@@ -103,8 +103,13 @@ func (d *Data) PrintDataBytes() {
 	fmt.Printf("%X \n",d.vcinbytes)
 }
 
-
-
+func (d *Data) PrintDataString() {
+	fmt.Println(d.id)
+	s:= string(d.name[:])
+	fmt.Println(s)
+	t:= string(d.vcinbytes[:])
+	fmt.Println(t)
+}
 
 
 
@@ -236,12 +241,12 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 
 func main() {	
     vc1 := vclock.New()
-	vc1.Update("A", 1)
+	vc1.Update("Hello", 21)
     d := Data{id: 7}
     copy(d.name[:], []byte("tree"))
 	copy(d.vcinbytes[:],vc1.Bytes())
 	
-	d.PrintDataBytes()
+	d.PrintDataString()
     buffer := new(bytes.Buffer)
     // writing
     enc := gob.NewEncoder(buffer)
@@ -255,5 +260,5 @@ func main() {
     dec := gob.NewDecoder(buffer)
     err = dec.Decode(e)
     //fmt.Println(e, err)
-	e.PrintDataBytes()
+	e.PrintDataString()
 }
