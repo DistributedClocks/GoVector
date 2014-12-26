@@ -279,7 +279,7 @@ func main() {
 	e.PrintDataString()
 	*/
 	Logger := New()
-	Logger.Initilize("Hell", true, false)
+	Logger.Initilize("Hell", "waliprocess", true, false)
 	
 	sendbuf := []byte("messagepayload")
 	finalsend := Logger.PrepareSend(sendbuf)
