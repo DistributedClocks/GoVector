@@ -10,7 +10,7 @@ type GoVec struct {
 	//processname 
 	processname	string
 	//vector clock in bytes
-	currentVC [32]byte
+	currentVC []byte
 	//should I print the log on screen every time I store it?
 	printonscreen bool
 	//should I assume that only I am logging (or are other remote hosts
@@ -81,7 +81,10 @@ func (gv *GoVec) PrepareSend(buf []byte) ([]byte){
 	using the Send Command
 */
 	//Converting Vector Clock from Bytes and Updating the gv clock
-	vc:=FromBytes(gv.currentVC)
+	vc, err := vclock.FromBytes(gv.currentVC)
+	if err!= nil {
+			panic(err)
+		}
 	gv.currenttime++
 	vc.Update(gv.processname,gv.currenttime)
 	gv.currentVC=vc.Bytes()
@@ -123,7 +126,10 @@ func (gv *GoVec) UnpackRecieve(buf []byte) ([] byte){
 	//if only our program is logging there is nothing attached in the byte buffer
 	if gv.locallogging ==true {
 		//simple adding to current time
-		vc:=FromBytes(gv.currentVC)
+		vc , err :=vclock.FromBytes(gv.currentVC)
+		if err!= nil {
+			panic(err)
+		}
 	    gv.currenttime++
 	    vc.Update(gv.processname,gv.currenttime)
 		gv.currentVC=vc.Bytes()
@@ -132,27 +138,38 @@ func (gv *GoVec) UnpackRecieve(buf []byte) ([] byte){
 	
 	//if we are receiving a packet with a time stamp then:
     //Create a new buffer holder and decode into E, a new Data Struct
-	
-	//buffer = bytes.NewBuffer(buf)
+	buffer := new(bytes.Buffer)
+	buffer = bytes.NewBuffer(buf)
 	e := new(Data)
 	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
-	dec := gob.NewDecoder(buf)
+	dec := gob.NewDecoder(buffer)
     err := dec.Decode(e)
 	if err!= nil {
 		fmt.Println("You said that I would be receiving a vector clock but I didnt! or decoding failed :P")
 		panic(err)
 	}
 	//In this case you increment your old clock
-	vc:=FromBytes(gv.currentVC)
+	vc , err :=vclock.FromBytes(gv.currentVC)
+	if err!= nil {
+			panic(err)
+		}
 	gv.currenttime++
 	vc.Update(gv.processname,gv.currenttime)
 	//merge it with the new clock
-	vc.Merge(FromBytes(e.vcinbytes))
+	
+	tmp := []byte(e.vcinbytes[:])
+	tempvc , err := vclock.FromBytes(tmp)
+	
+	if err!= nil {
+			panic(err)
+		}
+	vc.Merge(tempvc)
 	
 	//Log it
 	
     //  Out put the recieved Data
-	return e.programdata
+	tmp2 := []byte(e.programdata[:])
+	return tmp2
 }
 
 func New() *GoVec {
@@ -173,11 +190,11 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 	gv.currenttime = 0
 	
 	//we create a new Vector Clock with processname and 0 as the intial time
-	vc1 := vlclock.New()
+	vc1 := vclock.New()
 	vc1.Update(n, gv.currenttime)
 	
 	//Vector Clock Stored in bytes
-	gv.currentvc=vc1.Bytes()
+	copy(gv.currentVC[:],vc1.Bytes())
 
 }
 
