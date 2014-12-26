@@ -7,9 +7,15 @@ import "labix.org/v1/vclock"
 
 //This is the Global Variable Struct that holds precious info
 type GoVec struct {
+	//processname 
 	processname	string
-	cvc [16]byte
+	//vector clock in bytes
+	currrentvc [32]byte
+	//should I print the log on screen every time I store it?
 	printonscreen bool
+	//should I assume that only I am logging (or are other remote hosts
+	//doing so as well
+	locallogging bool
 }
 
 type Data struct {
@@ -54,27 +60,50 @@ func (d *Data) PrintDataBytes() {
 	fmt.Printf("%X \n",d.vcinbytes)
 }
 
-//func PrepareSend(buf []byte) ([]byte){
+func (gv *GoVec) PrepareSend(buf []byte) ([]byte){
+/*
+	This function is meant to be called before sending a packet. Usually,
+	it should Update the Vector Clock for its own process, package with the clock
+	using gob support and return the new byte array that should be sent onwards
+	using the Send Command
+*/
+	//Converting Vector Clock from Bytes and Updating 
+	vc:=FromBytes(gv.currentVC)
+	
+
 // Here a new "Data" Stut will be formed
 // Copy in PID and the rest
-// Encode Data to Gob
+// Encode Data to Gob if local logging dont encode
 // Update VC and Log Event
 // Output the Gob of data to be sent
 //}
 
 //func UnpackRecieve(buf []byte) ([] byte){
 //  Create a new Data Struct 
-//  Decode Relevant Data 
+//  Decode Relevant Data //if fail it means that this doesnt not hold vector clock
 //  Merge new Vector Clock with Old one
 //  Log Event
 //  Out put the recieved Data
 //}
 
-func StartUp(n string, p bool ){
-//This is the Start Up Function That should be called right at the start of 
-// a program
+func (gv *GoVec) StartUp(n string, p bool , l bool){
+/*This is the Start Up Function That should be called right at the start of 
+a program
 
-//Assumption that Code Creates Logger Struct using  LogVarName := GoVec.New
+Assumption that Code Creates Logger Struct using :
+LogVarName := GoVec.StartUp(nameofprocess, printlogline)
+*/
+	gv.processname=n
+	gv.printonscreen=p
+	gv.locallogging=l
+	
+	//we create a new Vector Clock with processname and 0 as the intial time
+	vc1 := vlclock.New()
+	vc1.Update(n, 0)
+	
+	//Vector Clock Stored in bytes
+	gv.currentvc=vc1.Bytes()
+
 }
 
 
