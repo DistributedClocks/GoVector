@@ -16,12 +16,15 @@ type GoVec struct {
 	//should I assume that only I am logging (or are other remote hosts
 	//doing so as well
 	locallogging bool
+	//current time for clock
+	currenttime uint64
 }
 
 type Data struct {
     id int32
     name [16]byte
 	vcinbytes [32]byte
+	programdata [32]byte
 }
 
 
@@ -40,6 +43,10 @@ func (d *Data) GobEncode() ([]byte, error) {
 	if err!=nil {
 		return nil,err
 	}
+	err = encoder.Encode(d.programdata)
+	if err!=nil {
+		return nil,err
+	}
     return w.Bytes(), nil
 }
 
@@ -51,7 +58,8 @@ func (d *Data) GobDecode(buf []byte) error {
         return err
     }
 	decoder.Decode(&d.name)
-    return decoder.Decode(&d.vcinbytes)
+	decoder.Decode(&d.vcinbytes)
+    return decoder.Decode(&d.programdata)
 }
 
 func (d *Data) PrintDataBytes() {
@@ -69,14 +77,37 @@ func (gv *GoVec) PrepareSend(buf []byte) ([]byte){
 */
 	//Converting Vector Clock from Bytes and Updating 
 	vc:=FromBytes(gv.currentVC)
+	gv.currenttime++
+	vc.Update(gv.processname,gv.currenttime)
+	//WILL HAVE TO CHECK THIS OUT!!!!!!! 
 	
-
-// Here a new "Data" Stut will be formed
-// Copy in PID and the rest
-// Encode Data to Gob if local logging dont encode
-// Update VC and Log Event
-// Output the Gob of data to be sent
-//}
+	//lets log the event
+	//print
+	
+	//if only local logging the next is unnecceary since we can simply return buf as is 
+	if gv.locallogging == true {
+	//if true, then we add relevant info and encode it
+		// Create New Data Structure and add information: data to be transfered
+		d := Data{id:15} 
+		copy(d.name[:], []byte(gv.processname))
+		copy(d.vcinbytes[:], vc.Bytes())
+		copy(d.programdata[:], buf)
+		
+		//create a buffer to hold data and Encode it
+		buffer := new(bytes.Buffer)
+		enc := gob.NewEncoder(buffer)
+        err := enc.Encode(d)
+		if err!=nil {
+			panic(err)
+		}
+		//return buffer bytes which are encoded as gob. Now these bytes can be sent off and 
+		// received on the other end!
+		return buffer.Bytes()
+	}
+	// if we are only performing local logging, we have updated vector clock and logged it buffer can
+	// be returned as is
+	return buf	
+}
 
 //func UnpackRecieve(buf []byte) ([] byte){
 //  Create a new Data Struct 
@@ -93,13 +124,14 @@ a program
 Assumption that Code Creates Logger Struct using :
 LogVarName := GoVec.StartUp(nameofprocess, printlogline)
 */
-	gv.processname=n
-	gv.printonscreen=p
-	gv.locallogging=l
+	gv.processname = n
+	gv.printonscreen = p
+	gv.locallogging = l
+	gv.currenttime = 0
 	
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vlclock.New()
-	vc1.Update(n, 0)
+	vc1.Update(n, gv.currenttime)
 	
 	//Vector Clock Stored in bytes
 	gv.currentvc=vc1.Bytes()
