@@ -5,8 +5,43 @@ import "encoding/gob"
 import "bytes"
 import "labix.org/v1/vclock"
 
+/*
+	- All licneces like other licenses ...
+	
+	How to Use This Library (After its Complete)
+	
+	The Library is generally simple to use ( I hope ) and wont cause too much trouble to whomever is 
+	planning to use it! Most of its functions ( vector timestamp and logging is something that should
+	happen without user intervention. So how does one use it after all?
+	
+	First of all You need to Create a Global Variable in your program for the GoLog Structure
+	Declare it as : var Logger GoLog
+	
+	Second, you need to initialize it, do this when initializing the entire program (it has to start
+	somewhere right?)  Do this as :
+	
+	Logger.Initialize(NameofYourProcess,ShouldYouSeeLoggingOnScreen,AreYouTheOnlyOneLogging)
+	
+	Third, When Ever You Decide to Send any []byte , before sending call PrepareSend like this:
+	RETURNSLICE := PrepareSend([]YourPayload)
+	and send the RETURN SLICE instead of your Designated Payload
+	
+	Fourth, When Receiveing, AFTER you receive your message, pass the []byte into UnpackRecieve
+	like this:
+	
+	RETURNSLICE := UnpackReceive([]ReceivedPayload)
+	and use RETURN SLICE for further processing.
+	
+	That should be it
+	
+	(After I implement it, I will make sure that log file closes itself before program exits so dont worry about shutting logging down ill be using defer statement)
+	
+
+*/
+
+
 //This is the Global Variable Struct that holds precious info
-type GoVec struct {
+type GoLog struct {
 	//processname 
 	processname	string
 	//vector clock in bytes
@@ -73,7 +108,7 @@ func (d *Data) PrintDataBytes() {
 
 
 
-func (gv *GoVec) PrepareSend(buf []byte) ([]byte){
+func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
 /*
 	This function is meant to be called before sending a packet. Usually,
 	it should Update the Vector Clock for its own process, package with the clock
@@ -118,7 +153,7 @@ func (gv *GoVec) PrepareSend(buf []byte) ([]byte){
 	return buf	
 }
 
-func (gv *GoVec) UnpackRecieve(buf []byte) ([] byte){ 
+func (gv *GoLog) UnpackRecieve(buf []byte) ([] byte){ 
 /*
 	This function is meant to be called immediatly after receiving a packet. It unpacks the data 
 	by the program, the vector clock. It updates vector clock and logs it. and returns the user data
@@ -172,11 +207,11 @@ func (gv *GoVec) UnpackRecieve(buf []byte) ([] byte){
 	return tmp2
 }
 
-func New() *GoVec {
-	return &GoVec{}
+func New() *GoLog {
+	return &GoLog{}
 }
 
-func (gv *GoVec) Initilize(n string, p bool , l bool){
+func (gv *GoLog) Initilize(n string, p bool , l bool){
 /*This is the Start Up Function That should be called right at the start of 
 a program
 
