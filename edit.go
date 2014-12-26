@@ -10,7 +10,7 @@ type GoVec struct {
 	//processname 
 	processname	string
 	//vector clock in bytes
-	currrentvc [32]byte
+	currentVC [32]byte
 	//should I print the log on screen every time I store it?
 	printonscreen bool
 	//should I assume that only I am logging (or are other remote hosts
@@ -22,7 +22,7 @@ type GoVec struct {
 
 type Data struct {
     id int32
-    name [16]byte
+    name [32]byte
 	vcinbytes [32]byte
 	programdata [32]byte
 }
@@ -68,6 +68,11 @@ func (d *Data) PrintDataBytes() {
 	fmt.Printf("%X \n",d.vcinbytes)
 }
 
+
+
+
+
+
 func (gv *GoVec) PrepareSend(buf []byte) ([]byte){
 /*
 	This function is meant to be called before sending a packet. Usually,
@@ -75,10 +80,11 @@ func (gv *GoVec) PrepareSend(buf []byte) ([]byte){
 	using gob support and return the new byte array that should be sent onwards
 	using the Send Command
 */
-	//Converting Vector Clock from Bytes and Updating 
+	//Converting Vector Clock from Bytes and Updating the gv clock
 	vc:=FromBytes(gv.currentVC)
 	gv.currenttime++
 	vc.Update(gv.processname,gv.currenttime)
+	gv.currentVC=vc.Bytes()
 	//WILL HAVE TO CHECK THIS OUT!!!!!!! 
 	
 	//lets log the event
@@ -90,7 +96,7 @@ func (gv *GoVec) PrepareSend(buf []byte) ([]byte){
 		// Create New Data Structure and add information: data to be transfered
 		d := Data{id:15} 
 		copy(d.name[:], []byte(gv.processname))
-		copy(d.vcinbytes[:], vc.Bytes())
+		copy(d.vcinbytes[:],gv.currentVC)
 		copy(d.programdata[:], buf)
 		
 		//create a buffer to hold data and Encode it
@@ -109,20 +115,57 @@ func (gv *GoVec) PrepareSend(buf []byte) ([]byte){
 	return buf	
 }
 
-//func UnpackRecieve(buf []byte) ([] byte){
-//  Create a new Data Struct 
-//  Decode Relevant Data //if fail it means that this doesnt not hold vector clock
-//  Merge new Vector Clock with Old one
-//  Log Event
-//  Out put the recieved Data
-//}
+func (gv *GoVec) UnpackRecieve(buf []byte) ([] byte){ 
+/*
+	This function is meant to be called immediatly after receiving a packet. It unpacks the data 
+	by the program, the vector clock. It updates vector clock and logs it. and returns the user data
+*/
+	//if only our program is logging there is nothing attached in the byte buffer
+	if gv.locallogging ==true {
+		//simple adding to current time
+		vc:=FromBytes(gv.currentVC)
+	    gv.currenttime++
+	    vc.Update(gv.processname,gv.currenttime)
+		gv.currentVC=vc.Bytes()
+		return buf
+	}
+	
+	//if we are receiving a packet with a time stamp then:
+    //Create a new buffer holder and decode into E, a new Data Struct
+	
+	//buffer = bytes.NewBuffer(buf)
+	e := new(Data)
+	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
+	dec := gob.NewDecoder(buf)
+    err := dec.Decode(e)
+	if err!= nil {
+		fmt.Println("You said that I would be receiving a vector clock but I didnt! or decoding failed :P")
+		panic(err)
+	}
+	//In this case you increment your old clock
+	vc:=FromBytes(gv.currentVC)
+	gv.currenttime++
+	vc.Update(gv.processname,gv.currenttime)
+	//merge it with the new clock
+	vc.Merge(FromBytes(e.vcinbytes))
+	
+	//Log it
+	
+    //  Out put the recieved Data
+	return e.programdata
+}
 
-func (gv *GoVec) StartUp(n string, p bool , l bool){
+func New() *GoVec {
+	return &GoVec{}
+}
+
+func (gv *GoVec) Initilize(n string, p bool , l bool){
 /*This is the Start Up Function That should be called right at the start of 
 a program
 
 Assumption that Code Creates Logger Struct using :
-LogVarName := GoVec.StartUp(nameofprocess, printlogline)
+Logger := GoVec.New()
+Logger.Initialize(nameofprocess, printlogline, locallogging)
 */
 	gv.processname = n
 	gv.printonscreen = p
