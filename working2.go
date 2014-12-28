@@ -3,7 +3,7 @@ package main
 import "fmt"
 import "encoding/gob"
 import "bytes"
-import "labix.org/v1/vclock"
+import "./vclock"
 import "strings"
 
 /*
@@ -127,10 +127,9 @@ func (d *Data) PrintDataString() {
 	s= string(d.vcinbytes[:])
 	fmt.Println(s)
 	s= string(d.programdata[:])
-	fmt.Println(strings.Trim(s,"  "))
+	fmt.Println(strings.Trim(s," "))
 	fmt.Println("-----DATA END -----")
 }
-
 
 
 func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
@@ -145,10 +144,15 @@ func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
 	if (err!= nil) {
 			panic(err)
 		}
-	gv.currenttime++
+	currenttime , found := vc.FindTicks(gv.pid)
+	if (found ==false){
+        panic("Couldnt find this process's id in its own vector clock!")
+	}
+	currenttime++
 	vc.Update(gv.pid,gv.currenttime)
 	gv.currentVC=vc.Bytes()
 	//WILL HAVE TO CHECK THIS OUT!!!!!!! 
+	
 	
 	//fmt.Print("VCLOCK IS :")
 	//s:= string(gv.currentVC)
@@ -169,7 +173,10 @@ func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
 		copy(d.programdata[:], buf)
 		
 		if (gv.debugmode == true){
+		fmt.Println("Sending:")
 		d.PrintDataString()
+		fmt.Print("Current Vector Clock : ")
+		vc.PrintVC()
 		}
 		//create a buffer to hold data and Encode it
 		buffer := new(bytes.Buffer)
@@ -219,17 +226,28 @@ func (gv *GoLog) UnpackReceive(buf []byte) ([] byte){
 		panic(err)
 	}
 	
-	if (gv.debugmode == true){
-	e.PrintDataString()
-	}
 	//In this case you increment your old clock
 	vc , err :=vclock.FromBytes(gv.currentVC)
+	
+	if (gv.debugmode == true){
+		fmt.Println("Received :")
+		e.PrintDataString()
+		fmt.Print("Received Vector Clock : ")
+		vc.PrintVC()
+	}
+	
+	currenttime , found := vc.FindTicks(gv.pid)
+	if (found ==false){
+		fmt.Println("Couldnt find Local Process's ID in the Vector Clock. Could it be a stray message?")
+        return nil
+	}
 	if err!= nil {
 			panic(err)
 		}
-	gv.currenttime++
-	vc.Update(gv.pid,gv.currenttime)
+	currenttime++
+	vc.Update(gv.pid,currenttime)
 	//merge it with the new clock
+	
 	
 	tmp := []byte(e.vcinbytes[:])
 	tempvc , err := vclock.FromBytes(tmp)
@@ -238,6 +256,8 @@ func (gv *GoLog) UnpackReceive(buf []byte) ([] byte){
 			panic(err)
 		}
 	vc.Merge(tempvc)
+	fmt.Print("Now, Vector Clock is : ")
+	vc.PrintVC()
 	
 	//Log it
 	
@@ -277,8 +297,7 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 	if (gv.debugmode == true){
 		fmt.Println(" ###### Initilization ######")
 		fmt.Print("VCLOCK IS :")
-		s:= string(gv.currentVC)
-	    fmt.Println(s)
+		vc1.PrintVC()
 	    fmt.Println(" ##### End of Initilization ")
 	}
 	return gv
@@ -300,11 +319,11 @@ func main() {
 		
 		
 	//receive message
-	//recbuf:=Logger.UnpackReceive(finalsend)
-	Logger.UnpackReceive(finalsend)
+	recbuf:= Logger.UnpackReceive(finalsend)
+	//Logger.UnpackReceive(finalsend)
 	//s:= string(recbuf[:])
 	//fmt.Println(s)
-	
+    finalsend = Logger.PrepareSend(recbuf)
 	
 	
 	

@@ -3,7 +3,7 @@ package main
 import "fmt"
 import "encoding/gob"
 import "bytes"
-import "labix.org/v1/vclock"
+import "./vclock"
 
 /*
 	- All licneces like other licenses ...
@@ -124,16 +124,21 @@ func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
 	vc, err := vclock.FromBytes(gv.currentVC)
 	if err!= nil {
 			panic(err)
-		}
-	//gv.currenttime++
+		} 
+	curt, found := vc.FindTicks(gv.processname)
+	if found == false{
+	}
+	fmt.Println("Look here are ticks:")
+	fmt.Println(curt)
+	gv.currenttime++
 	vc.Update(gv.processname,gv.currenttime)
 	gv.currentVC=vc.Bytes()
 	//WILL HAVE TO CHECK THIS OUT!!!!!!! 
 	
-	fmt.Print("VCLOCK IS :")
-	s:= string(gv.currentVC)
-	fmt.Println(s)
-	fmt.Println(" ")
+	//fmt.Print("VCLOCK IS :")
+	//s:= string(gv.currentVC)
+	//fmt.Println(s)
+	//fmt.Println(" ")
 	
 	//lets log the event
 	//print
@@ -247,10 +252,10 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 	//copy(gv.currentVC[:],vc1.Bytes())
 	gv.currentVC=vc1.Bytes()
 
-	fmt.Print("VCLOCK IS :")
-	s:= string(gv.currentVC)
-	fmt.Println(s)
-	fmt.Println(" ")
+	//fmt.Print("VCLOCK IS :")
+	//s:= string(gv.currentVC)
+	//fmt.Println(s)
+	//fmt.Println(" ")
 }
 
 
