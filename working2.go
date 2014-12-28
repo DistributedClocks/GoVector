@@ -52,9 +52,6 @@ type GoLog struct {
 	//buffer to output and locally log event. If True, VC will be encoded into packet on wire
 	VConWire bool
 	
-	//current time for clock neccessary to maintain time at local end
-	currenttime uint64
-	
 	//activates/deactivates printouts at each preparesend and unpackreceive
 	debugmode bool
 }
@@ -149,15 +146,15 @@ func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
         panic("Couldnt find this process's id in its own vector clock!")
 	}
 	currenttime++
-	vc.Update(gv.pid,gv.currenttime)
+	vc.Update(gv.pid,currenttime)
 	gv.currentVC=vc.Bytes()
 	//WILL HAVE TO CHECK THIS OUT!!!!!!! 
 	
-	
-	//fmt.Print("VCLOCK IS :")
-	//s:= string(gv.currentVC)
-	//fmt.Println(s)
-	//fmt.Println(" ")
+	if (gv.debugmode == true){
+		fmt.Println("Sending Message")
+		fmt.Print("Current Vector Clock : ")
+		vc.PrintVC()
+	}
 	
 	//lets log the event
 	//print
@@ -172,12 +169,6 @@ func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
 		copy(d.vcinbytes[:],gv.currentVC)
 		copy(d.programdata[:], buf)
 		
-		if (gv.debugmode == true){
-		fmt.Println("Sending:")
-		d.PrintDataString()
-		fmt.Print("Current Vector Clock : ")
-		vc.PrintVC()
-		}
 		//create a buffer to hold data and Encode it
 		buffer := new(bytes.Buffer)
 		enc := gob.NewEncoder(buffer)
@@ -207,9 +198,20 @@ func (gv *GoLog) UnpackReceive(buf []byte) ([] byte){
 		if err!= nil {
 			panic(err)
 		}
-	    gv.currenttime++
-	    vc.Update(gv.pid,gv.currenttime)
+		currenttime , found := vc.FindTicks(gv.pid)
+		if (found ==false){
+		panic("Couldnt find own process in local clock!")
+	}
+	    currenttime++
+	    vc.Update(gv.pid,currenttime)
 		gv.currentVC=vc.Bytes()
+		
+		if (gv.debugmode == true){
+		fmt.Println("A Message was Recieved")
+		fmt.Print("New Clock : ")
+		vc.PrintVC()
+		}
+		
 		return buf
 	}
 	
@@ -228,7 +230,6 @@ func (gv *GoLog) UnpackReceive(buf []byte) ([] byte){
 	
 	//In this case you increment your old clock
 	vc , err :=vclock.FromBytes(gv.currentVC)
-	
 	if (gv.debugmode == true){
 		fmt.Println("Received :")
 		e.PrintDataString()
@@ -283,12 +284,11 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 	gv.pid = processid
 	gv.printonscreen = printouts
 	gv.VConWire = vectorclockonwire
-	gv.currenttime = 1
 	gv.debugmode= debugmode
 	
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
-	vc1.Update(processid, gv.currenttime)
+	vc1.Update(processid, 1)
 	
 	//Vector Clock Stored in bytes
 	//copy(gv.currentVC[:],vc1.Bytes())
