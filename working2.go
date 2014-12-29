@@ -126,8 +126,25 @@ func (d *Data) PrintDataString() {
 	fmt.Println("-----DATA END -----")
 }
 
+func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string)(bool) {
+	
+	
+	
+	
+	
+	
+	
+	if(gv.printonscreen == true){
+		fmt.Print(ProcessID)
+		fmt.Print(" ")
+		fmt.Println(VCString)
+		fmt.Println(Message)
+	}
+	
+	return true
+}
 
-func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
+func (gv *GoLog) PrepareSend(mesg string,buf []byte) ([]byte){
 /*
 	This function is meant to be called before sending a packet. Usually,
 	it should Update the Vector Clock for its own process, package with the clock
@@ -154,8 +171,7 @@ func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
 		vc.PrintVC()
 	}
 	
-	//lets log the event
-	//print
+	gv.LogThis(mesg,gv.pid,vc.ReturnVCString())
 	
 	//if only local logging the next is unnecceary since we can simply return buf as is 
 	if (gv.VConWire == true) {
@@ -166,10 +182,6 @@ func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
 		d.pid = []byte(gv.pid)
 		d.vcinbytes = gv.currentVC
 		d.programdata = buf
-		//copy(d.name[:], []byte(gv.processname))
-		//copy(d.pid[:], []byte(gv.pid))
-		//copy(d.vcinbytes[:],gv.currentVC)
-		//copy(d.programdata[:], buf)
 		
 		//create a buffer to hold data and Encode it
 		buffer := new(bytes.Buffer)
@@ -188,7 +200,7 @@ func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
 	return buf	
 }
 
-func (gv *GoLog) UnpackReceive(buf []byte) ([] byte){ 
+func (gv *GoLog) UnpackReceive(mesg string, buf []byte) ([] byte){ 
 /*
 	This function is meant to be called immediatly after receiving a packet. It unpacks the data 
 	by the program, the vector clock. It updates vector clock and logs it. and returns the user data
@@ -213,6 +225,9 @@ func (gv *GoLog) UnpackReceive(buf []byte) ([] byte){
 		fmt.Print("New Clock : ")
 		vc.PrintVC()
 		}
+		
+		//logging local
+		gv.LogThis(mesg,gv.pid,vc.ReturnVCString())
 		
 		return buf
 	}
@@ -262,7 +277,9 @@ func (gv *GoLog) UnpackReceive(buf []byte) ([] byte){
 	    vc.PrintVC()
 	}
 	gv.currentVC=vc.Bytes()
+	
 	//Log it
+	gv.LogThis(mesg,gv.pid,vc.ReturnVCString())
 	
     //  Out put the recieved Data
 	tmp2 := []byte(e.programdata[:])
@@ -302,6 +319,10 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 		vc1.PrintVC()
 	    fmt.Println(" ##### End of Initilization ")
 	}
+	
+	//Log it
+	gv.LogThis("Initilization Complete",gv.pid,vc1.ReturnVCString())
+	
 	return gv
 }
 
@@ -309,23 +330,21 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 func main() {
 
 	
-	Logger:= Initilize("waliprocess", "0001", true, true,true)
+	Logger:= Initilize("waliprocess", "0001", true, true, false)
 	
 	sendbuf := []byte("messagepayload")
-	finalsend := Logger.PrepareSend(sendbuf)
+	finalsend := Logger.PrepareSend("Sending Message",sendbuf)
 	//send message
 	
 	//s:= string(finalsend[:])
 	//fmt.Println(s)
-	fmt.Println("End of Message")
-		
 		
 	//receive message
-	recbuf:= Logger.UnpackReceive(finalsend)
+	recbuf:= Logger.UnpackReceive("receivingmsg", finalsend)
 	//Logger.UnpackReceive(finalsend)
 	//s:= string(recbuf[:])
 	//fmt.Println(s)
-    finalsend = Logger.PrepareSend(recbuf)
+    finalsend = Logger.PrepareSend("Sending Message Again" , recbuf)
 	
 	
 	

@@ -37,6 +37,8 @@ import (
 	"math"
 	"sort"
 	"fmt"
+	"bytes"
+	"strconv"
 )
 
 // Condition constants define how to compare a vector clock against another,
@@ -82,14 +84,33 @@ func (vc *VClock) FindTicks(id string) (curt uint64, found bool) {
 }
 
 func (vc *VClock) PrintVC() {
-	for i := range vc.items {
-		fmt.Print("'")
+	fmt.Print("{")
+	for i:= range vc.items {
+		fmt.Print("\"")
 		fmt.Print(vc.items[i].id)
-		fmt.Print("' ")
+		fmt.Print("\":")
 		fmt.Print(vc.items[i].ticks)
-		fmt.Println(",")
+		if(i+1 < len(vc.items)){
+			fmt.Print(", ")
+		}
 	}
+	fmt.Println("}")
+}
 
+func (vc *VClock) ReturnVCString() (string) {
+	var buffer bytes.Buffer
+	buffer.WriteString("{")
+	for i:= range vc.items {
+		buffer.WriteString("\"")
+		buffer.WriteString(vc.items[i].id)
+		buffer.WriteString("\":")
+		buffer.WriteString(strconv.FormatUint(vc.items[i].ticks,10))
+		if(i+1 < len(vc.items)){
+			buffer.WriteString(", ")
+		}
+	}
+	buffer.WriteString("}")
+	return buffer.String()
 }
 // updateItem changes or appends the given id with ticks and when.
 func (vc *VClock) updateItem(id string, ticks, when uint64) {
