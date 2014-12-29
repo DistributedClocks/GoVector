@@ -4,6 +4,7 @@ import "fmt"
 import "encoding/gob"
 import "bytes"
 import "./vclock"
+import "os"
 
 /*
 	- All licneces like other licenses ...
@@ -53,6 +54,9 @@ type GoLog struct {
 	
 	//activates/deactivates printouts at each preparesend and unpackreceive
 	debugmode bool
+	
+	//Logfilename
+	logfile string
 }
 
 //This is the data structure that is actually end on the wire
@@ -127,21 +131,29 @@ func (d *Data) PrintDataString() {
 }
 
 func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string)(bool) {
+	complete := true
+	var buffer bytes.Buffer
+	buffer.WriteString(ProcessID)
+	buffer.WriteString(" ")
+	buffer.WriteString(VCString)
+	buffer.WriteString("\n")
+	buffer.WriteString(Message)
+	buffer.WriteString("\n")
+	output :=buffer.String()
+	file, err := os.OpenFile(gv.logfile, os.O_APPEND|os.O_WRONLY,0600)
+     if err != nil {
+         complete=false;
+     }
+     defer file.Close()
 	
-	
-	
-	
-	
-	
-	
+	if _, err = file.WriteString(output); err != nil {
+      complete=false
+     }
 	if(gv.printonscreen == true){
-		fmt.Print(ProcessID)
-		fmt.Print(" ")
-		fmt.Println(VCString)
-		fmt.Println(Message)
+		fmt.Println(output)
 	}
+	return complete
 	
-	return true
 }
 
 func (gv *GoLog) PrepareSend(mesg string,buf []byte) ([]byte){
@@ -171,7 +183,10 @@ func (gv *GoLog) PrepareSend(mesg string,buf []byte) ([]byte){
 		vc.PrintVC()
 	}
 	
-	gv.LogThis(mesg,gv.pid,vc.ReturnVCString())
+	ok :=gv.LogThis(mesg,gv.pid,vc.ReturnVCString())
+	if( ok==false){
+		fmt.Println("Something went Wrong, Could not Log!")
+	}
 	
 	//if only local logging the next is unnecceary since we can simply return buf as is 
 	if (gv.VConWire == true) {
@@ -227,7 +242,10 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) ([] byte){
 		}
 		
 		//logging local
-		gv.LogThis(mesg,gv.pid,vc.ReturnVCString())
+		ok1:=gv.LogThis(mesg,gv.pid,vc.ReturnVCString())
+		if( ok1==false){
+		fmt.Println("Something went Wrong, Could not Log!")
+	}
 		
 		return buf
 	}
@@ -279,7 +297,10 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) ([] byte){
 	gv.currentVC=vc.Bytes()
 	
 	//Log it
-	gv.LogThis(mesg,gv.pid,vc.ReturnVCString())
+	ok:=gv.LogThis(mesg,gv.pid,vc.ReturnVCString())
+	if( ok==false){
+		fmt.Println("Something went Wrong, Could not Log!")
+	}
 	
     //  Out put the recieved Data
 	tmp2 := []byte(e.programdata[:])
@@ -320,8 +341,27 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 	    fmt.Println(" ##### End of Initilization ")
 	}
 	
+	//Starting File IO . If Log exists, Log Will be deleted and A New one will be created
+	logname := nameofprocess + "-Log.txt"
+	
+	if _, err := os.Stat(logname); err == nil {
+		//its exists... deleting old log
+		fmt.Println(logname, "exists! ... Deleting ")
+		os.Remove(logname)
+	}
+	//Creating new Log
+	file, err := os.Create(logname)
+    if err != nil {
+        panic(err)
+    }
+	file.Close()
+	
+	gv.logfile=logname
 	//Log it
-	gv.LogThis("Initilization Complete",gv.pid,vc1.ReturnVCString())
+	ok:=gv.LogThis("Initilization Complete",gv.pid,vc1.ReturnVCString())
+	if( ok==false){
+		fmt.Println("Something went Wrong, Could not Log!")
+	}
 	
 	return gv
 }
