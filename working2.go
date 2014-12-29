@@ -4,7 +4,6 @@ import "fmt"
 import "encoding/gob"
 import "bytes"
 import "./vclock"
-import "strings"
 
 /*
 	- All licneces like other licenses ...
@@ -58,10 +57,10 @@ type GoLog struct {
 
 //This is the data structure that is actually end on the wire
 type Data struct {
-    name [200]byte
-	pid [4]byte
-	vcinbytes [200] byte
-	programdata [1024]byte
+    name []byte
+	pid []byte
+	vcinbytes [] byte
+	programdata []byte
 }
 
 //This function packs the Vector Clock with user program's data to send on wire
@@ -118,13 +117,12 @@ func (d *Data) PrintDataBytes() {
 func (d *Data) PrintDataString() {
 	fmt.Println("-----DATA START -----")
 	s:= string(d.name[:])
-	fmt.Println(strings.TrimSpace(s))
+	fmt.Println(s)
 	s= string(d.pid[:])
 	fmt.Println(s)
 	s= string(d.vcinbytes[:])
 	fmt.Println(s)
 	s= string(d.programdata[:])
-	fmt.Println(strings.Trim(s," "))
 	fmt.Println("-----DATA END -----")
 }
 
@@ -164,10 +162,14 @@ func (gv *GoLog) PrepareSend(buf []byte) ([]byte){
 	//if true, then we add relevant info and encode it
 		// Create New Data Structure and add information: data to be transfered
 		d := Data{} 
-		copy(d.name[:], []byte(gv.processname))
-		copy(d.pid[:], []byte(gv.pid))
-		copy(d.vcinbytes[:],gv.currentVC)
-		copy(d.programdata[:], buf)
+		d.name = []byte(gv.processname)
+		d.pid = []byte(gv.pid)
+		d.vcinbytes = gv.currentVC
+		d.programdata = buf
+		//copy(d.name[:], []byte(gv.processname))
+		//copy(d.pid[:], []byte(gv.pid))
+		//copy(d.vcinbytes[:],gv.currentVC)
+		//copy(d.programdata[:], buf)
 		
 		//create a buffer to hold data and Encode it
 		buffer := new(bytes.Buffer)
@@ -247,9 +249,7 @@ func (gv *GoLog) UnpackReceive(buf []byte) ([] byte){
 		}
 	currenttime++
 	vc.Update(gv.pid,currenttime)
-	//merge it with the new clock
-	
-	
+	//merge it with the new clock and update GV
 	tmp := []byte(e.vcinbytes[:])
 	tempvc , err := vclock.FromBytes(tmp)
 	
@@ -257,9 +257,11 @@ func (gv *GoLog) UnpackReceive(buf []byte) ([] byte){
 			panic(err)
 		}
 	vc.Merge(tempvc)
-	fmt.Print("Now, Vector Clock is : ")
-	vc.PrintVC()
-	
+	if (gv.debugmode == true){
+	    fmt.Print("Now, Vector Clock is : ")
+	    vc.PrintVC()
+	}
+	gv.currentVC=vc.Bytes()
 	//Log it
 	
     //  Out put the recieved Data
@@ -307,7 +309,7 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 func main() {
 
 	
-	Logger:= Initilize("waliprocess", "0001", true, true, true)
+	Logger:= Initilize("waliprocess", "0001", true, true,true)
 	
 	sendbuf := []byte("messagepayload")
 	finalsend := Logger.PrepareSend(sendbuf)
