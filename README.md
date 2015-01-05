@@ -28,7 +28,7 @@ How to Use This Library
 	call :
 	TCP.Send(PrepareSend("Message Description", []YourPayload))
 
-  Step 3:
+        Step 3:
 	When Receiveing a []byte Message, Unpack it with UnpackRecieve Call. 
 	So instead of:
 	TCP.Receive([]ReceivedPayload)
