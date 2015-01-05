@@ -4,7 +4,7 @@ import "./govec"
 
 
 func main() {
-	Logger:= govec.Initilize("waliprocess", "0001", true, true, false)
+	Logger:= govec.Initilize("exampleprocess", "0001", true, true, false)
 	
 	sendbuf := []byte("messagepayload")
 	finalsend := Logger.PrepareSend("Sending Message",sendbuf)

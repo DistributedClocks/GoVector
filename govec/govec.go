@@ -9,7 +9,7 @@ import "os"
 /*
 	- All licneces like other licenses ...
 	
-	How to Use This Library (After its Complete)
+	How to Use This Library
 	
 	Step 1:
 	Create a Global Variable and Initilize it using like this = 
@@ -28,7 +28,7 @@ import "os"
 	RETURNSLICE := UnpackReceive("Message Description" []ReceivedPayload)
 	and use RETURNSLICE for further processing.
 	
-	Restrictions
+
 	
 */
 
