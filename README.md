@@ -25,7 +25,7 @@ How to Use This Library
 Step 0
 To Use This Library, copy the govec folder in your project. In your program, import it by adding this :
 
-	"./govec"
+	"import ./govec"
 
 to your import list.
 	
