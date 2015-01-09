@@ -40,13 +40,16 @@ Debug prints extra information on Standard Output
 Step 2:
 When Ever You Decide to Send any []byte, call PrepareSend and send output. 
 So instead of:
+
 	TCP.Send([]YourMessage)
 call :
+
 	TCP.Send(PrepareSend("Message Description", []YourMessage))
 
 Step 3:
 When Receiveing a []byte Message, Unpack it with UnpackRecieve Call. 
 So instead of:
+
 	TCP.Receive([]RecievedBuffer)
 call :
 	
