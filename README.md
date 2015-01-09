@@ -41,19 +41,19 @@ Step 2:
 When Ever You Decide to Send any []byte, call PrepareSend and send output. 
 So instead of:
 
-	TCP.Send([]YourMessage)
+	connection.Send([]YourMessage)
 call :
 
-	TCP.Send(PrepareSend("Message Description", []YourMessage))
+	connection.Send(PrepareSend("Message Description", []YourMessage))
 
 Step 3:
 When Receiveing a []byte Message, Unpack it with UnpackRecieve Call. 
-So instead of:
+So after you call :
 
-	TCP.Receive([]RecievedBuffer)
+	connection.Receive([]RecievedBuffer)
 call :
 	
 	[]UnpackedMessage :=  UnpackReceive("Message Description", []ReceivedBuffer)
-using UnpackedMessage for further processing. Note You may have to convert an Array into a slice
+using UnpackedMessage for further processing. Note You may have to convert an Array into a slice for ReceivedBuffer
 	
 	
