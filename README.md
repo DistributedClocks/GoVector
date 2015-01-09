@@ -15,14 +15,16 @@ Experimental Development Folder : A folder containing code used in development o
 API Info
 
 The Library Supports 3 Major Calls
+<i>
 Initialize()
 PrepareSend()
 UnpackReceive()
+</i>
 The calls are explained below
 
 How to Use This Library
 
-<b>Step 0</b>
+<b>Step 0:</b>
 To Use This Library, copy the govec folder in your project. In your program, import it by adding this :
 
 	"import ./govec"
