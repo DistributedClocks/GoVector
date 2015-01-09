@@ -14,7 +14,7 @@ import "os"
 	Step 1:
 	Create a Global Variable and Initilize it using like this = 
 	
-	Logger:= Initialize("MyProcess","ProcessId",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
+	Logger:= Initialize("MyProcess",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
 	
 	Step 2:
 	When Ever You Decide to Send any []byte , before sending call PrepareSend like this:
@@ -298,9 +298,6 @@ func New() *GoLog {
 func Initilize(processid string, printouts bool , vectorclockonwire bool , debugmode bool) (*GoLog){
 /*This is the Start Up Function That should be called right at the start of 
 a program
-Assumption that Code Creates Logger Struct using :
-Logger := GoVec.New()
-Logger.Initialize(nameofprocess, printlogline, locallogging)
 */
 	gv := New() //Simply returns a new struct
 	gv.pid = processid
