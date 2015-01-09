@@ -15,39 +15,42 @@ Experimental Development Folder : A folder containing code used in development o
 API Info
 
 The Library Supports 3 Major Calls
-Initilize()
+Initialize()
 PrepareSend()
 UnpackReceive()
 The calls are explained below
 
 How to Use This Library
 
-	Step 0
-	To Use This Library, copy the govec folder in your project. In your program, import it by adding this :
-	import "./govec"
-	to your import list.
+Step 0
+To Use This Library, copy the govec folder in your project. In your program, import it by adding this :
+	"./govec"
+to your import list.
 	
-	Step 1:
-	Create a Global Variable and Initilize it using like this = 
-	Logger:= Initialize("MyProcess","ProcessId",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
-	ShouldYouSeeLoggingOnScreen prints whatever is logged by the Libary on Standard Output
-	ShouldISendVectorClockonWire should be true if all involved Networked Program are also using this library and false if
-	only you are logging 
-	Debug prints extra information on Standard Output
-	
-	Step 2:
-	When Ever You Decide to Send any []byte, call PrepareSend and send output. 
-	So instead of:
-	TCP.Send([]MessagePayload)
-	call :
-	TCP.Send(PrepareSend("Message Description", []YourPayload))
+Step 1:
+Create a Global Variable and Initialize it using like this = 
 
-        Step 3:
-	When Receiveing a []byte Message, Unpack it with UnpackRecieve Call. 
-	So instead of:
-	TCP.Receive([]ReceivedPayload)
-	call :
-	[]UnpackedMessage :=  UnpackReceive("Message Description" []ReceivedPayload)
-	using UnpackedMessage for further processing.
+	Logger:= Initialize("MyProcessName",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
+	
+ShouldYouSeeLoggingOnScreen prints whatever is logged by the Library on Standard Output
+ShouldISendVectorClockonWire should be true if all involved Networked Program are also using this library and false if
+only you are logging 
+Debug prints extra information on Standard Output
+	
+Step 2:
+When Ever You Decide to Send any []byte, call PrepareSend and send output. 
+So instead of:
+	TCP.Send([]YourMessage)
+call :
+	TCP.Send(PrepareSend("Message Description", []YourMessage))
+
+Step 3:
+When Receiveing a []byte Message, Unpack it with UnpackRecieve Call. 
+So instead of:
+	TCP.Receive([]RecievedBuffer)
+call :
+	
+	[]UnpackedMessage :=  UnpackReceive("Message Description", []ReceivedBuffer)
+using UnpackedMessage for further processing. Note You may have to convert an Array into a slice
 	
 	
