@@ -14,12 +14,14 @@ Experimental Development Folder : A folder containing code used in development o
 
 API Info
 
-The Library Supports 3 Major Calls
+The Library Supports 3 Major Calls:
+
 <i>
-Initialize()
-PrepareSend()
-UnpackReceive()
+-Initialize()
+-PrepareSend()
+-UnpackReceive()
 </i>
+
 The calls are explained below
 
 How to Use This Library
