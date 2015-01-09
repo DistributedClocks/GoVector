@@ -22,14 +22,14 @@ The calls are explained below
 
 How to Use This Library
 
-Step 0
+<b>Step 0</b>
 To Use This Library, copy the govec folder in your project. In your program, import it by adding this :
 
 	"import ./govec"
 
 to your import list.
 	
-Step 1:
+<b>Step 1:</b>
 Create a Global Variable and Initialize it using like this = 
 
 	Logger:= Initialize("MyProcessName",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
@@ -39,7 +39,7 @@ ShouldISendVectorClockonWire should be true if all involved Networked Program ar
 only you are logging 
 Debug prints extra information on Standard Output
 	
-Step 2:
+<b>Step 2:</b>
 When Ever You Decide to Send any []byte, call PrepareSend and send output. 
 So instead of:
 
@@ -48,7 +48,7 @@ call :
 
 	connection.Send(PrepareSend("Message Description", []YourMessage))
 
-Step 3:
+<b>Step 3:</b>
 When Receiveing a []byte Message, Unpack it with UnpackRecieve Call. 
 So after you call :
 
