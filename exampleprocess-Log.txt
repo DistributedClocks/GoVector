@@ -1,8 +1,8 @@
-0001 {"0001":1}
+exampleprocess {"exampleprocess":1}
 Initilization Complete
-0001 {"0001":2}
+exampleprocess {"exampleprocess":2}
 Sending Message
-0001 {"0001":3}
+exampleprocess {"exampleprocess":3}
 receivingmsg
-0001 {"0001":4}
+exampleprocess {"exampleprocess":4}
 Sending Message Again

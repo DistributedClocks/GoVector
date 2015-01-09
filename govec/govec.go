@@ -28,15 +28,12 @@ import "os"
 	RETURNSLICE := UnpackReceive("Message Description" []ReceivedPayload)
 	and use RETURNSLICE for further processing.
 	
-
 	
 */
 
 
 //This is the Global Variable Struct that holds all the info needed to be maintained 
 type GoLog struct {
-	// Local Process Name 
-	processname	string
 	
 	//Local Process ID
 	pid string
@@ -61,7 +58,6 @@ type GoLog struct {
 
 //This is the data structure that is actually end on the wire
 type Data struct {
-    name []byte
 	pid []byte
 	vcinbytes [] byte
 	programdata []byte
@@ -71,11 +67,7 @@ type Data struct {
 func (d *Data) GobEncode() ([]byte, error) {
     w := new(bytes.Buffer)
     encoder := gob.NewEncoder(w)
-    err:= encoder.Encode(d.name)
-    if (err!=nil) {
-        return nil, err
-    }
-	err = encoder.Encode(d.pid)
+	err := encoder.Encode(d.pid)
 	if (err!=nil) {
         return nil, err
     }
@@ -94,11 +86,7 @@ func (d *Data) GobEncode() ([]byte, error) {
 func (d *Data) GobDecode(buf []byte) error {
     r := bytes.NewBuffer(buf)
     decoder := gob.NewDecoder(r)
-	err:= decoder.Decode(&d.name)
-	if (err!=nil) {
-        return err
-	}
-	err = decoder.Decode(&d.pid)
+	err := decoder.Decode(&d.pid)
 	if (err!=nil) {
         return err
     }
@@ -111,7 +99,6 @@ func (d *Data) GobDecode(buf []byte) error {
 
 //Prints the Data Stuct as Bytes
 func (d *Data) PrintDataBytes() {
-	fmt.Printf("%x \n",d.name)
 	fmt.Printf("%x \n",d.pid)
 	fmt.Printf("%X \n",d.vcinbytes)
 	fmt.Printf("%X \n",d.programdata)
@@ -120,9 +107,7 @@ func (d *Data) PrintDataBytes() {
 //Prints the Data Struct as a String
 func (d *Data) PrintDataString() {
 	fmt.Println("-----DATA START -----")
-	s:= string(d.name[:])
-	fmt.Println(s)
-	s= string(d.pid[:])
+	s:= string(d.pid[:])
 	fmt.Println(s)
 	s= string(d.vcinbytes[:])
 	fmt.Println(s)
@@ -193,7 +178,6 @@ func (gv *GoLog) PrepareSend(mesg string,buf []byte) ([]byte){
 	//if true, then we add relevant info and encode it
 		// Create New Data Structure and add information: data to be transfered
 		d := Data{} 
-		d.name = []byte(gv.processname)
 		d.pid = []byte(gv.pid)
 		d.vcinbytes = gv.currentVC
 		d.programdata = buf
@@ -311,16 +295,14 @@ func New() *GoLog {
 	return &GoLog{}
 }
 
-func Initilize(nameofprocess string, processid string, printouts bool , vectorclockonwire bool , debugmode bool) (*GoLog){
+func Initilize(processid string, printouts bool , vectorclockonwire bool , debugmode bool) (*GoLog){
 /*This is the Start Up Function That should be called right at the start of 
 a program
-
 Assumption that Code Creates Logger Struct using :
 Logger := GoVec.New()
 Logger.Initialize(nameofprocess, printlogline, locallogging)
 */
 	gv := New() //Simply returns a new struct
-	gv.processname = nameofprocess
 	gv.pid = processid
 	gv.printonscreen = printouts
 	gv.VConWire = vectorclockonwire
@@ -342,7 +324,7 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 	}
 	
 	//Starting File IO . If Log exists, Log Will be deleted and A New one will be created
-	logname := nameofprocess + "-Log.txt"
+	logname := processid + "-Log.txt"
 	
 	if _, err := os.Stat(logname); err == nil {
 		//its exists... deleting old log
@@ -365,5 +347,3 @@ Logger.Initialize(nameofprocess, printlogline, locallogging)
 	
 	return gv
 }
-
-
