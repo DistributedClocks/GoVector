@@ -17,9 +17,9 @@ API Info
 The Library Supports 3 Major Calls:
 
 <i>
--Initialize()
--PrepareSend()
--UnpackReceive()
+-Initialize()<br>
+-PrepareSend()<br>
+-UnpackReceive()<br>
 </i>
 
 The calls are explained below
