@@ -12,7 +12,7 @@ import "os"
 	How to Use This Library
 	
 	Step 1:
-	Create a Global Variable and Initilize it using like this = 
+	Create a Global Variable and Initialize it using like this = 
 	
 	Logger:= Initialize("MyProcess",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
 	
@@ -295,7 +295,7 @@ func New() *GoLog {
 	return &GoLog{}
 }
 
-func Initilize(processid string, printouts bool , vectorclockonwire bool , debugmode bool) (*GoLog){
+func Initialize(processid string, printouts bool , vectorclockonwire bool , debugmode bool) (*GoLog){
 /*This is the Start Up Function That should be called right at the start of 
 a program
 */
