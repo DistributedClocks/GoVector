@@ -38,10 +38,10 @@ Create a Global Variable and Initialize it using like this =
 
 	Logger:= govec.Initialize("MyProcessName",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
 	
-ShouldYouSeeLoggingOnScreen prints whatever is logged by the Library on Standard Output
-ShouldISendVectorClockonWire should be true if all involved Networked Program are also using this library and false if
-only you are logging
-Debug prints extra information on Standard Output
+- ShouldYouSeeLoggingOnScreen prints whatever is logged by the Library on Standard Output<br>
+- ShouldISendVectorClockonWire should be true if all involved Networked Program are also using this library and false if
+only you are logging <br>
+- Debug prints extra information on Standard Output<br>
 
 Note : You can pass the Logger variable into a function to call it.
 	
@@ -54,6 +54,8 @@ call :
 
 	connection.Send(PrepareSend("Message Description", []YourMessage))
 
+In this case <b>[]YourMessage</b> are the bytes you are trying to send
+
 <b>Step 3:</b>
 When Receiveing a []byte Message, Unpack it with UnpackRecieve Call. 
 So after you call :
@@ -63,7 +65,8 @@ call :
 	
 	[]UnpackedMessage :=  UnpackReceive("Message Description", []ReceivedBuffer)
 using UnpackedMessage for further processing. Note You may have to convert an Array into a slice for ReceivedBuffer
-	
+
+In this case <b> []ReceivedBuffer </b> is the bytes you are trying to receive
 	
 	
 	
