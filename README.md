@@ -17,9 +17,9 @@ API Info
 The Library Supports 3 Major Calls:
 
 <i>
--Initialize()<br>
--PrepareSend()<br>
--UnpackReceive()<br>
+- Initialize()<br>
+- PrepareSend()<br>
+- UnpackReceive()<br>
 </i>
 
 The calls are explained below
@@ -38,10 +38,10 @@ Create a Global Variable and Initialize it using like this =
 
 	Logger:= govec.Initialize("MyProcessName",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
 	
-- ShouldYouSeeLoggingOnScreen prints whatever is logged by the Library on Standard Output<br>
-- ShouldISendVectorClockonWire should be true if all involved Networked Program are also using this library and false if
+- <b>ShouldYouSeeLoggingOnScreen</b> prints whatever is logged by the Library on Standard Output<br>
+- <b>ShouldISendVectorClockonWire</b> should be true if all involved Networked Program are also using this library and false if
 only you are logging <br>
-- Debug prints extra information on Standard Output<br>
+- <b>Debug</b> prints extra information on Standard Output<br>
 
 Note : You can pass the Logger variable into a function to call it.
 	
