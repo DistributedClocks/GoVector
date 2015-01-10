@@ -52,7 +52,7 @@ So instead of:
 	connection.Write([]YourMessage)
 call :
 
-	connection.Send(Logger.PrepareSend("Message Description", []YourMessage))
+	connection.Write(Logger.PrepareSend("Message Description", []YourMessage))
 
 In this case <b>[]YourMessage</b> are the bytes you are trying to send
 
