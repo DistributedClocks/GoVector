@@ -40,7 +40,7 @@ Create a Global Variable and Initialize it using like this =
 	
 - <b>ShouldYouSeeLoggingOnScreen</b> prints whatever is logged by the Library on Standard Output<br>
 - <b>ShouldISendVectorClockonWire</b> should be true if all involved Networked Program are also using this library and false if
-only you are logging <br>
+only you are logging on this locally running program<br>
 - <b>Debug</b> prints extra information on Standard Output<br>
 
 Note : You can pass the Logger variable into a function to call it.
