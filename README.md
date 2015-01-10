@@ -36,18 +36,20 @@ to your import list.
 <b>Step 1:</b>
 Create a Global Variable and Initialize it using like this = 
 
-	Logger:= Initialize("MyProcessName",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
+	Logger:= govec.Initialize("MyProcessName",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
 	
 ShouldYouSeeLoggingOnScreen prints whatever is logged by the Library on Standard Output
 ShouldISendVectorClockonWire should be true if all involved Networked Program are also using this library and false if
-only you are logging 
+only you are logging
 Debug prints extra information on Standard Output
+
+Note : You can pass the Logger variable into a function to call it.
 	
 <b>Step 2:</b>
 When Ever You Decide to Send any []byte, call PrepareSend and send output. 
 So instead of:
 
-	connection.Send([]YourMessage)
+	connection.Write([]YourMessage)
 call :
 
 	connection.Send(PrepareSend("Message Description", []YourMessage))
@@ -56,10 +58,12 @@ call :
 When Receiveing a []byte Message, Unpack it with UnpackRecieve Call. 
 So after you call :
 
-	connection.Receive([]RecievedBuffer)
+	connection.Read([]RecievedBuffer)
 call :
 	
 	[]UnpackedMessage :=  UnpackReceive("Message Description", []ReceivedBuffer)
 using UnpackedMessage for further processing. Note You may have to convert an Array into a slice for ReceivedBuffer
+	
+	
 	
 	
