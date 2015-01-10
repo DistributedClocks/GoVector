@@ -43,7 +43,7 @@ Create a Global Variable and Initialize it using like this =
 only you are logging on this locally running program<br>
 - <b>Debug</b> prints extra information on Standard Output<br>
 
-Note : You can pass the Logger variable into a function to call it.
+Note : Call Logger in any function by passing its pointer as an argument to the function
 	
 <b>Step 2:</b>
 When Ever You Decide to Send any []byte, call PrepareSend and send output. 
@@ -52,7 +52,7 @@ So instead of:
 	connection.Write([]YourMessage)
 call :
 
-	connection.Send(PrepareSend("Message Description", []YourMessage))
+	connection.Send(Logger.PrepareSend("Message Description", []YourMessage))
 
 In this case <b>[]YourMessage</b> are the bytes you are trying to send
 
@@ -63,7 +63,7 @@ So after you call :
 	connection.Read([]RecievedBuffer)
 call :
 	
-	[]UnpackedMessage :=  UnpackReceive("Message Description", []ReceivedBuffer)
+	[]UnpackedMessage :=  Logger.UnpackReceive("Message Description", []ReceivedBuffer)
 using UnpackedMessage for further processing. Note You may have to convert an Array into a slice for ReceivedBuffer
 
 In this case <b> []ReceivedBuffer </b> is the bytes you are trying to receive
