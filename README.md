@@ -43,7 +43,7 @@ Create a Global Variable and Initialize it using like this =
 only you are logging on this locally running program<br>
 - <b>Debug</b> prints extra information on Standard Output<br>
 
-Note : Call Logger in any function by passing its pointer as an argument to the function
+Note : Call Logger in any function by passing its pointer as an argument to the function. The variable Logger is of type GoLog so you pass it as (Logger *govec.GoLog)
 	
 <b>Step 2:</b>
 When Ever You Decide to Send any []byte, call PrepareSend and send output. 
