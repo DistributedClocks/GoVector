@@ -38,6 +38,7 @@ Create a Global Variable and Initialize it using like this =
 
 	Logger:= govec.Initialize("MyProcessName",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
 	
+- <b>MyProcessName</b> is where you name the local process. It should be unique to all other in the distributed system 	
 - <b>ShouldYouSeeLoggingOnScreen</b> prints whatever is logged by the Library on Standard Output<br>
 - <b>ShouldISendVectorClockonWire</b> should be true if all involved Networked Program are also using this library and false if
 only you are logging on this locally running program<br>
