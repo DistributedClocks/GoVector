@@ -1,5 +1,5 @@
 example {"example":1}
-Initilization Complete
+Initialization Complete
 example {"example":2}
 Sending Message
 example {"example":3}

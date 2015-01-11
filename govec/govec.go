@@ -141,7 +141,7 @@ func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string)(bool
 	
 }
 
-func (gv *GoLog) MarkAndLogLocalEvent(Message string) (bool){
+func (gv *GoLog) LogLocalEvent(Message string) (bool){
 
 	//Converting Vector Clock from Bytes and Updating the gv clock
 	vc, err := vclock.FromBytes(gv.currentVC)
