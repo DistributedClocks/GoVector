@@ -1,8 +1,0 @@
-exampleprocess {"exampleprocess":1}
-Initilization Complete
-exampleprocess {"exampleprocess":2}
-Sending Message
-exampleprocess {"exampleprocess":3}
-receivingmsg
-exampleprocess {"exampleprocess":4}
-Sending Message Again

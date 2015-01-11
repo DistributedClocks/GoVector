@@ -1,0 +1,8 @@
+example {"example":1}
+Initilization Complete
+example {"example":2}
+Sending Message
+example {"example":3}
+receivingmsg
+example {"example":4}
+Sending Message Again
