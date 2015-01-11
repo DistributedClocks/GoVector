@@ -332,10 +332,10 @@ a program
 	gv.currentVC=vc1.Bytes()
 	
 	if (gv.debugmode == true){
-		fmt.Println(" ###### Initilization ######")
+		fmt.Println(" ###### Initialization ######")
 		fmt.Print("VCLOCK IS :")
 		vc1.PrintVC()
-	    fmt.Println(" ##### End of Initilization ")
+	    fmt.Println(" ##### End of Initialization ")
 	}
 	
 	//Starting File IO . If Log exists, Log Will be deleted and A New one will be created
@@ -355,7 +355,7 @@ a program
 	
 	gv.logfile=logname
 	//Log it
-	ok:=gv.LogThis("Initilization Complete",gv.pid,vc1.ReturnVCString())
+	ok:=gv.LogThis("Initialization Complete",gv.pid,vc1.ReturnVCString())
 	if( ok==false){
 		fmt.Println("Something went Wrong, Could not Log!")
 	}
