@@ -5,4 +5,6 @@ Sending Message
 example {"example":3}
 receivingmsg
 example {"example":4}
+Message Processed
+example {"example":5}
 Sending Message Again

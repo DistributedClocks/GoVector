@@ -15,6 +15,7 @@ func main() {
 		
 	//receive message
 	recbuf:= Logger.UnpackReceive("receivingmsg", finalsend)
+	Logger.MarkAndLogLocalEvent("Message Processed")
 	//Logger.UnpackReceive(finalsend)
 	//s:= string(recbuf[:])
 	//fmt.Println(s)

@@ -141,6 +141,24 @@ func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string)(bool
 	
 }
 
+func (gv *GoLog) MarkAndLogLocalEvent(Message string) (bool){
+
+	//Converting Vector Clock from Bytes and Updating the gv clock
+	vc, err := vclock.FromBytes(gv.currentVC)
+	if (err!= nil) {
+			panic(err)
+		}
+	currenttime , found := vc.FindTicks(gv.pid)
+	if (found ==false){
+        panic("Couldnt find this process's id in its own vector clock!")
+	}
+	currenttime++
+	vc.Update(gv.pid,currenttime)
+	gv.currentVC=vc.Bytes()
+	ok := gv.LogThis(Message,gv.pid,vc.ReturnVCString())
+	return ok
+}
+
 func (gv *GoLog) PrepareSend(mesg string,buf []byte) ([]byte){
 /*
 	This function is meant to be called before sending a packet. Usually,
