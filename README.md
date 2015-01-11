@@ -26,12 +26,15 @@ Add the govec folder to your project and import it with:
 
 Invoke Initialize once, somewhere at the start of an execution: 
 
-	logger:= govec.Initialize("MyProcessName", ShouldYouSeeLoggingOnScreen, ShouldISendVectorClockonWire, Debug)
+	logger:= govec.Initialize("MyProcessName", "LogFileName")
 
 Initialize returns a pointer to govec.GoLog (logger var above) and
 takes the following arguments:
 
 * MyProcessName (string): local process name; must be unique to your distributed system.
+* LogFileName (string) : name of the log file that will store info
+
+Inside the Library Code You can change the following to make the library more verbose in the Initialize function
 * ShouldYouSeeLoggingOnScreen (bool): whether to print whatever is logged by the library to stdout.
 * ShouldISendVectorClockonWire (bool): whether or not PrepareSend wraps buffers with a vector clock (true) or leaves them unchanged (false)
 * Debug (bool): print extra diagnostic information to stdout
