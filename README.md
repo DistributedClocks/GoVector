@@ -16,7 +16,7 @@ At the high-level the library exports 4 calls:
 * govec.Initialize : initialize the local state, returns a reference to govec.GoLog 
 * (*govec.GoLog) PrepareSend : wraps a buffer with a vector clock to prepare it to be sent
 * (*govec.GoLog) UnpackReceive : unwraps the vector clock from a received buffer
-* (*govec.GoLog) MarkAndLogLocalEvent : increments the local clock by one and logs it
+* (*govec.GoLog) LogLocalEvent : increments the local clock by one and logs it
 
 ### Usage
 
@@ -58,6 +58,6 @@ invoke UnpackReceive :
 	
 When you want to log a local event, use :
 
-	Logger.MarkAndLogLocalEvent("Message")
+	Logger.LogLocalEvent("Message")
 
 "Message" here represents the message that you want to be entered along side this event. 
