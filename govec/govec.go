@@ -313,15 +313,17 @@ func New() *GoLog {
 	return &GoLog{}
 }
 
-func Initialize(processid string, printouts bool , vectorclockonwire bool , debugmode bool) (*GoLog){
+func Initialize(processid string, logfilename string) (*GoLog){
 /*This is the Start Up Function That should be called right at the start of 
 a program
 */
 	gv := New() //Simply returns a new struct
 	gv.pid = processid
-	gv.printonscreen = printouts
-	gv.VConWire = vectorclockonwire
-	gv.debugmode= debugmode
+	
+	//# These are bools that can be changed to change debuging nature of library
+	gv.printonscreen = false
+	gv.VConWire = true
+	gv.debugmode= false
 	
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
@@ -339,7 +341,7 @@ a program
 	}
 	
 	//Starting File IO . If Log exists, Log Will be deleted and A New one will be created
-	logname := processid + "-Log.txt"
+	logname := logfilename + "-Log.txt"
 	
 	if _, err := os.Stat(logname); err == nil {
 		//its exists... deleting old log
