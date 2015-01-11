@@ -321,9 +321,9 @@ a program
 	gv.pid = processid
 	
 	//# These are bools that can be changed to change debuging nature of library
-	gv.printonscreen = false
-	gv.VConWire = true
-	gv.debugmode= false
+	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
+	gv.VConWire = true // (ShouldISendVectorClockonWire) 
+	gv.debugmode= false // (Debug)
 	
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
