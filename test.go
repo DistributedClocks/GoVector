@@ -4,7 +4,7 @@ import "./govec"
 
 
 func main() {
-	Logger:= govec.Initialize("example", "logfile")
+	Logger:= govec.Initialize("example", "example")
 	
 	sendbuf := []byte("messagepayload")
 	finalsend := Logger.PrepareSend("Sending Message",sendbuf)
