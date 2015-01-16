@@ -203,7 +203,7 @@ func (gv *GoLog) PrepareSend(mesg string,buf []byte) ([]byte){
 		//create a buffer to hold data and Encode it
 		buffer := new(bytes.Buffer)
 		enc := gob.NewEncoder(buffer)
-        err := enc.Encode(d)
+        err := enc.Encode(&d)
 		if (err!=nil) {
 			panic(err)
 			
