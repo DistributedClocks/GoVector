@@ -1,0 +1,6 @@
+example2 {"example2":1}
+Initialization Complete
+example2 {"example2":2}
+Sending Message2
+example2 {"example2":3}
+Message Processed2
