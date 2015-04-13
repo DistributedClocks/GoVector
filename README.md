@@ -82,7 +82,7 @@ The following is a basic example of how this library can be used
 	import "./govec"
 
 	func main() {
-		Logger := govec.Initialize("example", "example")
+		Logger := govec.Initialize("MyProcess", "LogFile")
 		
 		//In Sending Process
 		
@@ -102,3 +102,14 @@ The following is a basic example of how this library can be used
 		//Can be called at any point 
 		Logger.LogLocalEvent("Example Complete")
 	}
+
+This produces the log "LogFile.txt" :
+
+	MyProcess {"MyProcess":1}
+	Initialization Complete
+	MyProcess {"MyProcess":2}
+	Sending Message
+	MyProcess {"MyProcess":3}
+	Receiving Message
+	MyProcess {"MyProcess":4}
+	Message Processed
