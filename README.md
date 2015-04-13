@@ -52,7 +52,8 @@ Returns a Go Log Struct taking in two arguments and truncates previous logs:
 
 Returns a Go Log Struct taking in two arguments without truncating previous log entry:
 * MyProcessName (string): local process name; must be unique in your distributed system.
-* LogFileName (string) : name of the log file that will store info. Each run will append to log file seperated by "=== Execution # ==="
+* LogFileName (string) : name of the log file that will store info. Each run will append to log file seperated 
+by "=== Execution # ==="
 
 #####   func PrepareSend
 	
