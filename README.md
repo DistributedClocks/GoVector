@@ -71,7 +71,7 @@ Unpacks incoming byte[] b from GOB and logs LogMessage with received vector time
 
 	func LogLocalEvent(string LogMessage)
 	
-Increments current vector timestamp and logs it into Log File. No output is generated
+Increments current vector timestamp and logs it into Log File. 
 
 ###   Examples
 
