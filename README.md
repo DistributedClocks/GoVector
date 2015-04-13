@@ -37,7 +37,7 @@ Add the govec folder to your project and import it with:
 
  The GoLog struct provides an interface to creating and maintaining vector timestamp entries in the generated log file
  
-#####   Initialize
+#####   func Initialize
 
 	func Initialize(string ProcessName, string LogName) *GoLog
 
