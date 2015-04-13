@@ -97,7 +97,6 @@ The following is a basic example of how this library can be used
 		
 		//receive message
 		recbuf := Logger.UnpackReceive("Receiving Message", finalsend)
-		fmt.Print(string(recbuf[:]))
 
 		//Can be called at any point 
 		Logger.LogLocalEvent("Example Complete")
