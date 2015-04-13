@@ -15,11 +15,11 @@ PLEASE NOTE: GoVec is compatible with Go 1.4 +
 ### Index
 
 type GoLog
-   func Initialize(string ProcessName, string LogName) *GoLog
-   func InitializeMutipleExecutions(string ProcessName, string LogName) *GoLog
-   func PrepareSend(string LogMessage, byte[] b) (byte[] output)
-   func UnpackReceive(string LogMessage, byte[] b) (byte[] output)
-   func LogLocalEvent(string LogMessage)
+   * func Initialize(string ProcessName, string LogName) *GoLog
+   * func InitializeMutipleExecutions(string ProcessName, string LogName) *GoLog
+   * func PrepareSend(string LogMessage, byte[] b) (byte[] output)
+   * func UnpackReceive(string LogMessage, byte[] b) (byte[] output)
+   * func LogLocalEvent(string LogMessage)
    
 
 ### Usage
