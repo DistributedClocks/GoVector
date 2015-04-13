@@ -111,4 +111,4 @@ This produces the log "LogFile.txt" :
 	MyProcess {"MyProcess":3}
 	Receiving Message
 	MyProcess {"MyProcess":4}
-	Message Processed
+	Example Complete
