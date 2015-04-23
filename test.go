@@ -22,4 +22,12 @@ func main() {
 	//s:= string(recbuf[:])
 	//fmt.Println(s)
 	finalsend = Logger.PrepareSend("Sending Message Again", recbuf)
+
+	// This should not appear in log
+	Logger.DisableLogging()
+	Logger.LogLocalEvent("-Logging was disabled here")
+
+	//This should appear in log
+	Logger.EnableLogging()
+	Logger.LogLocalEvent("-Logging is renabled here-")
 }

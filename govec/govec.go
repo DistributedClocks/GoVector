@@ -55,6 +55,8 @@ type GoLog struct {
 	//activates/deactivates printouts at each preparesend and unpackreceive
 	debugmode bool
 
+	logging bool
+
 	//Logfilename
 	logfile string
 }
@@ -158,7 +160,12 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 	currenttime++
 	vc.Update(gv.pid, currenttime)
 	gv.currentVC = vc.Bytes()
-	ok := gv.LogThis(Message, gv.pid, vc.ReturnVCString())
+
+	var ok bool
+	if gv.logging == true {
+		ok = gv.LogThis(Message, gv.pid, vc.ReturnVCString())
+	}
+
 	return ok
 }
 
@@ -189,7 +196,11 @@ func (gv *GoLog) PrepareSend(mesg string, buf []byte) []byte {
 		vc.PrintVC()
 	}
 
-	ok := gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
+	var ok bool
+	if gv.logging == true {
+		ok = gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
+	}
+
 	if ok == false {
 		fmt.Println("Something went Wrong, Could not Log!")
 	}
@@ -247,7 +258,11 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) []byte {
 		}
 
 		//logging local
-		ok1 := gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
+		var ok1 bool
+		if gv.logging == true {
+			ok1 = gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
+		}
+
 		if ok1 == false {
 			fmt.Println("Something went Wrong, Could not Log!")
 		}
@@ -302,7 +317,10 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) []byte {
 	gv.currentVC = vc.Bytes()
 
 	//Log it
-	ok := gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
+	var ok bool
+	if gv.logging == true {
+		ok = gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
+	}
 	if ok == false {
 		fmt.Println("Something went Wrong, Could not Log!")
 	}
@@ -310,6 +328,14 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) []byte {
 	//  Out put the recieved Data
 	tmp2 := []byte(e.programdata[:])
 	return tmp2
+}
+
+func (gv *GoLog) EnableLogging() {
+	gv.logging = true
+}
+
+func (gv *GoLog) DisableLogging() {
+	gv.logging = false
 }
 
 func New() *GoLog {
@@ -327,7 +353,7 @@ func Initialize(processid string, logfilename string) *GoLog {
 	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
 	gv.VConWire = true       // (ShouldISendVectorClockonWire)
 	gv.debugmode = false     // (Debug)
-
+	gv.EnableLogging()
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
 	vc1.Update(processid, 1)
@@ -379,7 +405,7 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
 	gv.VConWire = true       // (ShouldISendVectorClockonWire)
 	gv.debugmode = false     // (Debug)
-
+	gv.EnableLogging()
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
 	vc1.Update(processid, 1)
