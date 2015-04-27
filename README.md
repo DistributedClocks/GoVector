@@ -20,6 +20,7 @@ type GoLog
    * func PrepareSend(string LogMessage, byte[] b) (byte[] output)
    * func UnpackReceive(string LogMessage, byte[] b) (byte[] output)
    * func LogLocalEvent(string LogMessage)
+   * func DisableLogging()
    
 
 ### Usage
@@ -73,6 +74,13 @@ Unpacks incoming byte[] b from GOB and logs LogMessage with received vector time
 	
 Increments current vector timestamp and logs it into Log File. 
 
+#####   func DisableLogging
+
+	func DisableLogging()
+	
+Disables Logging. Log messages will not appear in Log file any longer.
+Note: For the moment, the vector clocks are going to continue being updated.
+
 ###   Examples
 
 The following is a basic example of how this library can be used 
@@ -100,6 +108,9 @@ The following is a basic example of how this library can be used
 
 		//Can be called at any point 
 		Logger.LogLocalEvent("Example Complete")
+		
+		Logger.DisableLogging()
+		//No further events will be written to log file
 	}
 
 This produces the log "LogFile.txt" :
