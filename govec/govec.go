@@ -3,7 +3,7 @@ package govec
 import "fmt"
 import "encoding/gob"
 import "bytes"
-import "./vclock"
+import "github.com/arcaneiceman/GoVector/govec/vclock"
 import "os"
 import "strings"
 import "strconv"
@@ -118,6 +118,11 @@ func (d *Data) PrintDataString() {
 	fmt.Println(s)
 	s = string(d.programdata[:])
 	fmt.Println("-----DATA END -----")
+}
+
+// TODO Pull request for this function
+func (gv *GoLog) GetCurrentVC() []byte {
+	return gv.currentVC
 }
 
 func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool {
