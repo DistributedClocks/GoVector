@@ -47,11 +47,6 @@ type GoLog struct {
 	//Flag to Printf the logs made by Local Program
 	printonscreen bool
 
-	//This bools Checks to send the VC Bundled with User Data on the Wire
-	// if False, PrepareSend and UnpackReceive will simply forward their input
-	//buffer to output and locally log event. If True, VC will be encoded into packet on wire
-	VConWire bool
-
 	//activates/deactivates printouts at each preparesend and unpackreceive
 	debugmode bool
 
@@ -116,7 +111,6 @@ func (d *Data) PrintDataString() {
 	fmt.Println(s)
 	s = string(d.vcinbytes[:])
 	fmt.Println(s)
-	s = string(d.programdata[:])
 	fmt.Println("-----DATA END -----")
 }
 
@@ -174,7 +168,7 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 	return ok
 }
 
-func (gv *GoLog) PrepareSend(mesg string, buf []byte) []byte {
+func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	/*
 		This function is meant to be called before sending a packet. Usually,
 		it should Update the Vector Clock for its own process, package with the clock
@@ -210,70 +204,37 @@ func (gv *GoLog) PrepareSend(mesg string, buf []byte) []byte {
 		fmt.Println("Something went Wrong, Could not Log!")
 	}
 
-	//if only local logging the next is unnecceary since we can simply return buf as is
-	if gv.VConWire == true {
-		//if true, then we add relevant info and encode it
-		// Create New Data Structure and add information: data to be transfered
-		d := Data{}
-		d.pid = []byte(gv.pid)
-		d.vcinbytes = gv.currentVC
-		d.programdata = buf
+	// Create New Data Structure and add information: data to be transfered
+	d := Data{}
+	d.pid = []byte(gv.pid)
+	d.vcinbytes = gv.currentVC
 
-		//create a buffer to hold data and Encode it
-		buffer := new(bytes.Buffer)
-		enc := gob.NewEncoder(buffer)
-		err := enc.Encode(&d)
-		if err != nil {
-			panic(err)
-
-		}
-		//return buffer bytes which are encoded as gob. Now these bytes can be sent off and
-		// received on the other end!
-		return buffer.Bytes()
+	//first layer encoding, encoding buffer argument
+	programDataBuffer := new(bytes.Buffer)
+	programDataEncoder := gob.NewEncoder(programDataBuffer)
+	err = programDataEncoder.Encode(&buf)
+	d.programdata = programDataBuffer.Bytes()
+	if err != nil {
+		panic(err)
 	}
-	// if we are only performing local logging, we have updated vector clock and logged it buffer can
-	// be returned as is
-	return buf
+
+	//second layer wrapperEncoderoding, wrapperEncoderode wrapping structure
+	wrapperBuffer := new(bytes.Buffer)
+	wrapperEncoder := gob.NewEncoder(wrapperBuffer)
+	err = wrapperEncoder.Encode(&d)
+	if err != nil {
+		panic(err)
+	}
+	//return wrapperBuffer bytes which are wrapperEncoderoded as gob. Now these bytes can be sent off and
+	// received on the other end!
+	return wrapperBuffer.Bytes()
 }
 
-func (gv *GoLog) UnpackReceive(mesg string, buf []byte) []byte {
+func (gv *GoLog) UnpackReceive(mesg string, buf []byte) interface{} {
 	/*
 		This function is meant to be called immediatly after receiving a packet. It unpacks the data
 		by the program, the vector clock. It updates vector clock and logs it. and returns the user data
 	*/
-	//if only our program is logging there is nothing attached in the byte buffer
-	if gv.VConWire == false {
-		//simple adding to current time
-		vc, err := vclock.FromBytes(gv.currentVC)
-		if err != nil {
-			panic(err)
-		}
-		currenttime, found := vc.FindTicks(gv.pid)
-		if found == false {
-			panic("Couldnt find own process in local clock!")
-		}
-		currenttime++
-		vc.Update(gv.pid, currenttime)
-		gv.currentVC = vc.Bytes()
-
-		if gv.debugmode == true {
-			fmt.Println("A Message was Recieved")
-			fmt.Print("New Clock : ")
-			vc.PrintVC()
-		}
-
-		//logging local
-		var ok1 bool
-		if gv.logging == true {
-			ok1 = gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
-		}
-
-		if ok1 == false {
-			fmt.Println("Something went Wrong, Could not Log!")
-		}
-
-		return buf
-	}
 
 	//if we are receiving a packet with a time stamp then:
 	//Create a new buffer holder and decode into E, a new Data Struct
@@ -330,9 +291,18 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) []byte {
 		fmt.Println("Something went Wrong, Could not Log!")
 	}
 
-	//  Out put the recieved Data
-	tmp2 := []byte(e.programdata[:])
-	return tmp2
+	//Decode the actual message passed to Pack
+	programDataBuffer := new(bytes.Buffer)
+	programDataBuffer = bytes.NewBuffer(e.programdata)
+	var decodedData interface{}
+	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
+	msgdec := gob.NewDecoder(programDataBuffer)
+	err = msgdec.Decode(&decodedData)
+	if err != nil {
+		fmt.Println("Unable to decode message, what data type did you pack in?")
+		panic(err)
+	}
+	return decodedData
 }
 
 func (gv *GoLog) EnableLogging() {
@@ -356,7 +326,6 @@ func Initialize(processid string, logfilename string) *GoLog {
 
 	//# These are bools that can be changed to change debuging nature of library
 	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
-	gv.VConWire = true       // (ShouldISendVectorClockonWire)
 	gv.debugmode = false     // (Debug)
 	gv.EnableLogging()
 	//we create a new Vector Clock with processname and 0 as the intial time
@@ -408,7 +377,6 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 
 	//# These are bools that can be changed to change debuging nature of library
 	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
-	gv.VConWire = true       // (ShouldISendVectorClockonWire)
 	gv.debugmode = false     // (Debug)
 	gv.EnableLogging()
 	//we create a new Vector Clock with processname and 0 as the intial time
