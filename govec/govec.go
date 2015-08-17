@@ -291,7 +291,7 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) interface{} {
 		fmt.Println("Something went Wrong, Could not Log!")
 	}
 
-	//Decode the actual message passed to Pack
+	//Decode the user defined message
 	programDataBuffer := new(bytes.Buffer)
 	programDataBuffer = bytes.NewBuffer(e.programdata)
 	var decodedData interface{}
