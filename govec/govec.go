@@ -34,7 +34,13 @@ import "bufio"
 
 
 */
+/*
+//publicly supplied encoding function
+func encode(interface{}) ([]byte, error) {}
 
+//publicly supplied decoding function
+func decode([]byte) (interface{}, error) {}
+*/
 //This is the Global Variable Struct that holds all the info needed to be maintained
 type GoLog struct {
 
@@ -54,6 +60,12 @@ type GoLog struct {
 
 	//Logfilename
 	logfile string
+
+	//publicly supplied encoding function
+	encodingStrategy func(interface{}) ([]byte, error)
+
+	//publicly supplied decoding function
+	decodingStrategy func([]byte) (interface{}, error)
 }
 
 //This is the data structure that is actually end on the wire
@@ -209,11 +221,8 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	d.pid = []byte(gv.pid)
 	d.vcinbytes = gv.currentVC
 
-	//first layer encoding, encoding buffer argument
-	programDataBuffer := new(bytes.Buffer)
-	programDataEncoder := gob.NewEncoder(programDataBuffer)
-	err = programDataEncoder.Encode(&buf)
-	d.programdata = programDataBuffer.Bytes()
+	//first layer of encoding (user data)
+	d.programdata, err = gv.encodingStrategy(buf)
 	if err != nil {
 		panic(err)
 	}
@@ -290,19 +299,46 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) interface{} {
 	if ok == false {
 		fmt.Println("Something went Wrong, Could not Log!")
 	}
-
-	//Decode the user defined message
-	programDataBuffer := new(bytes.Buffer)
-	programDataBuffer = bytes.NewBuffer(e.programdata)
-	var decodedData interface{}
-	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
-	msgdec := gob.NewDecoder(programDataBuffer)
-	err = msgdec.Decode(&decodedData)
+	decodedData, err := gv.decodingStrategy(e.programdata)
 	if err != nil {
-		fmt.Println("Unable to decode message, what data type did you pack in?")
 		panic(err)
 	}
 	return decodedData
+}
+
+//gobDecodingStrategy decodes user data by using the Go Object decoder
+func gobDecodingStrategy(programData []byte) (interface{}, error) {
+	//Decode the user defined message
+	programDataBuffer := new(bytes.Buffer)
+	programDataBuffer = bytes.NewBuffer(programData)
+	var decodedData interface{}
+	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
+	msgdec := gob.NewDecoder(programDataBuffer)
+	err := msgdec.Decode(&decodedData)
+	if err != nil {
+		err = fmt.Errorf("Unable to decode message using default gob decoder, consider using a differnt type or custom encoder/decoder ?")
+		return nil, err
+	}
+	return decodedData, nil
+}
+
+//gobEncodingStrategy encodes user data by using the Go Object encoder
+func gobEncodingStrategy(buf interface{}) ([]byte, error) {
+	//first layer encoding, encoding buffer argument
+	programDataBuffer := new(bytes.Buffer)
+	programDataEncoder := gob.NewEncoder(programDataBuffer)
+	err := programDataEncoder.Encode(&buf)
+	if err != nil {
+		err = fmt.Errorf("Unable to encode with gob encoder, consider using a different type or custom encoder/decoder")
+		return nil, err
+	}
+	programdata := programDataBuffer.Bytes()
+	return programdata, nil
+}
+
+func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte) (interface{}, error)) {
+	gv.encodingStrategy = encoder
+	gv.decodingStrategy = decoder
 }
 
 func (gv *GoLog) EnableLogging() {
@@ -328,6 +364,11 @@ func Initialize(processid string, logfilename string) *GoLog {
 	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
 	gv.debugmode = false     // (Debug)
 	gv.EnableLogging()
+
+	//set the default encoder / decoder to gob
+	gv.encodingStrategy = gobEncodingStrategy
+	gv.decodingStrategy = gobDecodingStrategy
+
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
 	vc1.Update(processid, 1)
