@@ -49,7 +49,7 @@
     //handling the start of the chat
     $("#join").click(function(){
       $("#error").html("");
-      var name= escapeHtml($("#name").val())
+      var name= $("#name").val() //escapeHtml($("#name").val())
       if(name.length<3){
         $("#error").html("Name is too short!");
         return

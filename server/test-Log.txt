@@ -1,3 +1,1 @@
 Initialization Complete
-test
-test 1

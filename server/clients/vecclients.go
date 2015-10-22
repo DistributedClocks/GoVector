@@ -1,13 +1,9 @@
 package servervec
 
 import (
-	"./../websocket" //gorilla websocket implementation
+	//"./../websocket" //gorilla websocket implementation
+	"golang.org/x/net/websocket"
 	"fmt"
-	"net"
-	"net/http"
-	"time"
-	"sync"
-	"strings"
 	"os"
 )
 
@@ -15,43 +11,43 @@ import (
 type Subscriber interface {
 	Send(message string)
 	GetName() string
-	Filter() 
+	//Filter() 
 }
 
 type WSSub struct {
-	name      string
-	conn      *websocket.Conn
+	Name      string
+	Conn      *websocket.Conn
 }
 
 func (ws *WSSub) GetName() (name string) {
-	ws.name
+	return ws.Name
 }
 
 //Sending message block to the client
 func (ws *WSSub) Send(message string) {
-	ws.conn.WriteMessage(websocket.TextMessage, []byte(msgs))
+	ws.Conn.Write([]byte(message))
 }
 
 type FileSub struct {
-	name 	  string
-	logname	  string
+	Name 	  string
+	Logname	  string
 }
 
 func (fs *FileSub) GetName() (name string) {
-	fs.name
+	return fs.Name
 }
 
 func (fs *FileSub) CreateLog() {
 	//Starting File IO. If Log exists, Log will be deleted and a new one will be created
-	fs.logname := fs.name + "-Log.txt"
+	fs.Logname = fs.Name + "-Log.txt"
 
-	if _, err := os.Stat(fs.logname); err == nil {
+	if _, err := os.Stat(fs.Logname); err == nil {
 		//it exists... deleting old log
-		fmt.Println(fs.logname, "exists! ... Deleting ")
-		os.Remove(fs.logname)
+		fmt.Println(fs.Logname, "exists! ... Deleting ")
+		os.Remove(fs.Logname)
 	}
 	//Creating new Log
-	file, err := os.Create(fs.logname)
+	file, err := os.Create(fs.Logname)
 	if err != nil {
 		panic(err)
 	}
@@ -63,7 +59,7 @@ func (fs *FileSub) CreateLog() {
 
 func (fs *FileSub) Send(message string) {
 	complete := true
-	file, err := os.OpenFile(fs.logname, os.O_APPEND|os.O_WRONLY, 0600)
+	file, err := os.OpenFile(fs.Logname, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		complete = false
 	}
@@ -83,12 +79,12 @@ type Publisher interface {
 }
 
 type TCPPub struct {
-	name      string
-	conn      *websocket.Conn // net.Conn for tcp connection likely
+	Name      string
+	Conn      *websocket.Conn // net.Conn for tcp connection likely
 }
 
-func (tp *TCPSub) GetName() (name string) {
-	tp.name
+func (tp *TCPPub) GetName() (name string) {
+	return tp.Name
 }
 
 //Client has a new message to broadcast
