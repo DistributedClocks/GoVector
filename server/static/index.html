@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <title>Simple Chat with Go</title>
+  <style>
+    #messages {
+      border: 1px solid #666;
+      height: 300px;
+      width: 50%;
+      overflow: auto;
+    }
+    #msg {
+      width: 50%;
+      height: 3em;
+    }
+    #error {
+      color: #f00;
+      padding: 5px;
+      font-weight: bold;
+    }
+  </style>
+  <script src="jquery.js"></script>
+</head>
+
+<body>
+  <h1>Simple Chat with Go</h1>
+  <div id="phase1">
+    <P>Please enter your name to Join the chat</P>
+    <input id="name">
+    <button id="join">Join</button>
+  </div>
+  <div id="error"></div>
+  <div id="phase2" style="opacity:0">
+    <div id="messages"></div>
+    <textarea id="msg"></textarea>
+    <br/><button id="send">Send</button>
+  </div>
+
+  <script>
+    $("INPUT").val("")
+    $("#name").keypress(function(evt){
+      if(evt.originalEvent.keyCode==13){
+        $("#join").trigger("click")
+        //submit name
+      }
+    })
+
+    //handling the start of the chat
+    $("#join").click(function(){
+      $("#error").html("");
+      var name= escapeHtml($("#name").val())
+      if(name.length<3){
+        $("#error").html("Name is too short!");
+        return
+      }
+      console.log("join started")
+      chat = new WebSocket("ws://"+window.location.host+"/ws");
+      chat.onopen = function(evt) {
+        chat.send(name);  //sending the chat name
+        $("#phase1").animate({opacity:0},500,"linear",function(){
+          $("#phase1").css({display:"none"})
+          $("#phase2").css({opacity:1})
+          $("#msg").focus()
+        })
+      };
+      chat.onerror = function(evt) { 
+        console.log("Websocket Error:",evt) 
+      };  
+      chat.onclose = function(evt) {
+        console.log("chat closing")
+        $("#phase1").stop().css({display:"block"}).animate({opacity:1},500)
+        $("#phase2").stop().animate({opacity:0})
+        $("#error").html("That name was already used!")
+      };
+      chat.onmessage = function(evt) { 
+        $("#messages").append(evt.data).scrollTop(9e6)
+      };
+
+    })
+
+    $("#msg").keypress(function(evt){
+      if(evt.originalEvent.keyCode==13 && !evt.originalEvent.shiftKey){
+        $("#send").trigger("click")
+        evt.preventDefault();
+         // submit name
+      }
+    })
+
+    $("#send").click(function(){
+      chat.send(escapeHtml($("#msg").val()));
+      $("#msg").val("");
+    })    
+
+//helper function for escaping HTML
+ var entityMap = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': '&quot;',
+    "'": '&#39;',
+    "/": '&#x2F;',
+    "\n": '<BR/>'
+  };
+
+  function escapeHtml(string) {
+    return String(string).replace(/[&<>"'\/]/g, function (s) {
+      return entityMap[s];
+    });
+  }
+
+//helper function for debugging purposes
+  function toHex(str) {
+    var result = '';
+    for (var i=0; i<str.length; i++) {
+      result += ("0"+str.charCodeAt(i).toString(16)).slice(-2)+" ";
+    }
+    return result.toUpperCase();
+  }
+
+  </script>
+</body>
+</html>

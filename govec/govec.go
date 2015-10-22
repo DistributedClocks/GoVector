@@ -57,8 +57,17 @@ type GoLog struct {
 
 	logging bool
 
-	//Logfilename
+	//Logfile name
 	logfile string
+	
+	// Connect to logging server?
+	realtime bool
+	
+	// IP address of server to connect to
+	serveraddr string
+	
+	serverconn PublishConn
+
 }
 
 //This is the data structure that is actually end on the wire
@@ -135,6 +144,11 @@ func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool
 	buffer.WriteString(Message)
 	buffer.WriteString("\n")
 	output := buffer.String()
+
+	if gv.realtime == true {
+		serverconn.Send(output)
+	}	
+
 	file, err := os.OpenFile(gv.logfile, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		complete = false
@@ -478,4 +492,14 @@ func FindExecutionNumber(logname string) int {
 		line, _, err = reader.ReadLine()
 	}
 	return executionnumber
+}
+
+type PublishConn struct {
+	conn      *websocket.Conn
+	address   string
+}
+
+func (pc *PublishConn) Init(string address) {
+	pc.address = address
+	// net.conn via dial, needs more work
 }
