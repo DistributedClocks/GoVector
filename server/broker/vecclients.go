@@ -1,4 +1,4 @@
-package servervec
+package brokervec
 
 import (
 	//"./../websocket" //gorilla websocket implementation
@@ -9,9 +9,8 @@ import (
 
 
 type Subscriber interface {
-	Send(message string)
-	GetName() string
-	//Filter() 
+	Send(message Message)
+	GetName() string 
 }
 
 type WSSub struct {
@@ -24,8 +23,8 @@ func (ws *WSSub) GetName() (name string) {
 }
 
 //Sending message block to the client
-func (ws *WSSub) Send(message string) {
-	ws.Conn.Write([]byte(message))
+func (ws *WSSub) Send(message Message) {
+	ws.Conn.Write([]byte(message.GetMessage()))
 }
 
 type FileSub struct {
@@ -57,7 +56,8 @@ func (fs *FileSub) CreateLog() {
 	fs.Send("Initialization Complete\r\n")	
 }
 
-func (fs *FileSub) Send(message string) {
+func (fs *FileSub) Send(message Message) {
+	logMessage = message.name + ": " + message.message + " " + message.vclock + "\r\n"
 	complete := true
 	file, err := os.OpenFile(fs.Logname, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
@@ -65,7 +65,7 @@ func (fs *FileSub) Send(message string) {
 	}
 	defer file.Close()
 
-	if _, err = file.WriteString(message); err != nil {
+	if _, err = file.WriteString(logMessage; err != nil {
 		complete = false
 	}
 
