@@ -1,7 +1,6 @@
 package brokervec
 
 import (
-	//"./websocket" //gorilla websocket implementation
 	"golang.org/x/net/websocket"
 	"fmt"
 	"net"
@@ -10,9 +9,6 @@ import (
 	"encoding/json"
 	"time"
 	"sync"
-//	"strings"
-//	"os"
-	"./clients"
 )
 
 // Vector Messaging Server
@@ -44,19 +40,19 @@ func (vb *VectorBroker) Init(logfilename string) {
 }
 
 //broadcasting all the messages in the queue in one block
-func (vs *VectorBroker) BroadCast() {
+func (vb *VectorBroker) BroadCast() {
 	msgBlock := nil
 infLoop:
 	for {
 		select {
-		case m := <- vs.queue:
+		case m := <- vb.queue:
 			msgBlock = m
 		default:
 			break infLoop
 		}
 	}
 	if msgBlock != nil {
-		for _, client := range vs.subscribers {
+		for _, client := range vb.subManager.Subscribers {
 			client.Send(msgBlock)
 		}
 	}

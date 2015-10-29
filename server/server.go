@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"./websocket" //gorilla websocket implementation
 	"golang.org/x/net/websocket"
 	"fmt"
 	"net"
@@ -10,15 +9,11 @@ import (
 	"encoding/json"
 	"time"
 	"sync"
-//	"strings"
-//	"os"
 	"./broker"
 )
 
 //global variable for handling all server traffic
 var broker VectorBroker
-
-
 
 //Printing out the various ways the server can be reached by the clients
 func printClientConnInfo() {

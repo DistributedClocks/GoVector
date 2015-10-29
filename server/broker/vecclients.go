@@ -1,7 +1,6 @@
 package brokervec
 
 import (
-	//"./../websocket" //gorilla websocket implementation
 	"golang.org/x/net/websocket"
 	"fmt"
 	"os"
@@ -65,7 +64,7 @@ func (fs *FileSub) Send(message Message) {
 	}
 	defer file.Close()
 
-	if _, err = file.WriteString(logMessage; err != nil {
+	if _, err = file.WriteString(logMessage); err != nil {
 		complete = false
 	}
 

@@ -1,36 +1,30 @@
 package brokervec
 
 import (
-	//"./websocket" //gorilla websocket implementation
 	"golang.org/x/net/websocket"
 	"fmt"
-	"net"
 	"net/rpc/jsonrpc"
 	"net/http"
 	"encoding/json"
-	"time"
 	"sync"
-//	"strings"
-//	"os"
-	"./clients"
 )
 
 type PubManager struct {
-	publishers map[string]servervec.Publisher	
+	publishers map[string]Publisher	
 	publishersMtx sync.Mutex
 
 	queue   chan Message
 	messageStore []Message
 }
 
-func NewPubManager() *PubManager {
+func NewPubManager() PubManager {
     pm := PubManager{
         publishers: make(map[string]Publisher),
-        messageStore = make([]Message, 1}),
-		queue = make(chan Message, 20),
+        messageStore: make([]Message, 1),
+		queue: make(chan Message, 20),
     }
 	
-	http.Handle("/ws", websocket.Handler(wsHandler))
+	http.Handle("/ws", websocket.Handler(pubWSHandler))
 	http.HandleFunc("/", staticFiles)
 	http.ListenAndServe(":8000", nil)
     return pm
@@ -39,12 +33,12 @@ func NewPubManager() *PubManager {
 //Registers a new publisher for providing information to the server
 //returns pointer to a Client, or Nil, if the name is already taken
 func (pm *PubManager) RegisterPublisher(name string, conn *websocket.Conn) {
-	defer vs.publishersMtx.Unlock()
+	defer pm.publishersMtx.Unlock()
 	pm.publishersMtx.Lock() //preventing simultaneous access to the `publishers` map
 	if _, exists := pm.publishers[name]; exists {
 		conn.Close()
 	}
-	publisher := servervec.TCPPub{
+	publisher := TCPPub{
 		Name:      name,
 		Conn:      conn,
 	}
@@ -61,7 +55,7 @@ func (pm *PubManager) AddMsg(msg *Message, reply *string) error {
 }
 
 //this is also the handler for joining the server
-func wsHandler(conn *websocket.Conn) {
+func pubWSHandler(conn *websocket.Conn) {
 
 //	conn, err := upgrader.Upgrade(w, r, nil)
 
@@ -77,18 +71,13 @@ func wsHandler(conn *websocket.Conn) {
 			conn.Close()
 			return
 		}
-		processMessage(msg, conn)
+		processFirstPublish(msg, conn)
 	go	jsonrpc.ServeConn(conn)
 		
 	//}()
 }
 
-type Client struct {
-	Name string
-	Type string
-}
-
-func processMessage(message []byte, conn *websocket.Conn) {
+func processFirstPublish(message []byte, conn *websocket.Conn) {
 	
 	var client Client
 	err := json.Unmarshal(message, &client)

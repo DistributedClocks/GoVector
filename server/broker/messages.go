@@ -15,7 +15,7 @@ type LocalMessage struct {
 	message string
 }
 
-func (lm *LocalMessage) GetMessage() {
+func (lm *LocalMessage) GetMessage() string {
 		
 	return lm.pid + " " + lm.vclock + "\n" + lm.message + "\n"
 }
@@ -26,7 +26,7 @@ type NetworkMessage struct {
 	message string
 }
 
-func (nm *NetworkMessage) GetMessage() {
+func (nm *NetworkMessage) GetMessage() string {
 		
-	return lm.pid + " " + lm.vclock + "\n" + lm.message + "\n"
+	return nm.pid + " " + nm.vclock + "\n" + nm.message + "\n"
 }
