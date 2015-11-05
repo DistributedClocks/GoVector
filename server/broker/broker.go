@@ -3,58 +3,48 @@ package brokervec
 import (
 	"golang.org/x/net/websocket"
 	"fmt"
-	"net"
-	"net/rpc/jsonrpc"
+	"net/rpc"
 	"net/http"
-	"encoding/json"
 	"time"
-	"sync"
+	"log"
 )
 
 // Vector Messaging Server
 
 type VectorBroker struct {
-	pubManager PubManager	
-	subManager SubManager
-
-	queue   chan Message
+	pubManager *PubManager	
+	subManager *SubManager
 
 }
 
 //initializing the server
 func (vb *VectorBroker) Init(logfilename string) {
 	fmt.Println("Server init")
-	vb.queue = make(chan Message, 20)
 	vb.pubManager = NewPubManager()
 	
+	rpc.Register(vb.pubManager)
+	http.Handle("/ws", websocket.Handler(vb.pubManager.pubWSHandler))
+	http.HandleFunc("/", staticFiles)
+	log.Fatal(http.ListenAndServe(":8000", nil))
+	
+	rpc.Register(vb.subManager)
 	vb.subManager = NewSubManager()
 	vb.subManager.AddLogSubscriber(logfilename)
+	
+	http.Handle("/ws", websocket.Handler(vb.subManager.subWSHandler))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 	
 	//the "heartbeat" for broadcasting messages
 	go func() {
 		for {
-			vb.BroadCast()
+			vb.subManager.BroadCast()
 			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 }
 
-//broadcasting all the messages in the queue in one block
-func (vb *VectorBroker) BroadCast() {
-	msgBlock := nil
-infLoop:
-	for {
-		select {
-		case m := <- vb.queue:
-			msgBlock = m
-		default:
-			break infLoop
-		}
-	}
-	if msgBlock != nil {
-		for _, client := range vb.subManager.Subscribers {
-			client.Send(msgBlock)
-		}
-	}
+//##############SERVING STATIC FILES
+func staticFiles(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./../static/"+r.URL.Path)
 }
 

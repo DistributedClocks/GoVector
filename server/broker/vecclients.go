@@ -52,11 +52,14 @@ func (fs *FileSub) CreateLog() {
 	file.Close()
 
 	//Log it
-	fs.Send("Initialization Complete\r\n")	
+	logmsg := LogMessage{
+		Message: "Initialization Complete\r\n",
+	}
+	fs.Send(&logmsg)	
 }
 
 func (fs *FileSub) Send(message Message) {
-	logMessage = message.name + ": " + message.message + " " + message.vclock + "\r\n"
+	logMessage := message.GetMessage()
 	complete := true
 	file, err := os.OpenFile(fs.Logname, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {

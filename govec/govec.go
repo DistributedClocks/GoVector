@@ -9,6 +9,12 @@ import "strings"
 import "strconv"
 import "io"
 import "bufio"
+import "log"
+import "golang.org/x/net/websocket"
+import "net/rpc/jsonrpc"
+import "net/rpc"
+import "./../server/broker"
+import "./../server/broker/nonce"
 
 /*
 	- All licneces like other licenses ...
@@ -66,7 +72,6 @@ type GoLog struct {
 	// IP address of server to connect to
 	serveraddr string
 	
-	serverconn PublishConn
 
 }
 
@@ -146,7 +151,7 @@ func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool
 	output := buffer.String()
 
 	if gv.realtime == true {
-		serverconn.Send(output)
+		//serverconn.Send(output)
 	}	
 
 	file, err := os.OpenFile(gv.logfile, os.O_APPEND|os.O_WRONLY, 0600)
@@ -494,12 +499,89 @@ func FindExecutionNumber(logname string) int {
 	return executionnumber
 }
 
-type PublishConn struct {
+
+// ******************************************
+// Client side RPC Library Calls
+// 
+
+type GoPublisher struct {
 	conn      *websocket.Conn
 	address   string
+	rpcconn   *rpc.Client
+	nonce     *nonce.Nonce
 }
 
-func (pc *PublishConn) Init(string address) {
-	pc.address = address
-	// net.conn via dial, needs more work
+func NewGoPublisher(addr string, port string) *GoPublisher {
+	fmt.Println("Making publisher")
+
+
+	origin := "http://" + addr + "/"
+	url := "ws://" + addr + ":" + port + "/ws"
+	fmt.Println("Origin: %v, url: %v", origin, url)
+	ws, err := websocket.Dial(url, "", origin)
+	
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// For testing purposes send a random identifier
+	// Use the process id in real usages.
+	var name string
+	name = "test"
+	nerr := websocket.JSON.Send(ws, name)
+    fmt.Println(name)
+    if nerr != nil {
+        log.Fatal(nerr)
+    }
+	
+	var nonce nonce.Nonce
+	
+	
+    wserr := websocket.JSON.Receive(ws, &nonce)
+    fmt.Println("%v", nonce)
+    if wserr != nil {
+        log.Fatal(wserr)
+    }
+	
+	jrpc := jsonrpc.NewClient(ws)
+	fmt.Println("RPC: %v", jrpc)
+//	gp.conn = ws
+//	gp.address = address
+
+	gp := &GoPublisher{
+        conn: ws,
+		address: addr,
+		rpcconn: jrpc,
+		nonce: &nonce,
+    }
+	return gp
+}
+
+func (gp *GoPublisher) SendLocalMessage(msg string, processID string, vcstring string) {
+	message := brokervec.LocalMessage{
+		Pid: processID, 
+		Vclock: vcstring,
+		Message: msg}
+	fmt.Println("Created message: %v", message)
+	var reply string
+	err := gp.rpcconn.Call("PubManager.AddMsg", message, &reply)
+	
+	if err != nil {
+		log.Fatal("PubManager error: ", err)
+	} else {
+		fmt.Println("Sent message")
+	}
+}
+
+func (gp *GoPublisher) SendNetworkMessage(msg string, processID string, vcstring string) {
+	message := brokervec.NetworkMessage{
+		Pid: processID, 
+		Vclock: vcstring,
+		Message: msg}
+	var reply string
+	err := gp.rpcconn.Call("PubManager.AddMsg", message, &reply)
+	
+	if err != nil {
+		log.Fatal("PubManager error: ", err)
+	}
 }

@@ -1,19 +1,19 @@
 package main
 
 import (
-	"golang.org/x/net/websocket"
+	//"golang.org/x/net/websocket"
 	"fmt"
 	"net"
-	"net/rpc/jsonrpc"
-	"net/http"
-	"encoding/json"
-	"time"
-	"sync"
+	//"net/rpc/jsonrpc"
+	//"net/http"
+	//"encoding/json"
+	//"time"
+	//"sync"
 	"./broker"
 )
 
 //global variable for handling all server traffic
-var broker VectorBroker
+var broker brokervec.VectorBroker
 
 //Printing out the various ways the server can be reached by the clients
 func printClientConnInfo() {

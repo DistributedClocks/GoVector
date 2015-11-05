@@ -9,24 +9,31 @@ type Message interface {
 	GetMessage()	string
 }
 
+type LogMessage struct {
+	Message string
+}
+func (logm *LogMessage) GetMessage() string {
+	return logm.Message
+}
+
 type LocalMessage struct {
-	pid string // pid
-	vclock string
-	message string
+	Pid string // pid
+	Vclock string
+	Message string
 }
 
 func (lm *LocalMessage) GetMessage() string {
 		
-	return lm.pid + " " + lm.vclock + "\n" + lm.message + "\n"
+	return lm.Pid + " " + lm.Vclock + "\n" + lm.Message + "\n"
 }
 
 type NetworkMessage struct {
-	pid string // pid
-	vclock string
-	message string
+	Pid string // pid
+	Vclock string
+	Message string
 }
 
 func (nm *NetworkMessage) GetMessage() string {
 		
-	return nm.pid + " " + nm.vclock + "\n" + nm.message + "\n"
+	return nm.Pid + " " + nm.Vclock + "\n" + nm.Message + "\n"
 }
