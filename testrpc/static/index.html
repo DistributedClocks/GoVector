@@ -45,7 +45,7 @@
         //submit name
       }
     })
-	var nonce = "";
+
     //handling the start of the chat
     $("#join").click(function(){
       $("#error").html("");
@@ -56,9 +56,15 @@
       }
       console.log("join started")
       chat = new WebSocket("ws://"+window.location.host+"/ws");
-	  
       chat.onopen = function(evt) {
-		chat.send(name);  //sending the chat name
+        var msg = {
+			method: "Arith.Multiply", 
+			params: [{'A': 1, 'B': 2}], 
+			id: 5
+		}
+      	chat.send(JSON.stringify(msg));
+		//chat.send("{\"method\": \"SubManager.AddFilter\", \"params\": [{\"A\": 1, \"B\": 2}], \"id\": 0}")
+		//chat.send(name);  //sending the chat name
 		console.log("sent name")
         $("#phase1").animate({opacity:0},500,"linear",function(){
           $("#phase1").css({display:"none"})
@@ -77,9 +83,6 @@
         $("#error").html("That name was already used!")
       };
       chat.onmessage = function(evt) { 
-		if(nonce.length<1){
-	        nonce = evt.data.replace(/"/g, "");;
-        }
         $("#messages").append(evt.data).scrollTop(9e6)
       };
 
@@ -94,14 +97,7 @@
     })
 
     $("#send").click(function(){
-		var msg = {
-			method: "SubManager.AddFilter", 
-			params: [{"Nonce":nonce, "Message":"Test message"}], 
-			id: 0
-		}
-		var text = JSON.stringify(msg)
-		$("#messages").append(text).scrollTop(9e6)
-      chat.send(text);
+      chat.send({method: "SubManager.AddFilter", params: ["sub test"], id: 0});
       $("#msg").val("");
     })    
 

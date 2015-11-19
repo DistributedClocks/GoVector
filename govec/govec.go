@@ -2,6 +2,7 @@ package govec
 
 import "fmt"
 import "encoding/gob"
+import "encoding/json"
 import "bytes"
 import "github.com/arcaneiceman/GoVector/govec/vclock"
 import "os"
@@ -10,9 +11,10 @@ import "strconv"
 import "io"
 import "bufio"
 import "log"
-import "golang.org/x/net/websocket"
+//import "golang.org/x/net/websocket"
 import "net/rpc/jsonrpc"
 import "net/rpc"
+import "net"
 import "./../server/broker"
 import "./../server/broker/nonce"
 
@@ -505,20 +507,23 @@ func FindExecutionNumber(logname string) int {
 // 
 
 type GoPublisher struct {
-	conn      *websocket.Conn
+	conn      net.Conn
 	address   string
 	rpcconn   *rpc.Client
 	nonce     *nonce.Nonce
 }
 
+// Convert to using tcp - need to receive the nonce to use when creating the 
+// connection
 func NewGoPublisher(addr string, port string) *GoPublisher {
 	fmt.Println("Making publisher")
 
 
-	origin := "http://" + addr + "/"
-	url := "ws://" + addr + ":" + port + "/ws"
-	fmt.Println("Origin: %v, url: %v", origin, url)
-	ws, err := websocket.Dial(url, "", origin)
+	//origin := "http://" + addr + "/"
+	//url := "ws://" + addr + ":" + port + "/ws"
+	url := addr + ":" + port
+	fmt.Println("url: %v", url)
+	tcps, err := net.Dial("tcp", url) //net.Dial(url, "", origin)
 	
 	if err != nil {
 		log.Fatal(err)
@@ -526,30 +531,30 @@ func NewGoPublisher(addr string, port string) *GoPublisher {
 
 	// For testing purposes send a random identifier
 	// Use the process id in real usages.
-	var name string
-	name = "test"
-	nerr := websocket.JSON.Send(ws, name)
-    fmt.Println(name)
-    if nerr != nil {
-        log.Fatal(nerr)
-    }
+//	var name string
+//	name = "test"
+//	nerr := websocket.JSON.Send(tcps, name)
+//    fmt.Println(name)
+//    if nerr != nil {
+//        log.Fatal(nerr)
+//    }
 	
 	var nonce nonce.Nonce
 	
-	
-    wserr := websocket.JSON.Receive(ws, &nonce)
+	d := json.NewDecoder(tcps)
+    tcperr := d.Decode(&nonce)
     fmt.Println("%v", nonce)
-    if wserr != nil {
-        log.Fatal(wserr)
+    if tcperr != nil {
+        log.Fatal(tcperr)
     }
 	
-	jrpc := jsonrpc.NewClient(ws)
+	jrpc := jsonrpc.NewClient(tcps)
 	fmt.Println("RPC: %v", jrpc)
 //	gp.conn = ws
 //	gp.address = address
 
 	gp := &GoPublisher{
-        conn: ws,
+        conn: tcps,
 		address: addr,
 		rpcconn: jrpc,
 		nonce: &nonce,
@@ -557,19 +562,32 @@ func NewGoPublisher(addr string, port string) *GoPublisher {
 	return gp
 }
 
+func (gp *GoPublisher) SendTestMessage() {
+	var reply string
+	message := "test" + gp.nonce.Nonce
+	err := gp.rpcconn.Call("PubManager.Test", message, &reply)
+	
+	if err != nil {
+		log.Fatal("PubManager test error: ", err)
+	} else {
+		fmt.Println("Sent message: ", reply)
+	}
+}
+
 func (gp *GoPublisher) SendLocalMessage(msg string, processID string, vcstring string) {
 	message := brokervec.LocalMessage{
 		Pid: processID, 
 		Vclock: vcstring,
-		Message: msg}
-	fmt.Println("Created message: %v", message)
+		Message: msg,
+		Nonce: gp.nonce.Nonce}
+	fmt.Println("Created message: ", message)
 	var reply string
-	err := gp.rpcconn.Call("PubManager.AddMsg", message, &reply)
+	err := gp.rpcconn.Call("PubManager.AddLocalMsg", message, &reply)
 	
 	if err != nil {
-		log.Fatal("PubManager error: ", err)
+		log.Fatal("PubManager message error: ", err)
 	} else {
-		fmt.Println("Sent message")
+		fmt.Println("Sent message: ", reply)
 	}
 }
 
@@ -577,9 +595,11 @@ func (gp *GoPublisher) SendNetworkMessage(msg string, processID string, vcstring
 	message := brokervec.NetworkMessage{
 		Pid: processID, 
 		Vclock: vcstring,
-		Message: msg}
+		Message: msg,
+		Nonce: gp.nonce.Nonce}
+	fmt.Println("Created message: ", message)
 	var reply string
-	err := gp.rpcconn.Call("PubManager.AddMsg", message, &reply)
+	err := gp.rpcconn.Call("PubManager.AddNetworkMsg", message, &reply)
 	
 	if err != nil {
 		log.Fatal("PubManager error: ", err)

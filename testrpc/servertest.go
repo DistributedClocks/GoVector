@@ -1,8 +1,9 @@
 package main
 
 import (
-	"golang.org/x/net/websocket"
-	"net/http"
+	//"golang.org/x/net/websocket"
+	//"net/http"
+	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"fmt"
@@ -54,30 +55,25 @@ func (t *Arith) Error(args *Args, reply *Reply) error {
 func startServer() {
     arith := new(Arith)
 
-    server := rpc.NewServer()
-    server.Register(arith)
-	//rpc.Register(arith)
-	http.Handle("/ws", websocket.Handler(serve))
-	http.ListenAndServe("localhost:8000", nil)
+    rpc.Register(arith)
+	rpc.HandleHTTP()
+	//
+	//http.Handle("/ws", websocket.Handler(serve))
+	//http.ListenAndServe("localhost:8000", nil)
+	listener, e := net.Listen("tcp", ":8000")
+    if e != nil {
+        log.Fatal("listen error:", e)
+    }
+
+    for {
+        conn, err := listener.Accept()
+        if err != nil {
+            log.Fatal(err)
+        }
+		fmt.Println("New connection")
+        go jsonrpc.ServeConn(conn)
+    }
 }
-
-func serve(ws *websocket.Conn) {
-	go jsonrpc.ServeConn(ws)
-}
-//    l, e := net.Listen("tcp", ":8222")
-//    if e != nil {
-//        log.Fatal("listen error:", e)
-//    }
-
-//    for {
-//        conn, err := l.Accept()
-//        if err != nil {
-//            log.Fatal(err)
-//        }
-
-//        go server.ServeCodec(jsonrpc.NewServerCodec(conn))
-//    }
-//}
 
 func main() {
 
@@ -88,7 +84,7 @@ func main() {
     // now client part connecting to RPC service
     // and calling methods
 
-    conn, err := websocket.Dial("ws://127.0.0.1:8000/ws", "", "http://127.0.0.1/")
+    conn, err := net.Dial("tcp","127.0.0.1:8000")
 
     if err != nil {
         panic(err)

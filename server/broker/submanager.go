@@ -4,8 +4,9 @@ package brokervec
 import (
 	"golang.org/x/net/websocket"
 	"fmt"
+	"log"
 	"net/rpc/jsonrpc"
-	"encoding/json"
+	//"encoding/json"
 	"sync"
 	"./nonce"
 )
@@ -14,12 +15,13 @@ type SubManager struct {
 	Subscribers map[string]Subscriber	
 	subscribersMtx sync.Mutex
 
-	queue   chan Message
+	queue   <-chan Message
 }
 
-func NewSubManager() *SubManager {
+func NewSubManager(queue <-chan Message) *SubManager {
     sm := &SubManager{
         Subscribers: make(map[string]Subscriber),
+		queue: queue,
     }
 
     return sm
@@ -36,11 +38,13 @@ func (sm *SubManager) AddLogSubscriber(logFileName string) {
 }
 
 //Registers a new publisher for providing information to the server
-func (sm *SubManager) RegisterSubscriber(name string, conn *websocket.Conn) {
+func (sm *SubManager) registerSubscriber(name string, conn *websocket.Conn) {
 	defer sm.subscribersMtx.Unlock()
 	sm.subscribersMtx.Lock() //preventing simultaneous access to the `subscribers` map
 	if _, exists := sm.Subscribers[name]; exists {
+		log.Panic("That subscriber has already been registered, closing connection, please try again.")
 		conn.Close()
+		return
 	}
 	subscriber := WSSub{
 		Name:      name,
@@ -48,7 +52,19 @@ func (sm *SubManager) RegisterSubscriber(name string, conn *websocket.Conn) {
 	}
 	sm.Subscribers[name] = &subscriber
 	 
-	fmt.Println("<B>" + name + "</B> has joined the server.")
+	fmt.Println(name + " has been registered.")
+}
+
+func (sm *SubManager) AddFilter(msg FilterMessage, reply *string) error {
+	fmt.Println("In AddFilter, Message: ", msg.GetMessage(), "Nonce: ", msg.GetNonce(), "Subs: ", len(sm.Subscribers))
+	
+	if _, exists := sm.Subscribers[msg.GetNonce()]; exists {
+		*reply = "Your subscriber exists!"
+	} else {
+		*reply = "We couldn't find that subscriber."
+	}
+
+	return nil
 }
 
 //this is also the handler for joining the server
@@ -62,13 +78,11 @@ func (sm *SubManager) subWSHandler(conn *websocket.Conn) {
 		return
 	}
 	sm.processMessage(msg, conn)
-	go	jsonrpc.ServeConn(conn)
-		
-}
+	fmt.Println("Starting the rpc")
 
-type Client struct {
-	Name string
-	Type string
+	jsonrpc.ServeConn(conn)
+	fmt.Println("Past serveconn")
+		
 }
 
 func (sm *SubManager) processMessage(message string, conn *websocket.Conn) {
@@ -90,15 +104,15 @@ func (sm *SubManager) processMessage(message string, conn *websocket.Conn) {
 	//fmt.Println("Error processing message: ", message, "\nPlease connect with a json object in the format \"Name\": \"name\", \"Type\": \"Publisher/Subscriber\"}")
 	//conn.Close() //closing connection to indicate failed registration
 	var non *nonce.Nonce
-	fmt.Println(message)
+	fmt.Println("Name is: ", message)
 	non = nonce.NewNonce(message)		
-	b, err := json.Marshal(non)
-	if err != nil {
-		conn.Write(b)
+	err := websocket.JSON.Send(conn, non.Nonce)
+	if err == nil {
+		//conn.Write(b)
 		fmt.Println("Sending nonce with nonce: ", non.Nonce)
-		sm.RegisterSubscriber(non.Nonce, conn)
+		sm.registerSubscriber(non.Nonce, conn)
 	} else {
-		fmt.Println("Error creating nonce. Subscriber not registered.")
+		fmt.Println("Error creating nonce. Subscriber not registered.", err)
 		conn.Close() //closing connection to indicate failed registration
 	}
 }
@@ -110,6 +124,7 @@ infLoop:
 	for {
 		select {
 		case m := <- sm.queue:
+			fmt.Println("Got a message!")
 			msgBlock = m
 		default:
 			break infLoop

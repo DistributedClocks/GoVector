@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 	//"net/rpc/jsonrpc"
-	//"net/http"
+	"net/http"
 	//"encoding/json"
 	//"time"
 	//"sync"
@@ -36,8 +36,16 @@ func printClientConnInfo() {
 
 func main() {
 	printClientConnInfo()
+	http.HandleFunc("/", staticFiles)
 	broker.Init("E:/Documents/UBCCS/448/GoVector/server/test")
+
 }
+
+//##############SERVING STATIC FILES
+func staticFiles(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./static/"+r.URL.Path)
+}
+
 
 // MANUAL MESSAGE PROCESSSING
 //	delimiter := ";"

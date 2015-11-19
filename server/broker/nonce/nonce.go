@@ -55,10 +55,10 @@ func RecreateNonce(timestamp int64, args ...interface{}) (n *Nonce) {
 func makeNonce(timestamp int64, args ...interface{}) (n *Nonce) {
 	str := fmt.Sprint(args...)
 	str = fmt.Sprintf("a%s7xf6g%s%s9", Salt, str, timestamp)
-	fmt.Println(str)
+	//fmt.Println(str)
 	hash := sha1.New()
 	hash.Write([]byte(str))
-	fmt.Println(hash.Sum(nil))
+	//fmt.Println(hash.Sum(nil))
 	nonce := fmt.Sprintf("%x", hash.Sum(nil))
 	return &Nonce{Nonce:nonce, Timestamp:timestamp}
 }

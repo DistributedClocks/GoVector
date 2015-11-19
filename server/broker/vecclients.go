@@ -3,6 +3,7 @@ package brokervec
 import (
 	"golang.org/x/net/websocket"
 	"fmt"
+	"net"
 	"os"
 )
 
@@ -82,7 +83,7 @@ type Publisher interface {
 
 type TCPPub struct {
 	Name      string
-	Conn      *websocket.Conn // net.Conn for tcp connection likely
+	Conn      net.Conn // net.Conn for tcp connection likely
 }
 
 func (tp *TCPPub) GetName() (name string) {
