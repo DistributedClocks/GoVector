@@ -50,10 +50,6 @@
     $("#join").click(function(){
       $("#error").html("");
       var name= $("#name").val() //escapeHtml($("#name").val())
-      if(name.length<3){
-        $("#error").html("Name is too short!");
-        return
-      }
       console.log("join started")
       chat = new WebSocket("ws://"+window.location.host+"/ws");
 	  
