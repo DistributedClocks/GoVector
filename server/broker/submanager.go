@@ -79,9 +79,11 @@ func (sm *SubManager) subWSHandler(conn *websocket.Conn) {
 	}
 	sm.processMessage(msg, conn)
 	fmt.Println("Starting the rpc")
-
+	
+	// Isn't strictly necessary, but try using a go statement here.
 	jsonrpc.ServeConn(conn)
 	fmt.Println("Past serveconn")
+	// Remove subscriber here because the connection has closed.
 		
 }
 

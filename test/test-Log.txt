@@ -1,0 +1,4 @@
+Initialization Complete
+
+42 [0, 0]
+This is a local test message

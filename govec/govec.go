@@ -151,10 +151,7 @@ func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool
 	buffer.WriteString(Message)
 	buffer.WriteString("\n")
 	output := buffer.String()
-
-	if gv.realtime == true {
-		//serverconn.Send(output)
-	}	
+	
 
 	file, err := os.OpenFile(gv.logfile, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
@@ -190,6 +187,9 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 	var ok bool
 	if gv.logging == true {
 		ok = gv.LogThis(Message, gv.pid, vc.ReturnVCString())
+		if gv.realtime == true {
+			// Send local message to broker
+		}
 	}
 
 	return ok
@@ -225,6 +225,9 @@ func (gv *GoLog) PrepareSend(mesg string, buf []byte) []byte {
 	var ok bool
 	if gv.logging == true {
 		ok = gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
+		if gv.realtime == true {
+			// Send local message to broker
+		}
 	}
 
 	if ok == false {
@@ -518,12 +521,9 @@ type GoPublisher struct {
 func NewGoPublisher(addr string, port string) *GoPublisher {
 	fmt.Println("Making publisher")
 
-
-	//origin := "http://" + addr + "/"
-	//url := "ws://" + addr + ":" + port + "/ws"
 	url := addr + ":" + port
 	fmt.Println("url: %v", url)
-	tcps, err := net.Dial("tcp", url) //net.Dial(url, "", origin)
+	tcps, err := net.Dial("tcp", url)
 	
 	if err != nil {
 		log.Fatal(err)
@@ -550,8 +550,6 @@ func NewGoPublisher(addr string, port string) *GoPublisher {
 	
 	jrpc := jsonrpc.NewClient(tcps)
 	fmt.Println("RPC: %v", jrpc)
-//	gp.conn = ws
-//	gp.address = address
 
 	gp := &GoPublisher{
         conn: tcps,
@@ -562,7 +560,7 @@ func NewGoPublisher(addr string, port string) *GoPublisher {
 	return gp
 }
 
-func (gp *GoPublisher) SendTestMessage() {
+func (gp *GoPublisher) PublishTestMessage() {
 	var reply string
 	message := "test" + gp.nonce.Nonce
 	err := gp.rpcconn.Call("PubManager.Test", message, &reply)
@@ -574,7 +572,7 @@ func (gp *GoPublisher) SendTestMessage() {
 	}
 }
 
-func (gp *GoPublisher) SendLocalMessage(msg string, processID string, vcstring string) {
+func (gp *GoPublisher) PublishLocalMessage(msg string, processID string, vcstring string) {
 	message := brokervec.LocalMessage{
 		Pid: processID, 
 		Vclock: vcstring,
@@ -591,7 +589,7 @@ func (gp *GoPublisher) SendLocalMessage(msg string, processID string, vcstring s
 	}
 }
 
-func (gp *GoPublisher) SendNetworkMessage(msg string, processID string, vcstring string) {
+func (gp *GoPublisher) PublishNetworkMessage(msg string, processID string, vcstring string) {
 	message := brokervec.NetworkMessage{
 		Pid: processID, 
 		Vclock: vcstring,
