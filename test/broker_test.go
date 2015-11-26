@@ -42,13 +42,13 @@ func (s *BrokerSuite) SetUpSuite(c *C) {
 	// Check if publisher port is open
 	puburl := brokeraddr + ":" + brokerpubport
 	pubconn, err := net.Dial("tcp", puburl)
-	c.Check(err, IsNil)
+	c.Assert(err, IsNil)
 	pubconn.Close()
 	
 	// Check if subscriber port is open
 	suburl := brokeraddr + ":" + brokersubport
 	subconn, err := net.Dial("tcp", suburl)
-	c.Check(err, IsNil)
+	c.Assert(err, IsNil)
 	subconn.Close()
 
 	s.gopub = govec.NewGoPublisher(brokeraddr, brokerpubport)
@@ -59,6 +59,20 @@ func (s *BrokerSuite) TestPublishLocalMessage(c *C) {
 	testvcstring := "[0, 0]"
 	testmessage := "This is a local test message"
 	s.gopub.PublishLocalMessage(testmessage, testpid, testvcstring)
+
+	// Assert that line is the last line of the log file.
+	message := testpid + " " + testvcstring + testmessage
+	logpath := brokerlogfile + "-Log.txt"
+	result, err := readLines(logpath)
+	c.Check(err, IsNil)
+	c.Check(result, Equals, message)
+}
+
+func (s *BrokerSuite) TestPublishNetworkMessage(c *C) {
+	testpid := "42"
+	testvcstring := "[0, 0]"
+	testmessage := "This is a network test message"
+	s.gopub.PublishNetworkMessage(testmessage, testpid, testvcstring)
 
 	// Assert that line is the last line of the log file.
 	message := testpid + " " + testvcstring + testmessage
