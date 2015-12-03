@@ -567,18 +567,6 @@ func NewGoPublisher(addr string, port string) *GoPublisher {
 	return gp
 }
 
-func (gp *GoPublisher) PublishTestMessage() {
-	var reply string
-	message := "test" + gp.nonce.Nonce
-	err := gp.rpcconn.Call("PubManager.Test", message, &reply)
-	
-	if err != nil {
-		log.Fatal("GoVec: PubMgr error: ", err)
-	} else {
-		log.Println("GoVec: Sent message, reply was: ", reply)
-	}
-}
-
 func (gp *GoPublisher) PublishLocalMessage(msg string, processID string, vcstring string) {
 	message := brokervec.LocalMessage{
 		Pid: processID, 
@@ -589,7 +577,7 @@ func (gp *GoPublisher) PublishLocalMessage(msg string, processID string, vcstrin
 	err := gp.rpcconn.Call("PubManager.AddLocalMsg", message, &reply)
 	
 	if err != nil {
-		log.Fatal("GoVec: PubMgr error: ", err)
+		log.Panic("GoVec: PubMgr error: ", err)
 	} else {
 		log.Println("GoVec: Sent message, reply was: ", reply)
 	}
@@ -605,6 +593,6 @@ func (gp *GoPublisher) PublishNetworkMessage(msg string, processID string, vcstr
 	err := gp.rpcconn.Call("PubManager.AddNetworkMsg", message, &reply)
 	
 	if err != nil {
-		log.Fatal("PubManager error: ", err)
+		log.Panic("PubManager error: ", err)
 	}
 }

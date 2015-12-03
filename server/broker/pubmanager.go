@@ -25,17 +25,15 @@ type PubManager struct {
 	publishers map[string]Publisher	
 	publishersMtx sync.Mutex
 
-	Queue   chan Message
-	messageStore []Message
+	vb   *VectorBroker
 	
 	listenPort	string
 }
 
-func NewPubManager(listenPort string) *PubManager {
+func NewPubManager(vb *VectorBroker, listenPort string) *PubManager {
     pm := &PubManager{
         publishers: make(map[string]Publisher),
-        messageStore: make([]Message, 1),
-		Queue: make(chan Message),
+		vb: vb,
 		listenPort: listenPort,
     }
 
@@ -60,29 +58,29 @@ func (pm *PubManager) setupPubManagerTCP() {
     }
 }
 
-//adding message to queue
+//Adding local message to queue
 func (pm *PubManager) AddLocalMsg(msg *LocalMessage, reply *string) error {
 	log.Println("PubMgr: Adding local message from nonce: ", msg.GetNonce())
 	if _, exists := pm.publishers[msg.GetNonce()]; exists {
-		msg.Receipttime = time.Now()
-		pm.Queue <- msg
+		msg.ReceiptTime = time.Now()
+		pm.vb.AddMessage(msg)
 		*reply = "Added to queue"
 		return nil
 	} else {
-		return errors.New("We couldn't find that publisher.")
+		return errors.New("Could not find that publisher.")
 	}
 }
 
-//adding message to queue
+//Adding network message to queue
 func (pm *PubManager) AddNetworkMsg(msg *NetworkMessage, reply *string) error {
 	log.Println("PubMgr: Adding net message from nonce: ", msg.GetNonce())
 	if _, exists := pm.publishers[msg.GetNonce()]; exists {
-		msg.Receipttime = time.Now()
-		pm.Queue <- msg
+		msg.ReceiptTime = time.Now()
+		pm.vb.AddMessage(msg)
 		*reply = "Added to queue"
 		return nil
 	} else {
-		return errors.New("We couldn't find that publisher.")
+		return errors.New("Could not find that publisher.")
 	}
 }
 
@@ -117,8 +115,7 @@ func (pm *PubManager) registerPublisher(conn net.Conn) {
 	log.Println("PubMgr: " + name + " has joined the publisher list.")
 }
 
-//Registers a new publisher for providing information to the server
-//returns pointer to a Client, or Nil, if the name is already taken
+//Unregisters a publisher
 func (pm *PubManager) UnregisterPublisher(msg Message, reply *string) error {
 	defer pm.publishersMtx.Unlock()
 

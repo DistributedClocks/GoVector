@@ -8,7 +8,7 @@ import (
   	"bufio"
     . "gopkg.in/check.v1"
 	"net"
-	"net/rpc"
+	//"net/rpc"
 	"net/rpc/jsonrpc"
 	//"net/http"
 	//"encoding/json"
@@ -16,6 +16,7 @@ import (
 	"./../server/broker"
 	"./../govec"
 	"strings"
+	"strconv"
 )
 
 /*
@@ -72,7 +73,7 @@ func (s *BrokerSuite) TestPublishLocalMessage(c *C) {
 	message := testpid + " " + testvcstring + testmessage
 	logpath := brokerlogfile + "-Log.txt"
 	result, err := readLines(logpath)
-	c.Check(err, IsNil)
+	c.Assert(err, IsNil)
 	c.Check(result, Equals, message)
 }
 
@@ -86,45 +87,72 @@ func (s *BrokerSuite) TestPublishNetworkMessage(c *C) {
 	message := testpid + " " + testvcstring + testmessage
 	logpath := brokerlogfile + "-Log.txt"
 	result, err := readLines(logpath)
-	c.Check(err, IsNil)
+	c.Assert(err, IsNil)
 	c.Check(result, Equals, message)
 }
 
 func (s *BrokerSuite) TestConnectSubscriber(c *C) {
-	nonce, jrpc, err := connectSubscriber("TestConnectSubscriber", brokersubport)
-	defer jrpc.Close()
+	nonce, ws, err := connectSubscriber("TestConnect", brokersubport)
+	defer ws.Close()
 	
 	c.Assert(err, IsNil)
-	c.Assert(jrpc, NotNil)
+	c.Assert(ws, NotNil)
 	c.Assert(nonce, Not(Equals), "")
 }
 
 func (s *BrokerSuite) TestConnectSubscriberToWrongPort(c *C) {
 	// Try to connect to open but wrong port.
-	_, _, err := connectSubscriber("TestConnectSubscriber", brokerpubport)	
+	_, _, err := connectSubscriber("TestConnectErr", brokerpubport)	
 	c.Assert(err, NotNil)
 	
 	// Try to connect to random port.
-	_, _, err2 := connectSubscriber("TestConnectSubscriber", "8010")	
+	_, _, err2 := connectSubscriber("TestConnectErr", "8010")	
 	c.Assert(err2, NotNil)
 }
 
-func (s *BrokerSuite) TestSubscriberRPC(c *C) {
-	nonce, jrpc, err := connectSubscriber("TestSubscriberRPC", brokersubport)
+func (s *BrokerSuite) TestSubscriberReceive(c *C) {
+	nonce, ws, err := connectSubscriber("TestReceive", brokersubport)
 	
 	c.Assert(err, IsNil)
-	c.Assert(jrpc, NotNil)
+	c.Assert(ws, NotNil)	
 	c.Assert(nonce, Not(Equals), "")
 	
+	defer ws.Close()
+	
+	// Send a message
+	testpid := "324"
+	testvcstring := "[2, 4]"
+	testmessage := "This is a test message for subscribers"
+	s.gopub.PublishLocalMessage(testmessage, testpid, testvcstring)
+
+	// Receive the message
+	var reply string
+	websocket.Message.Receive(ws, &reply)
+	expectedreply := "324 [2, 4]\nThis is a test message for subscribers\n"
+	c.Assert(reply, Equals, expectedreply)
+}
+
+func (s *BrokerSuite) TestSubscriberRPC(c *C) {
+	nonce, ws, err := connectSubscriber("TestSubscriberRPC", brokersubport)
+	c.Assert(err, IsNil)
+	c.Assert(ws, NotNil)	
+	c.Assert(nonce, Not(Equals), "")
+	
+	defer ws.Close()
+	
+	jrpc := jsonrpc.NewClient(ws)
+	defer jrpc.Close()
+	c.Assert(jrpc, NotNil)
+	
 	message := brokervec.FilterMessage{
-		Regex: "TestSubscriberRPC",
+		Regex: "Fake Regex",
 		Nonce: nonce}
 		
 	var reply string
 	jerr := jrpc.Call("SubManager.AddFilter", message, &reply)
 
 	c.Assert(jerr, IsNil)
-	expected_reply := "Your subscriber exists!"
+	expected_reply := "Added filter: Fake Regex"
 	c.Check(reply, Equals, expected_reply)
 
 	jerr = jrpc.Call("SubManager.AddFilter", message, &reply)
@@ -133,17 +161,48 @@ func (s *BrokerSuite) TestSubscriberRPC(c *C) {
 	c.Check(reply, Equals, expected_reply)
 }
 
-func connectSubscriber(testname string, port string) (nonce string, jrpc *rpc.Client, err error) {
+func (s *BrokerSuite) TestGetOldMessages(c *C) {
+	testpid := "4"
+	testvcstring := "[6, 6]"
+	testmessage := "This is an old message"
+	s.gopub.PublishLocalMessage(testmessage, testpid, testvcstring)	
+
+	nonce, ws, err := connectSubscriber("TestOldMessage", brokersubport)
+	c.Assert(err, IsNil)
+	c.Assert(ws, NotNil)	
+	c.Assert(nonce, Not(Equals), "")
+	
+	defer ws.Close()
+	
+	jrpc := jsonrpc.NewClient(ws)
+	defer jrpc.Close()
+	c.Assert(jrpc, NotNil)
+
+	message := nonce
+		
+	var reply string
+	jerr := jrpc.Call("SubManager.SendOldMessages", message, &reply)
+	
+	c.Assert(jerr, IsNil)
+	numMessages, cerr := strconv.Atoi(reply)
+	c.Check(cerr, IsNil)
+
+	result := numMessages >= 1
+	c.Check(result, Equals, true)
+
+}
+
+func connectSubscriber(testname string, port string) (nonce string, ws *websocket.Conn, err error) {
 	origin := "http://" + brokeraddr + "/"
 	url := "ws://" + brokeraddr + ":" + port + "/ws"
 	
-	ws, err := websocket.Dial(url, "", origin)
+	ws, err = websocket.Dial(url, "", origin)
 	
 	if err != nil {
         return "", nil, err
     }
 	
-	ws.SetDeadline(time.Now().Add(time.Duration(3e8)))
+	ws.SetDeadline(time.Now().Add(time.Duration(3e9)))
 
 	websocket.Message.Send(ws, testname)
 	
@@ -151,10 +210,8 @@ func connectSubscriber(testname string, port string) (nonce string, jrpc *rpc.Cl
 	websocket.Message.Receive(ws, &nonce)
 	
 	nonce = strings.Replace(nonce, "\"", "", -1)
-		
-	jrpc = jsonrpc.NewClient(ws)
 	
-	return nonce, jrpc, err
+	return nonce, ws, err
 }
 
 func readLines(path string) (string, error) {

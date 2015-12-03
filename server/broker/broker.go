@@ -4,6 +4,7 @@ import (
 	"net/rpc"
 	"bufio"
 	"os"
+	"time"
 	"log"
 	"fmt"
 )
@@ -50,17 +51,22 @@ type VectorBroker struct {
 	pubManager *PubManager	
 	subManager *SubManager
 
+	queue   chan Message
+	messageStore []Message
+
 }
 
 //initializing the server
 func (vb *VectorBroker) Init(logfilename string, pubport string, subport string) {
 	log.Println("Broker: Broker init")
-
-	vb.pubManager = NewPubManager(pubport)	
+	vb.messageStore = make([]Message, 0)
+	vb.queue = make(chan Message)
+	
+	vb.pubManager = NewPubManager(vb, pubport)	
 	log.Println("Broker: Registering pubmanager as an rpc server")
 	rpc.Register(vb.pubManager)
 	
-	vb.subManager = NewSubManager(vb.pubManager.Queue, logfilename, subport)
+	vb.subManager = NewSubManager(vb, logfilename, subport)
 	log.Println("Broker: Registering submanager as an rpc server")
 	rpc.Register(vb.subManager)
 	
@@ -71,5 +77,29 @@ func (vb *VectorBroker) Init(logfilename string, pubport string, subport string)
     reader.ReadString('\n')
 	log.Println("Closing.")
 }
+
+func (vb *VectorBroker) AddMessage(message Message) {
+
+	vb.queue <- message 
+	vb.messageStore = append(vb.messageStore, message)
+}
+
+func (vb *VectorBroker) GetReadQueue() <-chan Message {
+	return vb.queue
+}
+
+func (vb *VectorBroker) GetMessagesBefore(registerTime time.Time) ([]Message, int) {
+	var oldMessages []Message
+	numMessages := 0
+	for _, msg := range vb.messageStore {
+		if msg.GetTime().Before(registerTime) {
+			oldMessages = append(oldMessages, msg)
+			numMessages++
+		}
+	}
+	return oldMessages, numMessages
+}
+
+
 
 

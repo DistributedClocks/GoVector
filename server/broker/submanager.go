@@ -4,11 +4,14 @@ package brokervec
 import (
 	"golang.org/x/net/websocket"
 	"log"
+	"fmt"
 	"errors"
 	"net/rpc/jsonrpc"
 	"net/http"
 	"time"
 	"sync"
+	"strconv"
+	"regexp"
 	"./nonce"
 )
 
@@ -26,15 +29,18 @@ type SubManager struct {
 	Subscribers map[string]Subscriber	
 	subscribersMtx sync.Mutex
 
-	queue   <-chan Message
+	Filters map[int]string	
+	
+	vb *VectorBroker
 	
 	listenPort string
 }
 
-func NewSubManager(queue <-chan Message, logfilename string, subport string) *SubManager {
+func NewSubManager(vb *VectorBroker, logfilename string, subport string) *SubManager {
     sm := &SubManager{
         Subscribers: make(map[string]Subscriber),
-		queue: queue,
+		Filters: make(map[int]string),
+		vb: vb,
 		listenPort: subport,
     }
 
@@ -75,6 +81,7 @@ func (sm *SubManager) addLogSubscriber(logFileName string) {
 	log := FileSub{
 		Name:      logFileName,
 		Logname:   "",
+		NetworkFilter: false,
 	}
 	log.CreateLog()
 	sm.Subscribers[log.Name] = &log
@@ -92,22 +99,12 @@ func (sm *SubManager) registerSubscriber(name string, conn *websocket.Conn) {
 	subscriber := WSSub{
 		Name:      name,
 		Conn:      conn,
+		TimeRegistered: time.Now(),
+		NetworkFilter: false,
 	}
 	sm.Subscribers[name] = &subscriber
 	 
 	log.Println("SubMgr: " + name + " has been registered.")
-}
-
-func (sm *SubManager) AddFilter(msg FilterMessage, reply *string) error {
-	log.Println("SubMgr: In AddFilter, Message: ", msg.GetFilter(), "Nonce: ", msg.GetNonce(), "Subs: ", len(sm.Subscribers))
-	
-	if _, exists := sm.Subscribers[msg.GetNonce()]; exists {
-		*reply = "Your subscriber exists!"
-	} else {
-		return errors.New("We couldn't find that subscriber.")
-	}
-
-	return nil
 }
 
 //this is also the handler for joining the server
@@ -128,7 +125,7 @@ func (sm *SubManager) subWSHandler(conn *websocket.Conn) {
 	// Isn't strictly necessary, but try using a go statement here.
 	jsonrpc.ServeConn(conn)
 	
-	// TODO: Remove subscriber here because the connection has closed.
+	// TODO: Remove subscriber from list here because the connection has closed.
 	conn.Close()	
 }
 
@@ -149,13 +146,36 @@ func (sm *SubManager) processMessage(message string, conn *websocket.Conn) error
 	return nil
 }
 
+func (sm *SubManager) passesFilters(subscriber Subscriber, message Message) bool {
+	messageType := fmt.Sprintf("%T", message)
+	
+	if subscriber.HasNetworkFilter() {
+		// Message type is local then return false
+		if messageType == "*brokervec.LocalMessage" {
+			return false
+		}
+	}
+	
+	for filter := range subscriber.GetFilters() {
+		value, ok := sm.Filters[filter]
+		if ok {
+			matched, err := regexp.MatchString(value, message.GetMessage())
+			if err == nil && !matched {
+				return false
+			}
+		}		
+	}
+	
+	return true
+}
+
 //broadcasting all the messages in the queue in one block
 func (sm *SubManager) broadCast() {
 	var msgBlock Message
 infLoop:
 	for {
 		select {
-		case m := <- sm.queue:
+		case m := <- sm.vb.GetReadQueue():
 			msgBlock = m
 		default:
 			break infLoop
@@ -163,7 +183,66 @@ infLoop:
 	}
 	if msgBlock != nil {
 		for _, client := range sm.Subscribers {
-			client.Send(msgBlock)
+			if sm.passesFilters(client, msgBlock) {
+				client.Send(msgBlock)
+			}			
 		}
 	}
+}
+
+// **************
+// RPC Calls
+// **************
+
+func (sm *SubManager) AddFilter(msg FilterMessage, reply *string) error {
+	log.Println("SubMgr: In AddFilter, Message: ", msg.GetFilter(), "Nonce: ", msg.GetNonce())
+	
+	if sub, exists := sm.Subscribers[msg.GetNonce()]; exists {
+		max := 0
+		for key := range sm.Filters {
+			if key > max {
+				max = key
+			}
+		}
+		sm.Filters[max+1] =	msg.GetFilter()
+		sub.AddFilterKey(max+1)
+		*reply = "Added filter: " + msg.GetFilter()
+	} else {
+		return errors.New("We couldn't find that subscriber.")
+	}
+
+	return nil
+}
+
+func (sm *SubManager) AddNetworkFilter(nonce string, reply *string) error {
+	log.Println("SubMgr: In AddNetworkFilter, Nonce: ", nonce)
+	
+	if sub, exists := sm.Subscribers[nonce]; exists {
+		sub.SetNetworkFilter(true)
+		*reply = "You will no longer receive local messages."
+	} else {
+		return errors.New("We couldn't find that subscriber.")
+	}
+
+	return nil
+}
+
+func (sm *SubManager) SendOldMessages(nonce string, reply *string) error {
+	log.Println("SubMgr: In SendOldMessages, Nonce: ", nonce)
+	
+	if sub, exists := sm.Subscribers[nonce]; exists {
+		currentTime := time.Now()
+		broker := sm.vb
+		messages, num := broker.GetMessagesBefore(currentTime)
+		*reply = strconv.Itoa(num)
+		go func() {	
+			for _, msg := range messages {
+				sub.Send(msg)
+			}
+		}()
+	} else {
+		return errors.New("We couldn't find that subscriber.")
+	}
+
+	return nil
 }

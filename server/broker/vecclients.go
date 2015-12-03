@@ -12,15 +12,38 @@ import (
 type Subscriber interface {
 	Send(message Message)
 	GetName() string 
+	HasNetworkFilter() bool
+	SetNetworkFilter(toggle bool) 
+	AddFilterKey(key int)
+	GetFilters() []int
 }
 
 type WSSub struct {
-	Name      string
-	Conn      *websocket.Conn
+	Name      		string
+	Conn      		*websocket.Conn
+	TimeRegistered	time.Time
+	NetworkFilter 	bool
+	FilterKeys		[]int
 }
 
 func (ws *WSSub) GetName() (name string) {
 	return ws.Name
+}
+
+func (ws *WSSub) HasNetworkFilter() bool {
+	return ws.NetworkFilter
+}
+
+func (ws *WSSub) SetNetworkFilter(toggle bool) {
+	ws.NetworkFilter = toggle
+}
+
+func (ws *WSSub) AddFilterKey(key int) {
+	ws.FilterKeys = append(ws.FilterKeys, key)
+}
+
+func (ws *WSSub) GetFilters() []int {
+	return ws.FilterKeys
 }
 
 //Sending message block to the client
@@ -29,12 +52,30 @@ func (ws *WSSub) Send(message Message) {
 }
 
 type FileSub struct {
-	Name 	  string
-	Logname	  string
+	Name 	  		string
+	Logname	  		string
+	NetworkFilter 	bool
+	FilterKeys		[]int
 }
 
 func (fs *FileSub) GetName() (name string) {
 	return fs.Name
+}
+
+func (fs *FileSub) HasNetworkFilter() bool {
+	return fs.NetworkFilter
+}
+
+func (fs *FileSub) SetNetworkFilter(toggle bool) {
+	fs.NetworkFilter = toggle
+}
+
+func (fs *FileSub) AddFilterKey(key int) {
+	fs.FilterKeys = append(fs.FilterKeys, key)
+}
+
+func (fs *FileSub) GetFilters() []int {
+	return fs.FilterKeys
 }
 
 func (fs *FileSub) CreateLog() {
@@ -56,7 +97,7 @@ func (fs *FileSub) CreateLog() {
 	//Log it
 	logmsg := LogMessage{
 		Message: "Initialization Complete\r\n",
-		Receipttime: time.Now(),
+		ReceiptTime: time.Now(),
 	}
 	fs.Send(&logmsg)	
 }
@@ -92,8 +133,4 @@ func (tp *TCPPub) GetName() (name string) {
 	return tp.Name
 }
 
-//Client has a new message to broadcast
-//func (tp *TCPSub) Publish(msg string) {
-//	tp.belongsTo.AddMsg(msg)
-//}
 

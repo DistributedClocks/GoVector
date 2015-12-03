@@ -15,10 +15,10 @@ type Message interface {
 // It should not be sent to subscribers or received from publishers.
 type LogMessage struct {
 	Message 	string
-	Receipttime	time.Time
+	ReceiptTime	time.Time
 }
 func (logm *LogMessage) GetMessage() string {
-	return logm.Receipttime.String() + " " + logm.Message + "\n"
+	return logm.ReceiptTime.String() + " " + logm.Message + "\n"
 }
 
 func (logm *LogMessage) GetNonce() string {
@@ -26,7 +26,7 @@ func (logm *LogMessage) GetNonce() string {
 }
 
 func (logm *LogMessage) GetTime() time.Time {
-	return logm.Receipttime
+	return logm.ReceiptTime
 }
 
 // A LocalMessage is a message that was not sent over the network in the 
@@ -36,7 +36,7 @@ type LocalMessage struct {
 	Vclock 		string
 	Message 	string
 	Nonce 		string
-	Receipttime time.Time
+	ReceiptTime time.Time
 }
 
 func (lm *LocalMessage) GetMessage() string {
@@ -48,7 +48,7 @@ func (lm *LocalMessage) GetNonce() string {
 }
 
 func (lm *LocalMessage) GetTime() time.Time {
-	return lm.Receipttime
+	return lm.ReceiptTime
 }
 
 // A NetworkMessage is a message that was sent over the network in the
@@ -58,7 +58,7 @@ type NetworkMessage struct {
 	Vclock 		string
 	Message		string
 	Nonce		string
-	Receipttime time.Time
+	ReceiptTime time.Time
 }
 
 func (nm *NetworkMessage) GetMessage() string {
@@ -72,7 +72,7 @@ func (nm *NetworkMessage) GetNonce() string {
 
 func (nm *NetworkMessage) GetTime() time.Time {
 		
-	return nm.Receipttime
+	return nm.ReceiptTime
 }
 
 // A FilterMessage is a message from a subscriber containing the filter it
