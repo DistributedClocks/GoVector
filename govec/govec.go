@@ -11,7 +11,6 @@ import "strconv"
 import "io"
 import "bufio"
 import "log"
-//import "golang.org/x/net/websocket"
 import "net/rpc/jsonrpc"
 import "net/rpc"
 import "net"
@@ -19,7 +18,7 @@ import "./../server/broker"
 import "./../server/broker/nonce"
 
 /*
-	- All licneces like other licenses ...
+	- All licences like other licenses ...
 
 	How to Use This Library
 
@@ -59,6 +58,10 @@ type GoLog struct {
 	// if False, PrepareSend and UnpackReceive will simply forward their input
 	//buffer to output and locally log event. If True, VC will be encoded into packet on wire
 	VConWire bool
+	
+	// This bool checks whether we should send logging data to a vecbroker whenever
+	// a message is logged. 
+	realtime bool
 
 	//activates/deactivates printouts at each preparesend and unpackreceive
 	debugmode bool
@@ -68,12 +71,11 @@ type GoLog struct {
 	//Logfile name
 	logfile string
 	
-	// Connect to logging server?
-	realtime bool
-	
 	// IP address of server to connect to
 	serveraddr string
 	
+	// Publisher to enable sending messages to a vecbroker. 
+	publisher *GoPublisher	
 
 }
 
@@ -189,6 +191,7 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 		ok = gv.LogThis(Message, gv.pid, vc.ReturnVCString())
 		if gv.realtime == true {
 			// Send local message to broker
+			gv.publisher.PublishLocalMessage(Message, gv.pid, vc.ReturnVCString())
 		}
 	}
 
@@ -226,7 +229,8 @@ func (gv *GoLog) PrepareSend(mesg string, buf []byte) []byte {
 	if gv.logging == true {
 		ok = gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
 		if gv.realtime == true {
-			// Send local message to broker
+			// Send Network message to broker
+			
 		}
 	}
 
@@ -354,7 +358,7 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) []byte {
 		fmt.Println("Something went Wrong, Could not Log!")
 	}
 
-	//  Out put the recieved Data
+	//  Output the recieved Data
 	tmp2 := []byte(e.programdata[:])
 	return tmp2
 }
@@ -383,6 +387,14 @@ func Initialize(processid string, logfilename string) *GoLog {
 	gv.VConWire = true       // (ShouldISendVectorClockonWire)
 	gv.debugmode = false     // (Debug)
 	gv.EnableLogging()
+	gv.realtime = false
+	
+	if gv.realtime == true {
+		brokeraddr := "127.0.0.1"
+		brokerpubport := "8000"
+		gv.publisher = NewGoPublisher(brokeraddr, brokerpubport)
+	}
+
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
 	vc1.Update(processid, 1)
@@ -434,6 +446,14 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
 	gv.VConWire = true       // (ShouldISendVectorClockonWire)
 	gv.debugmode = false     // (Debug)
+	gv.realtime = false		 // (ShouldISendMessagesToABroker)
+	
+	if gv.realtime == true {
+		brokeraddr := "127.0.0.1"
+		brokerpubport := "8000"
+		gv.publisher = NewGoPublisher(brokeraddr, brokerpubport)
+	}
+		
 	gv.EnableLogging()
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
@@ -519,37 +539,24 @@ type GoPublisher struct {
 // Convert to using tcp - need to receive the nonce to use when creating the 
 // connection
 func NewGoPublisher(addr string, port string) *GoPublisher {
-	fmt.Println("Making publisher")
-
 	url := addr + ":" + port
-	fmt.Println("url: %v", url)
+	log.Println("Broker: url: ", url)
 	tcps, err := net.Dial("tcp", url)
 	
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// For testing purposes send a random identifier
-	// Use the process id in real usages.
-//	var name string
-//	name = "test"
-//	nerr := websocket.JSON.Send(tcps, name)
-//    fmt.Println(name)
-//    if nerr != nil {
-//        log.Fatal(nerr)
-//    }
 	
 	var nonce nonce.Nonce
 	
 	d := json.NewDecoder(tcps)
     tcperr := d.Decode(&nonce)
-    fmt.Println("%v", nonce)
+    log.Println("GoVec: Nonce is: ", nonce)
     if tcperr != nil {
         log.Fatal(tcperr)
     }
 	
 	jrpc := jsonrpc.NewClient(tcps)
-	fmt.Println("RPC: %v", jrpc)
 
 	gp := &GoPublisher{
         conn: tcps,
@@ -566,9 +573,9 @@ func (gp *GoPublisher) PublishTestMessage() {
 	err := gp.rpcconn.Call("PubManager.Test", message, &reply)
 	
 	if err != nil {
-		log.Fatal("PubManager test error: ", err)
+		log.Fatal("GoVec: PubMgr error: ", err)
 	} else {
-		fmt.Println("Sent message: ", reply)
+		log.Println("GoVec: Sent message: ", reply)
 	}
 }
 
@@ -578,14 +585,13 @@ func (gp *GoPublisher) PublishLocalMessage(msg string, processID string, vcstrin
 		Vclock: vcstring,
 		Message: msg,
 		Nonce: gp.nonce.Nonce}
-	fmt.Println("Created message: ", message)
 	var reply string
 	err := gp.rpcconn.Call("PubManager.AddLocalMsg", message, &reply)
 	
 	if err != nil {
-		log.Fatal("PubManager message error: ", err)
+		log.Fatal("GoVec: PubMgr error: ", err)
 	} else {
-		fmt.Println("Sent message: ", reply)
+		log.Println("GoVec: Sent message: ", reply)
 	}
 }
 
@@ -595,7 +601,6 @@ func (gp *GoPublisher) PublishNetworkMessage(msg string, processID string, vcstr
 		Vclock: vcstring,
 		Message: msg,
 		Nonce: gp.nonce.Nonce}
-	fmt.Println("Created message: ", message)
 	var reply string
 	err := gp.rpcconn.Call("PubManager.AddNetworkMsg", message, &reply)
 	

@@ -3,18 +3,22 @@ package broker_test
 import (
     "testing"
     //"io"
+	"golang.org/x/net/websocket"
 	"os"
   	"bufio"
     . "gopkg.in/check.v1"
 	//"fmt"
 	"net"
-	//"net/rpc/jsonrpc"
+	"net/rpc"
+	"net/rpc/jsonrpc"
 	//"net/http"
 	//"encoding/json"
-	//"time"
+	"time"
 	//"sync"
 	"./../server/broker"
+	//"./../server/broker/nonce"
 	"./../govec"
+	"strings"
 )
 
 //global variable for handling all server traffic
@@ -37,7 +41,7 @@ var s = Suite(&BrokerSuite{})
 func (s *BrokerSuite) SetUpSuite(c *C) {
 
 	// Start the broker
-	go s.broker.Init(brokerlogfile)
+	go s.broker.Init(brokerlogfile, brokerpubport, brokersubport)
 
 	// Check if publisher port is open
 	puburl := brokeraddr + ":" + brokerpubport
@@ -55,7 +59,7 @@ func (s *BrokerSuite) SetUpSuite(c *C) {
 }
 
 func (s *BrokerSuite) TestPublishLocalMessage(c *C) {
-	testpid := "42"
+	testpid := "13"
 	testvcstring := "[0, 0]"
 	testmessage := "This is a local test message"
 	s.gopub.PublishLocalMessage(testmessage, testpid, testvcstring)
@@ -70,7 +74,7 @@ func (s *BrokerSuite) TestPublishLocalMessage(c *C) {
 
 func (s *BrokerSuite) TestPublishNetworkMessage(c *C) {
 	testpid := "42"
-	testvcstring := "[0, 0]"
+	testvcstring := "[1, 2]"
 	testmessage := "This is a network test message"
 	s.gopub.PublishNetworkMessage(testmessage, testpid, testvcstring)
 
@@ -80,6 +84,73 @@ func (s *BrokerSuite) TestPublishNetworkMessage(c *C) {
 	result, err := readLines(logpath)
 	c.Check(err, IsNil)
 	c.Check(result, Equals, message)
+}
+
+func (s *BrokerSuite) TestConnectSubscriber(c *C) {
+	nonce, jrpc, err := connectSubscriber("TestConnectSubscriber", brokersubport)
+	defer jrpc.Close()
+	
+	c.Assert(err, IsNil)
+	c.Assert(jrpc, NotNil)
+	c.Assert(nonce, Not(Equals), "")
+}
+
+func (s *BrokerSuite) TestConnectSubscriberToWrongPort(c *C) {
+	// Try to connect to open but wrong port.
+	_, _, err := connectSubscriber("TestConnectSubscriber", brokerpubport)	
+	c.Assert(err, NotNil)
+	
+	// Try to connect to random port.
+	_, _, err2 := connectSubscriber("TestConnectSubscriber", "8010")	
+	c.Assert(err2, NotNil)
+}
+
+func (s *BrokerSuite) TestSubscriberRPC(c *C) {
+	nonce, jrpc, err := connectSubscriber("TestSubscriberRPC", brokersubport)
+	
+	c.Assert(err, IsNil)
+	c.Assert(jrpc, NotNil)
+	c.Assert(nonce, Not(Equals), "")
+	
+	message := brokervec.FilterMessage{
+		Regex: "TestSubscriberRPC",
+		Nonce: nonce}
+		
+	var reply string
+	jerr := jrpc.Call("SubManager.AddFilter", message, &reply)
+
+	c.Assert(jerr, IsNil)
+	expected_reply := "Your subscriber exists!"
+	c.Check(reply, Equals, expected_reply)
+
+	jerr = jrpc.Call("SubManager.AddFilter", message, &reply)
+
+	c.Assert(jerr, IsNil)
+	c.Check(reply, Equals, expected_reply)
+}
+
+func connectSubscriber(testname string, port string) (nonce string, jrpc *rpc.Client, err error) {
+	origin := "http://" + brokeraddr + "/"
+	url := "ws://" + brokeraddr + ":" + port + "/ws"
+	
+	ws, err := websocket.Dial(url, "", origin)
+	
+	if err != nil {
+        return "", nil, err
+    }
+	
+	ws.SetDeadline(time.Now().Add(time.Duration(3e8)))
+
+	websocket.Message.Send(ws, testname)
+	
+	nonce = ""
+	websocket.Message.Receive(ws, &nonce)
+	
+	nonce = strings.Replace(nonce, "\"", "", -1)
+		
+	jrpc = jsonrpc.NewClient(ws)
+	
+	return nonce, jrpc, err
 }
 
 func readLines(path string) (string, error) {
@@ -98,27 +169,5 @@ func readLines(path string) (string, error) {
 }
 
 
-// Test functions...
-//func connectTestPublishers(num int) []govec.GoPublisher {
-//	var gp []govec.GoPublisher
-//	gp = make([]govec.GoPublisher, num)
-	
-//	for i := 0; i < num; i++ {
-//		gp[i] = govec.NewGoPublisher(brokeraddr, brokerpubport)
-//	}
-//	return gp
-//}
 
-	
-//	gp1 := govec.NewGoPublisher("127.0.0.1", "8000")
-//	fmt.Println("Registered publisher gp1, sending test message")
-	
-//	gp.SendTestMessage()
-//	gp1.SendTestMessage()
-	
-//	gp.SendLocalMessage("test", "test", "test")
-//	gp.SendNetworkMessage("net", "net", "net")
-	
-//	gp1.SendLocalMessage("test", "test", "test")
-//	gp1.SendNetworkMessage("net", "net", "net")
 	

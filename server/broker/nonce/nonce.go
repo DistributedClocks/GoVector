@@ -8,6 +8,8 @@
 // a) http://tyleregeto.com/a-guide-to-nonce
 // b) http://en.wikipedia.org/wiki/Cryptographic_nonce
 
+// Updated and modified by: Mike Fink, github: mikegfink
+
 package nonce
 
 import (

@@ -1,15 +1,24 @@
 package brokervec
 
 import (
-	//"golang.org/x/net/websocket"
-	"fmt"
 	"net/rpc/jsonrpc"
 	"net"
 	"encoding/json"
 	"sync"
+	"time"
 	"./nonce"
 	"log"
 )
+
+/*
+	This class manages the publishers connected to the broker and acts as an
+	RPC server for them. It provides publishers with the ability to send 
+	messages to the broker that can be read by subscribers and written to a log
+	file.
+	
+	The RPC calls are intended to be used by the wrapper provided in the govec
+	library called GoPublisher.
+*/
 
 type PubManager struct {
 	publishers map[string]Publisher	
@@ -17,13 +26,16 @@ type PubManager struct {
 
 	Queue   chan Message
 	messageStore []Message
+	
+	listenPort	string
 }
 
-func NewPubManager() *PubManager {
+func NewPubManager(listenPort string) *PubManager {
     pm := &PubManager{
         publishers: make(map[string]Publisher),
         messageStore: make([]Message, 1),
 		Queue: make(chan Message),
+		listenPort: listenPort,
     }
 
 	go pm.setupPubManagerTCP()
@@ -31,25 +43,26 @@ func NewPubManager() *PubManager {
 }
 
 func (pm *PubManager) setupPubManagerTCP() {
-	listener, e := net.Listen("tcp", ":8000")
+	port := ":" + pm.listenPort
+	listener, e := net.Listen("tcp", port)
     if e != nil {
-        log.Fatal("listen error:", e)
+        log.Fatal("PubMgr: listen error:", e)
     }
-	fmt.Println("Listening")
     for {
         conn, err := listener.Accept()
         if err != nil {
             log.Fatal(err)
         }
 		pm.registerPublisher(conn)
-		fmt.Println("Serving connection")
+		log.Println("PubMgr: Serving connection")
         go jsonrpc.ServeConn(conn)
     }
 }
 
 //adding message to queue
 func (pm *PubManager) AddLocalMsg(msg *LocalMessage, reply *string) error {
-	fmt.Println("In add local message rpc call")
+	log.Println("PubMgr: Adding local message from nonce: ", msg.GetNonce())
+	msg.Receipttime = time.Now()
 	pm.Queue <- msg
 	*reply = "Added to queue"
 	return nil
@@ -57,16 +70,10 @@ func (pm *PubManager) AddLocalMsg(msg *LocalMessage, reply *string) error {
 
 //adding message to queue
 func (pm *PubManager) AddNetworkMsg(msg *NetworkMessage, reply *string) error {
-	fmt.Println("In add net message rpc call", msg.GetNonce())
+	log.Println("PubMgr: Adding net message from nonce: ", msg.GetNonce())
+	msg.Receipttime = time.Now()
 	pm.Queue <- msg
 	*reply = "Added to queue"
-	return nil
-}
-
-//test
-func (pm *PubManager) Test(msg *string, reply *string) error {
-	fmt.Println("In test rpc call, ", *msg)
-	*reply = "Test successful"
 	return nil
 }
 
@@ -80,7 +87,8 @@ func (pm *PubManager) registerPublisher(conn net.Conn) {
 	name := non.Nonce
 	pm.publishersMtx.Lock() //preventing simultaneous access to the `publishers` map
 	if _, exists := pm.publishers[name]; exists {
-		log.Panic("That publisher has already been registered, closing connection, please try again.")
+		// Return error instead
+		log.Panic("PubMgr: That publisher has already been registered, closing connection, please try again.")
 		conn.Close()
 		return
 	}
@@ -97,7 +105,7 @@ func (pm *PubManager) registerPublisher(conn net.Conn) {
 	}
 	pm.publishers[name] = &publisher
 	 
-	fmt.Println("<B>" + name + "</B> has joined the publisher list.")
+	log.Println("PubMgr: " + name + " has joined the publisher list.")
 }
 
 //Registers a new publisher for providing information to the server
@@ -110,30 +118,13 @@ func (pm *PubManager) UnregisterPublisher(msg Message, reply *string) error {
 	if _, exists := pm.publishers[name]; exists {
 		delete(pm.publishers, name)
 		*reply = "Successfully unregistered."
-		log.Println(*reply, name)
+		log.Println("PubMgr: ", *reply, name)
 	} else
 	{
 		panic("Could not find that publisher.")
 	}	
 	return nil
 }
-
-//this is also the handler for joining the server
-//func (pm *PubManager) pubWSHandler(conn *websocket.Conn) {
-//	var msg string
-//	err := websocket.Message.Receive(conn, &msg)
-//	if err != nil {
-//		fmt.Println("Error reading connection:", err)
-//		conn.Close()
-//		return
-//	}
-//	pm.processFirstPublish(msg, conn)
-//	fmt.Println("Serving the RPC connection")
-//	go	func() {
-//		jsonrpc.ServeConn(conn)
-//		fmt.Println("RPC connection closed")
-//	}()
-//}
 
 //func (pm *PubManager) processFirstPublish(message string, conn *websocket.Conn) {
 	

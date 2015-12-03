@@ -1,32 +1,42 @@
 package brokervec
 
 import (
-	//"./nonce"
+	"time"
 )
 
-// Message abstraction to hold different types of message
+// Message abstraction to hold different types of message for use in the broker
 type Message interface {
 	GetMessage()	string
 	GetNonce()		string
+	GetTime()		time.Time
 }
 
+// A LogMessage is an internal message for the broker's log file.
+// It should not be sent to subscribers or received from publishers.
 type LogMessage struct {
-	Message string
-	Nonce	string
+	Message 	string
+	Receipttime	time.Time
 }
 func (logm *LogMessage) GetMessage() string {
-	return logm.Message + "\n"
+	return logm.Receipttime.String() + " " + logm.Message + "\n"
 }
 
 func (logm *LogMessage) GetNonce() string {
-	return logm.Nonce
+	return "Log does not have a nonce."
 }
 
+func (logm *LogMessage) GetTime() time.Time {
+	return logm.Receipttime
+}
+
+// A LocalMessage is a message that was not sent over the network in the 
+// distributive system using GoVec.
 type LocalMessage struct {
-	Pid string // pid
-	Vclock string
-	Message string
-	Nonce string
+	Pid 		string 
+	Vclock 		string
+	Message 	string
+	Nonce 		string
+	Receipttime time.Time
 }
 
 func (lm *LocalMessage) GetMessage() string {
@@ -37,11 +47,18 @@ func (lm *LocalMessage) GetNonce() string {
 	return lm.Nonce
 }
 
+func (lm *LocalMessage) GetTime() time.Time {
+	return lm.Receipttime
+}
+
+// A NetworkMessage is a message that was sent over the network in the
+// system using GoVec.
 type NetworkMessage struct {
 	Pid string // pid
-	Vclock string
-	Message string
-	Nonce string
+	Vclock 		string
+	Message		string
+	Nonce		string
+	Receipttime time.Time
 }
 
 func (nm *NetworkMessage) GetMessage() string {
@@ -53,14 +70,21 @@ func (nm *NetworkMessage) GetNonce() string {
 	return nm.Nonce
 }
 
+func (nm *NetworkMessage) GetTime() time.Time {
+		
+	return nm.Receipttime
+}
+
+// A FilterMessage is a message from a subscriber containing the filter it
+// wishes to apply to a Message's field in the form of a regular expression.
 type FilterMessage struct {
-	Message string
+	Regex string
 	Nonce string
 }
 
-func (fm *FilterMessage) GetMessage() string {
+func (fm *FilterMessage) GetFilter() string {
 		
-	return fm.Message
+	return fm.Regex
 }
 func (fm *FilterMessage) GetNonce() string {
 		

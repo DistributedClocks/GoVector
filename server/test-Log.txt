@@ -1,10 +1,2 @@
 Initialization Complete
 
-test test
-test
-net net
-net
-test test
-test
-net net
-net

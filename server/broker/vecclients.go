@@ -2,8 +2,9 @@ package brokervec
 
 import (
 	"golang.org/x/net/websocket"
-	"fmt"
+	"log"
 	"net"
+	"time"
 	"os"
 )
 
@@ -42,7 +43,7 @@ func (fs *FileSub) CreateLog() {
 
 	if _, err := os.Stat(fs.Logname); err == nil {
 		//it exists... deleting old log
-		fmt.Println(fs.Logname, "exists! ... Deleting ")
+		log.Println("FileSub: " + fs.Logname, "exists! ... Deleting ")
 		os.Remove(fs.Logname)
 	}
 	//Creating new Log
@@ -55,6 +56,7 @@ func (fs *FileSub) CreateLog() {
 	//Log it
 	logmsg := LogMessage{
 		Message: "Initialization Complete\r\n",
+		Receipttime: time.Now(),
 	}
 	fs.Send(&logmsg)	
 }
@@ -73,7 +75,7 @@ func (fs *FileSub) Send(message Message) {
 	}
 
 	if (!complete) {
-		fmt.Println("Could not write to log file.")
+		log.Println("FileSub: Could not write to log file.")
 	}
 }
 
@@ -83,7 +85,7 @@ type Publisher interface {
 
 type TCPPub struct {
 	Name      string
-	Conn      net.Conn // net.Conn for tcp connection likely
+	Conn      net.Conn 
 }
 
 func (tp *TCPPub) GetName() (name string) {

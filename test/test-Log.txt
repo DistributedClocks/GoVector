@@ -1,4 +1,6 @@
 Initialization Complete
 
-42 [0, 0]
+13 [0, 0]
 This is a local test message
+42 [1, 2]
+This is a network test message
