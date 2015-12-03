@@ -7,28 +7,32 @@ import (
 	"os"
   	"bufio"
     . "gopkg.in/check.v1"
-	//"fmt"
 	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	//"net/http"
 	//"encoding/json"
 	"time"
-	//"sync"
 	"./../server/broker"
-	//"./../server/broker/nonce"
 	"./../govec"
 	"strings"
 )
+
+/*
+	To use this test package, type "go test". 
+	
+	The test package uses Go-Check (https://labix.org/gocheck). To get this 
+	package type "go get gopkg.in/check.v1" into your go enabled console.
+*/
+
 
 //global variable for handling all server traffic
 const brokeraddr string = "127.0.0.1"
 const brokerpubport string = "8000"
 const brokersubport string = "8080"
-const brokerlogfile string = "./test"
+const brokerlogfile string = "./test_broker"
 
 // Hook up gocheck into the "go test" runner.
-// Maybe don't need this
 func Test(t *testing.T) { TestingT(t) }
 
 type BrokerSuite struct{

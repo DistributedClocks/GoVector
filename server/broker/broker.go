@@ -37,7 +37,7 @@ import (
 	Step 3 (optional):
 	Setup a Subscriber to connect to the broker via a WebSocket over the correct
 	subport. For example, setup a web browser running JavaScript to connect and
-	display all messages on receipt.
+	display messages as they are received.
 
 	A simple standalone program can be found in runbroker.go which will setup 
 	a broker with the desired parameters. Please read the documentation in 

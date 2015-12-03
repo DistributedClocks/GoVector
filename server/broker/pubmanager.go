@@ -8,6 +8,7 @@ import (
 	"time"
 	"./nonce"
 	"log"
+	"errors"
 )
 
 /*
@@ -62,19 +63,27 @@ func (pm *PubManager) setupPubManagerTCP() {
 //adding message to queue
 func (pm *PubManager) AddLocalMsg(msg *LocalMessage, reply *string) error {
 	log.Println("PubMgr: Adding local message from nonce: ", msg.GetNonce())
-	msg.Receipttime = time.Now()
-	pm.Queue <- msg
-	*reply = "Added to queue"
-	return nil
+	if _, exists := pm.publishers[msg.GetNonce()]; exists {
+		msg.Receipttime = time.Now()
+		pm.Queue <- msg
+		*reply = "Added to queue"
+		return nil
+	} else {
+		return errors.New("We couldn't find that publisher.")
+	}
 }
 
 //adding message to queue
 func (pm *PubManager) AddNetworkMsg(msg *NetworkMessage, reply *string) error {
 	log.Println("PubMgr: Adding net message from nonce: ", msg.GetNonce())
-	msg.Receipttime = time.Now()
-	pm.Queue <- msg
-	*reply = "Added to queue"
-	return nil
+	if _, exists := pm.publishers[msg.GetNonce()]; exists {
+		msg.Receipttime = time.Now()
+		pm.Queue <- msg
+		*reply = "Added to queue"
+		return nil
+	} else {
+		return errors.New("We couldn't find that publisher.")
+	}
 }
 
 //Registers a new publisher for providing information to the server

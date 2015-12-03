@@ -1,4 +1,4 @@
-Initialization Complete
+2015-12-02 16:52:00.7894538 -0800 PST Initialization Complete
 
 13 [0, 0]
 This is a local test message

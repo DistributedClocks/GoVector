@@ -575,7 +575,7 @@ func (gp *GoPublisher) PublishTestMessage() {
 	if err != nil {
 		log.Fatal("GoVec: PubMgr error: ", err)
 	} else {
-		log.Println("GoVec: Sent message: ", reply)
+		log.Println("GoVec: Sent message, reply was: ", reply)
 	}
 }
 
@@ -591,7 +591,7 @@ func (gp *GoPublisher) PublishLocalMessage(msg string, processID string, vcstrin
 	if err != nil {
 		log.Fatal("GoVec: PubMgr error: ", err)
 	} else {
-		log.Println("GoVec: Sent message: ", reply)
+		log.Println("GoVec: Sent message, reply was: ", reply)
 	}
 }
 
