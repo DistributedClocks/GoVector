@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset='utf-8'>
-  <title>Simple Chat with Go</title>
+  <title>Simple Echo Subscriber for GoVec with BrokerVec</title>
   <style>
     #messages {
       border: 1px solid #666;
@@ -24,10 +24,8 @@
 </head>
 
 <body>
-  <h1>Simple Chat with Go</h1>
+  <h1>Echo Subscriber with GoVec</h1>
   <div id="phase1">
-    <P>Please enter your name to Join the chat</P>
-    <input id="name">
     <button id="join">Join</button>
   </div>
   <div id="error"></div>
@@ -42,19 +40,17 @@
     $("#name").keypress(function(evt){
       if(evt.originalEvent.keyCode==13){
         $("#join").trigger("click")
-        //submit name
       }
     })
 	var nonce = "";
-    //handling the start of the chat
+    //handling the start of the connection
     $("#join").click(function(){
       $("#error").html("");
-      var name= $("#name").val() //escapeHtml($("#name").val())
       console.log("join started")
       chat = new WebSocket("ws://"+window.location.host+"/ws");
 	  
       chat.onopen = function(evt) {
-		chat.send(name);  //sending the chat name
+		chat.send("EchoSubscriber");  //sending the test name
 		console.log("sent name")
         $("#phase1").animate({opacity:0},500,"linear",function(){
           $("#phase1").css({display:"none"})
@@ -70,7 +66,7 @@
         console.log("chat closing")
         $("#phase1").stop().css({display:"block"}).animate({opacity:1},500)
         $("#phase2").stop().animate({opacity:0})
-        $("#error").html("That name was already used!")
+        $("#error").html("Something went wrong.")
       };
       chat.onmessage = function(evt) { 
 		if(nonce.length<1){
@@ -92,7 +88,7 @@
     $("#send").click(function(){
 		var msg = {
 			method: "SubManager.AddFilter", 
-			params: [{"Nonce":nonce, "Message":"Test message"}], 
+			params: [{"Nonce":nonce, "Regex":$("#msg").val()}], 
 			id: 0
 		}
 		var text = JSON.stringify(msg)
@@ -100,32 +96,6 @@
       chat.send(text);
       $("#msg").val("");
     })    
-
-//helper function for escaping HTML
- var entityMap = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': '&quot;',
-    "'": '&#39;',
-    "/": '&#x2F;',
-    "\n": '<BR/>'
-  };
-
-  function escapeHtml(string) {
-    return String(string).replace(/[&<>"'\/]/g, function (s) {
-      return entityMap[s];
-    });
-  }
-
-//helper function for debugging purposes
-  function toHex(str) {
-    var result = '';
-    for (var i=0; i<str.length; i++) {
-      result += ("0"+str.charCodeAt(i).toString(16)).slice(-2)+" ";
-    }
-    return result.toUpperCase();
-  }
 
   </script>
 </body>

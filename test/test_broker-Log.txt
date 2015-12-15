@@ -1,6 +1,10 @@
-2015-12-02 16:52:00.7894538 -0800 PST Initialization Complete
+2015-12-15 07:08:12.9602171 -0800 PST Initialization Complete
 
-13 [0, 0]
+4 {"4":1}
+This is an old message
+13 {"13":1}
 This is a local test message
-42 [1, 2]
+42 {"42":1}
 This is a network test message
+324 {"324":1}
+This is a test message for subscribers

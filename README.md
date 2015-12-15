@@ -123,3 +123,68 @@ This produces the log "LogFile.txt" :
 	Receiving Message
 	MyProcess {"MyProcess":4}
 	Example Complete
+
+### VectorBroker
+
+type VectorBroker
+   * func Init(logfilename string, pubport string, subport string)
+
+### Usage
+
+    A simple standalone program can be found in server/broker/runbroker.go 
+    which will setup a broker with command line parameters.
+   	Usage is: 
+    "go run ./runbroker (-logpath logpath) -pubport pubport -subport subport"
+
+    Tests can be run via GoVector/test/broker_test.go and "go test" with the 
+    Go-Check package (https://labix.org/gocheck). To get this package use 
+    "go get gopkg.in/check.v1".
+    
+Detailed Setup:
+Step 1:
+    Create a Global Variable of type brokervec.VectorBroker and Initialize 
+    it like this =
+
+    broker.Init(logpath, pubport, subport)
+    
+    Where:
+    - the logpath is the path and name of the log file you want created, or 
+    "" if no log file is wanted. E.g. "C:/temp/test" will result in the file 
+    "C:/temp/test-log.txt" being created.
+    - the pubport is the port you want to be open for publishers to send
+    messages to the broker.
+    - the subport is the port you want to be open for subscribers to receive 
+    messages from the broker.
+
+Step 2:
+    Setup your GoVec so that the realtime boolean is set to true and the correct
+    brokeraddr and brokerpubport values are set in the Initialize method you
+    intend to use.
+
+Step 3 (optional):
+    Setup a Subscriber to connect to the broker via a WebSocket over the correct
+    subport. For example, setup a web browser running JavaScript to connect and
+    display messages as they are received. Make RPC calls by sending a JSON 
+    object of the form:
+            var msg = {
+            method: "SubManager.AddFilter", 
+            params: [{"Nonce":nonce, "Regex":regex}], 
+            id: 0
+            }
+            var text = JSON.stringify(msg)
+
+####   RPC Calls
+
+    Publisher RPC calls are made automatically from the GoVec library if the 
+    broker is enabled.
+    
+    Subscriber RPC calls:
+    * AddNetworkFilter(nonce string, reply *string)
+        Filters messages so that only network messages are sent to the 
+        subscriber.      
+    * RemoveNetworkFilter(nonce string, reply *string)
+        Filters messages so that both network and local messages are sent to the 
+        subscriber.
+    * SendOldMessages(nonce string, reply *string)
+        Sends any messages received before the requesting subscriber subscribed.
+ 
