@@ -157,11 +157,13 @@ Step 1:
     messages from the broker.
 
 Step 2:
+
     Setup your GoVec so that the realtime boolean is set to true and the correct
     brokeraddr and brokerpubport values are set in the Initialize method you
     intend to use.
 
 Step 3 (optional):
+
     Setup a Subscriber to connect to the broker via a WebSocket over the correct
     subport. For example, setup a web browser running JavaScript to connect and
     display messages as they are received. Make RPC calls by sending a JSON 
