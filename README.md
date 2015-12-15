@@ -141,7 +141,9 @@ type VectorBroker
     "go get gopkg.in/check.v1".
     
 Detailed Setup:
+
 Step 1:
+
     Create a Global Variable of type brokervec.VectorBroker and Initialize 
     it like this =
 
