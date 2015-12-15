@@ -218,25 +218,28 @@ infLoop:
 // RPC Calls
 // **************
 
-func (sm *SubManager) AddFilter(msg FilterMessage, reply *string) error {
-    log.Println("SubMgr: In AddFilter, Regex: ", msg.GetFilter(), "Nonce: ", msg.GetNonce())
+// NEEDS TO BE SPLIT INTO CALLS FOR ADDING PID FILTERS, MESSAGE FILTERS AND
+// VCLOCK FILTERS
+// Adds a regex filter for messages
+//func (sm *SubManager) AddFilter(msg FilterMessage, reply *string) error {
+//    log.Println("SubMgr: In AddFilter, Regex: ", msg.GetFilter(), "Nonce: ", msg.GetNonce())
     
-    if sub, exists := sm.Subscribers[msg.GetNonce()]; exists {
-        max := 0
-        for key := range sm.Filters {
-            if key > max {
-                max = key
-            }
-        }
-        sm.Filters[max+1] =    msg.GetFilter()
-        sub.AddFilterKey(max+1)
-        *reply = "Added filter: " + msg.GetFilter()
-    } else {
-        return errors.New("We couldn't find that subscriber.")
-    }
+//    if sub, exists := sm.Subscribers[msg.GetNonce()]; exists {
+//        max := 0
+//        for key := range sm.Filters {
+//            if key > max {
+//                max = key
+//            }
+//        }
+//        sm.Filters[max+1] =    msg.GetFilter()
+//        sub.AddFilterKey(max+1)
+//        *reply = "Added filter: " + msg.GetFilter()
+//    } else {
+//        return errors.New("We couldn't find that subscriber.")
+//    }
 
-    return nil
-}
+//    return nil
+//}
 
 func (sm *SubManager) AddNetworkFilter(nonce string, reply *string) error {
     log.Println("SubMgr: In AddNetworkFilter, Nonce: ", nonce)
