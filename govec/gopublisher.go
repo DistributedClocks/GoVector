@@ -6,8 +6,8 @@ import (
     "net/rpc"
     "encoding/json"
     "net"
-    "./../server/broker"
-    "./../server/broker/nonce"
+    "./../broker"
+    "./../broker/nonce"
     "github.com/arcaneiceman/GoVector/govec/vclock"
 )
 
@@ -22,7 +22,8 @@ type GoPublisher struct {
     nonce     *nonce.Nonce
 }
 
-// TCP connection receives the nonce to use when creating the connection to broker
+// Creates a GoPublisher and initiates a TCP-RPC connection that receives a nonce
+// to identify the publisher when communicating with the broker.
 func NewGoPublisher(addr string, port string) *GoPublisher {
     url := addr + ":" + port
     log.Println("GoPublisher: Connecting to url: ", url)
@@ -52,6 +53,11 @@ func NewGoPublisher(addr string, port string) *GoPublisher {
     return gp
 }
 
+// **************
+// RPC CALLS
+// **************
+
+// Publish a local message to the broker
 func (gp *GoPublisher) PublishLocalMessage(msg string, processID string, vclock vclock.VClock) error {
     message := brokervec.LocalMessage{
         Pid: processID, 
@@ -70,6 +76,7 @@ func (gp *GoPublisher) PublishLocalMessage(msg string, processID string, vclock 
     return nil
 }
 
+// Publish a network message to the broker
 func (gp *GoPublisher) PublishNetworkMessage(msg string, processID string, vclock vclock.VClock) error {
     
     message := brokervec.NetworkMessage{

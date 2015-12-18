@@ -23,8 +23,8 @@ import (
 
 type PubManager struct {
     publishers map[string]Publisher    
-    publishersMtx sync.Mutex
-
+    publishersMtx sync.Mutex    // Mutex lock for preventing simultaneous access
+                                // to publishers map
     vb   *VectorBroker
     
     listenPort    string
@@ -39,14 +39,14 @@ func NewPubManager(vb *VectorBroker, listenPort string) *PubManager {
         listenPort: listenPort,
     }
 
-    go pm.setupPubManagerTCP()
+    go pm.initPubManagerTCP()
     return pm
 }
 
 // Setup the pubmanager's TCP connection. Listens on pm.listenPort and when
 // receiving a connection it registers the publisher and then serves a json
 // RPC server over the connection in a new goroutine. This method blocks.
-func (pm *PubManager) setupPubManagerTCP() {
+func (pm *PubManager) initPubManagerTCP() {
     port := ":" + pm.listenPort
     listener, e := net.Listen("tcp", port)
     if e != nil {
@@ -57,21 +57,26 @@ func (pm *PubManager) setupPubManagerTCP() {
         if err != nil {
             log.Fatal(err)
         }
-        pm.registerPublisher(conn)
+        name := pm.registerPublisher(conn)
         log.Println("PubMgr: Serving connection")
-        go jsonrpc.ServeConn(conn)
+        go func() {        
+            jsonrpc.ServeConn(conn)
+            pm.unregisterPublisher(name)
+        }() 
     }
 }
 
 // Registers a new publisher for providing information to the server
 // sends the publisher's identifying name (a nonce) back over the net.Conn
 // as a json object.
-func (pm *PubManager) registerPublisher(conn net.Conn) {
+func (pm *PubManager) registerPublisher(conn net.Conn) (name string) {
     defer pm.publishersMtx.Unlock()
 
     var non *nonce.Nonce
+    // Create a new nonce (will be based on the time registered)
     non = nonce.NewNonce("") 
-    name := non.Nonce
+    // Use the nonce string as the name for the publisher
+    name = non.Nonce
     pm.publishersMtx.Lock() //preventing simultaneous access to the `publishers` map
     if _, exists := pm.publishers[name]; exists {
         // Return error instead
@@ -94,6 +99,22 @@ func (pm *PubManager) registerPublisher(conn net.Conn) {
     pm.publishers[name] = &publisher
      
     log.Println("PubMgr: " + name + " has joined the publisher list.")
+    return name
+}
+
+// Unregisters a publisher
+func (pm *PubManager) unregisterPublisher(name string) error {
+    defer pm.publishersMtx.Unlock()
+
+    pm.publishersMtx.Lock() //preventing simultaneous access to the `publishers` map
+    if _, exists := pm.publishers[name]; exists {
+        delete(pm.publishers, name)
+        log.Println("PubMgr: Successfully unregistered: ", name)
+    } else
+    {
+        log.Panic("PubMgr: Could not find that publisher.")
+    }    
+    return nil
 }
 
 // Add a mesage to the message queue and return a reply or an error if failed.
@@ -103,7 +124,7 @@ func (pm *PubManager) AddMessage(msg Message, reply *string) (err error) {
         *reply = "Added to queue"
         err = nil
     } else {
-        err = errors.New("Could not find that publisher.")
+        err = errors.New("PubMgr: Could not find that publisher.")
     }
     return err
 }
@@ -111,23 +132,6 @@ func (pm *PubManager) AddMessage(msg Message, reply *string) (err error) {
 // ****************
 // RPC Calls
 // ****************
-
-// Unregisters a publisher
-func (pm *PubManager) UnregisterPublisher(msg Message, reply *string) error {
-    defer pm.publishersMtx.Unlock()
-
-    pm.publishersMtx.Lock() //preventing simultaneous access to the `publishers` map
-    name := msg.GetNonce()
-    if _, exists := pm.publishers[name]; exists {
-        delete(pm.publishers, name)
-        *reply = "Successfully unregistered."
-        log.Println("PubMgr: ", *reply, name)
-    } else
-    {
-        log.Panic("Could not find that publisher.")
-    }    
-    return nil
-}
 
 //Adding local message to queue
 func (pm *PubManager) AddLocalMsg(msg *LocalMessage, reply *string) error {

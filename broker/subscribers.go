@@ -3,22 +3,23 @@ package brokervec
 import (
     "golang.org/x/net/websocket"
     "log"
-    "net"
     "time"
     "os"
 )
 
-
+// Subscriber interface and structs.
 type Subscriber interface {
     Send(message Message)
     GetName() string 
 	Close()
     HasNetworkFilter() bool
-    SetNetworkFilter(toggle bool) 
+    EnableNetworkFilter() 
+    DisableNetworkFilter() 
     AddFilterKey(key int)
     GetFilters() []int
 }
 
+// WebSocket Subscriber
 type WSSub struct {
     Name              string
     Conn              *websocket.Conn
@@ -39,8 +40,12 @@ func (ws *WSSub) HasNetworkFilter() bool {
     return ws.NetworkFilter
 }
 
-func (ws *WSSub) SetNetworkFilter(toggle bool) {
-    ws.NetworkFilter = toggle
+func (ws *WSSub) EnableNetworkFilter() {
+    ws.NetworkFilter = true
+}
+
+func (ws *WSSub) DisableNetworkFilter() {
+    ws.NetworkFilter = false
 }
 
 func (ws *WSSub) AddFilterKey(key int) {
@@ -56,6 +61,7 @@ func (ws *WSSub) Send(message Message) {
     ws.Conn.Write([]byte(message.GetMessage()))
 }
 
+// Log File Subscriber
 type FileSub struct {
     Name              string
     file              *os.File
@@ -75,8 +81,12 @@ func (fs *FileSub) HasNetworkFilter() bool {
     return fs.NetworkFilter
 }
 
-func (fs *FileSub) SetNetworkFilter(toggle bool) {
-    fs.NetworkFilter = toggle
+func (fs *FileSub) EnableNetworkFilter() {
+    fs.NetworkFilter = true
+}
+
+func (fs *FileSub) DisableNetworkFilter() {
+    fs.NetworkFilter = false
 }
 
 func (fs *FileSub) AddFilterKey(key int) {
@@ -131,17 +141,6 @@ func (fs *FileSub) Send(message Message) {
     }
 }
 
-type Publisher interface {
-    GetName() string
-}
 
-type TCPPub struct {
-    Name      string
-    Conn      net.Conn 
-}
-
-func (tp *TCPPub) GetName() (name string) {
-    return tp.Name
-}
 
 

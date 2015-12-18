@@ -4,7 +4,6 @@ import (
     "fmt"
     "net"
     "net/http"
-    //"os"
     "flag"
     "./broker"
 )

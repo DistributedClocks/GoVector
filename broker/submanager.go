@@ -27,8 +27,8 @@ import (
 
 type SubManager struct {
     Subscribers map[string]Subscriber    
-    subscribersMtx sync.Mutex
-
+    subscribersMtx sync.Mutex   // Mutex lock for preventing simultaneous access
+                                // to subscribers map
     Filters map[int]string    
     
     vb *VectorBroker
@@ -36,6 +36,8 @@ type SubManager struct {
     listenPort string
 }
 
+// Construct a new SubManager, initialize the network handling and broadcast
+// routines
 func NewSubManager(vb *VectorBroker, logfilename string, subport string) *SubManager {
     sm := &SubManager{
         Subscribers: make(map[string]Subscriber),
@@ -44,15 +46,27 @@ func NewSubManager(vb *VectorBroker, logfilename string, subport string) *SubMan
         listenPort: subport,
     }
 
-    sm.setupSubManager(logfilename)
+    sm.initSubManager(logfilename)
         
     return sm
 }
 
-func (sm *SubManager) setupSubManager(logfilename string) {
+// Initialize the websocket handling to listen for new connections, start the
+// heartbeat for broadcasting messages and add a log subscriber if provided.
+func (sm *SubManager) initSubManager(logfilename string) {
     log.Println("SubMgr: Registering handler")
     http.Handle("/ws", websocket.Handler(sm.subWSHandler))
     
+    // Listen on the subscriber port for new websocket connections handled on
+    // the subWSHandler.
+    go func() {    
+        port := ":" + sm.listenPort    
+        err := http.ListenAndServe(port, nil)
+        if err != nil {
+            log.Fatal("ListenAndServe: ", err)
+        }
+    }()
+
     //the "heartbeat" for broadcasting messages
     log.Println("SubMgr: Starting heartbeat")
     go func() {        
@@ -61,23 +75,17 @@ func (sm *SubManager) setupSubManager(logfilename string) {
             time.Sleep(100 * time.Millisecond)
         }
     }()
-
-    go func() {    
-        port := ":" + sm.listenPort    
-        err := http.ListenAndServe(port, nil)
-        if err != nil {
-            log.Fatal("ListenAndServe: ", err)
-        }
-    }()
     
+    // Add a log subscriber if a name is provided.
     if len(logfilename) > 0 {
         sm.addLogSubscriber(logfilename)
     }
 }
 
+// Create a log subscriber to record messages to a file and register it in the
+// subscriber list.
 func (sm *SubManager) addLogSubscriber(logFileName string) {
     log.Println("SubMgr: Adding log subscriber.")
-    // Setup the logfile so the server keeps a copy
     log := FileSub{
         Name:      logFileName,
         NetworkFilter: false,
@@ -86,7 +94,7 @@ func (sm *SubManager) addLogSubscriber(logFileName string) {
     sm.Subscribers[log.Name] = &log
 }
 
-//Registers a new subscriber for providing information to the server
+// Registers a new subscriber for receiving messages from the server
 func (sm *SubManager) registerSubscriber(name string, conn *websocket.Conn) {
     defer sm.subscribersMtx.Unlock()
     sm.subscribersMtx.Lock() //preventing simultaneous access to the `subscribers` map
@@ -106,7 +114,7 @@ func (sm *SubManager) registerSubscriber(name string, conn *websocket.Conn) {
     log.Println("SubMgr: " + name + " has been registered.")
 }
 
-//Registers a new subscriber for providing information to the server
+// Registers a new subscriber for receiving messages from the server
 func (sm *SubManager) unregisterSubscriber(name string) {
     defer sm.subscribersMtx.Unlock()
     sm.subscribersMtx.Lock() //preventing simultaneous access to the `subscribers` map
@@ -121,10 +129,15 @@ func (sm *SubManager) unregisterSubscriber(name string) {
     }    
 }
 
-//this is also the handler for joining the server
+// Handler for joining the server as a subscriber
 func (sm *SubManager) subWSHandler(conn *websocket.Conn) {
-
+    // Defer closing the connection because we block when serving the rpc 
+    // server. This will close the connection if something disrupts the 
+    // RPC server.
     defer conn.Close()
+
+    // Receive the first message on the websocket connection containing the
+    // name of the subscriber
     var msg string
     err := websocket.Message.Receive(conn, &msg)
     if err != nil {
@@ -136,8 +149,12 @@ func (sm *SubManager) subWSHandler(conn *websocket.Conn) {
     // Turn name into a nonce
     name := nonce.NewNonce(msg)
     log.Println("SubMgr: Name is: ", msg)
-    // Send nonce back to subscriber
+    
+    // Use the string version of the nonce to identify the subscriber and
+    // send the identifying nonce back to subscriber.
     err = websocket.JSON.Send(conn, name.Nonce)
+    
+    // If successful, register the subscriber.
     if err == nil {
         log.Println("SubMgr: Sending name as nonce: ", name.Nonce)
         sm.registerSubscriber(name.Nonce, conn)
@@ -150,40 +167,25 @@ func (sm *SubManager) subWSHandler(conn *websocket.Conn) {
     // Serve the RPC server on the connection
     jsonrpc.ServeConn(conn)
     
-    // TODO: Remove subscriber from list here because the connection has closed.
+    // Unregister the subscriber because the RPC connection was lost/closed.
     sm.unregisterSubscriber(name.Nonce)
 }
 
-func (sm *SubManager) processMessage(message string, conn *websocket.Conn) error {
-    
-    var name *nonce.Nonce
-    log.Println("SubMgr: Name is: ", message)
-
-    // Turn name into a nonce
-    name = nonce.NewNonce(message)
-    // Send nonce back to subscriber
-    err := websocket.JSON.Send(conn, name.Nonce)
-    if err == nil {
-        log.Println("SubMgr: Sending name as nonce: ", name.Nonce)
-        sm.registerSubscriber(name.Nonce, conn)
-    } else {
-        conn.Close() //closing connection to indicate failed registration
-        log.Println("SubMgr: Error creating nonce. Subscriber not registered.", err)
-        return err        
-    }
-    return nil
-}
-
+// TODO: UPDATE WHEN FILTERS CHANGED TO USE FIELDS
+// Check that a message to be sent passes the filters for the subscriber.
 func (sm *SubManager) passesFilters(subscriber Subscriber, message Message) bool {
     messageType := fmt.Sprintf("%T", message)
     
+    // Check for the Network Message filter
     if subscriber.HasNetworkFilter() {
-        // Message type is local then return false
+        // If message type is local then return false
         if messageType == "*brokervec.LocalMessage" {
             return false
         }
     }
     
+    // Check the list of filters and return false if the message doesn't
+    // pass any of the filters
     for filter := range subscriber.GetFilters() {
         value, ok := sm.Filters[filter]
         if ok {
@@ -197,7 +199,7 @@ func (sm *SubManager) passesFilters(subscriber Subscriber, message Message) bool
     return true
 }
 
-//broadcasting all the messages in the queue in one block
+// Broadcasts all the messages in the queue to each subscriber
 func (sm *SubManager) broadCast() {
 infLoop:
     for {
@@ -241,11 +243,14 @@ infLoop:
 //    return nil
 //}
 
+
+// RPC call to add a network filter. Prevents a subscriber from receiving
+// local messages.
 func (sm *SubManager) AddNetworkFilter(nonce string, reply *string) error {
     log.Println("SubMgr: In AddNetworkFilter, Nonce: ", nonce)
     
     if sub, exists := sm.Subscribers[nonce]; exists {
-        sub.SetNetworkFilter(true)
+        sub.EnableNetworkFilter()
         *reply = "You will no longer receive local messages."
     } else {
         return errors.New("We couldn't find that subscriber.")
@@ -254,11 +259,13 @@ func (sm *SubManager) AddNetworkFilter(nonce string, reply *string) error {
     return nil
 }
 
+// RPC call to remove a network filter. Allows a subscriber to receive
+// local and network messages.
 func (sm *SubManager) RemoveNetworkFilter(nonce string, reply *string) error {
     log.Println("SubMgr: In AddNetworkFilter, Nonce: ", nonce)
     
     if sub, exists := sm.Subscribers[nonce]; exists {
-        sub.SetNetworkFilter(false)
+        sub.DisableNetworkFilter()
         *reply = "You will now receive local and network messages."
     } else {
         return errors.New("We couldn't find that subscriber.")
@@ -267,6 +274,8 @@ func (sm *SubManager) RemoveNetworkFilter(nonce string, reply *string) error {
     return nil
 }
 
+// RPC call to send all messages that were received before the subscriber
+// joined to that subscriber.
 func (sm *SubManager) SendOldMessages(nonce string, reply *string) error {
     log.Println("SubMgr: In SendOldMessages, Nonce: ", nonce)
     
@@ -274,6 +283,9 @@ func (sm *SubManager) SendOldMessages(nonce string, reply *string) error {
         currentTime := time.Now()
         broker := sm.vb
         messages, num := broker.GetMessagesBefore(currentTime)
+        // Plausible timing issue here becauase reply isn't sent back until
+        // this function returns and the old messages are sent in a go routine
+        // that may or may not happen before it returns.
         *reply = strconv.Itoa(num)
         go func() {    
             for _, msg := range messages {

@@ -59,37 +59,49 @@ type VectorBroker struct {
 //initializing the server
 func (vb *VectorBroker) Init(logfilename string, pubport string, subport string) {
     log.Println("Broker: Broker init")
+	
+	// Initialize message storing
     vb.messageStore = make([]Message, 0)
     vb.queue = make(chan Message)
     
+	// Initialize the PubManager on the pubport
     vb.pubManager = NewPubManager(vb, pubport)    
     log.Println("Broker: Registering pubmanager as an rpc server")
     rpc.Register(vb.pubManager)
     
+	// Initialize the SubManager on the subport
     vb.subManager = NewSubManager(vb, logfilename, subport)
     log.Println("Broker: Registering submanager as an rpc server")
     rpc.Register(vb.subManager)
     
+	// Connect the default rpc server to look for http connections
     rpc.HandleHTTP()    
 
+	// Allow a user to close the program by pressing enter.
     fmt.Println("Press enter to shut down broker.")
     reader := bufio.NewReader(os.Stdin)
     reader.ReadString('\n')
     log.Println("Closing.")
 }
 
+// Adds a message to the broadcast queue and to the message archive for this
+// session.
 func (vb *VectorBroker) AddMessage(message Message) {
     vb.queue <- message 
     vb.messageStore = append(vb.messageStore, message)
 }
 
+// Returns a queue that messages can be read from but not written to.
 func (vb *VectorBroker) GetReadQueue() <-chan Message {
     return vb.queue
 }
 
+// Return all messages that were received before registerTime and the number
+// of messages returned.
 func (vb *VectorBroker) GetMessagesBefore(registerTime time.Time) ([]Message, int) {
     var oldMessages []Message
     numMessages := 0
+
     for _, msg := range vb.messageStore {
         if msg.GetTime().Before(registerTime) {
             oldMessages = append(oldMessages, msg)
