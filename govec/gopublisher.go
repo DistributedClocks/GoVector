@@ -54,7 +54,7 @@ func NewGoPublisher(addr string, port string) *GoPublisher {
 }
 
 // **************
-// RPC CALLS
+// RPC CLIENT CALLS
 // **************
 
 // Publish a local message to the broker

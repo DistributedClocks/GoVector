@@ -87,8 +87,8 @@
 
     $("#send").click(function(){
 		var msg = {
-			method: "SubManager.AddFilter", 
-			params: [{"Nonce":nonce, "Regex":$("#msg").val()}], 
+			method: "SubManager.SendOldMessages", 
+			params: [nonce], 
 			id: 0
 		}
 		var text = JSON.stringify(msg)

@@ -45,7 +45,7 @@ func printUsage() {
 
 //##############SERVING STATIC FILES
 func staticFiles(w http.ResponseWriter, r *http.Request) {
-    http.ServeFile(w, r, "./static/"+r.URL.Path)
+    http.ServeFile(w, r, "./broker/static/"+r.URL.Path)
 }
 
 //#############MAIN FUNCTION and INITIALIZATIONS
