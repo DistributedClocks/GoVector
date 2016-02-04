@@ -1,6 +1,6 @@
 package main
 
-import "./govec"
+import "github.com/arcaneiceman/GoVector/govec"
 
 func main() {
 	Logger := govec.InitializeMutipleExecutions("example", "example")

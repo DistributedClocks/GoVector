@@ -76,9 +76,6 @@ type GoLog struct {
 	// Publisher to enable sending messages to a vecbroker.
 	publisher *GoPublisher
 
-	//Logfilename
-	logfile string
-
 	//publicly supplied encoding function
 	encodingStrategy func(interface{}) ([]byte, error)
 
