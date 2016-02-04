@@ -14,26 +14,26 @@ import "io"
 import "bufio"
 
 /*
-	- All licneces like other licenses ...
+   - All licences like other licenses ...
 
-	How to Use This Library
+   How to Use This Library
 
-	Step 1:
-	Create a Global Variable and Initialize it using like this =
+   Step 1:
+   Create a Global Variable and Initialize it using like this =
 
-	Logger:= Initialize("MyProcess",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
+   Logger:= Initialize("MyProcess",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
 
-	Step 2:
-	When Ever You Decide to Send any []byte , before sending call PrepareSend like this:
-	SENDSLICE := PrepareSend("Message Description", []YourPayload)
-	and send the SENDSLICE instead of your Designated Payload
+   Step 2:
+   When Ever You Decide to Send any []byte , before sending call PrepareSend like this:
+   SENDSLICE := PrepareSend("Message Description", []YourPayload)
+   and send the SENDSLICE instead of your Designated Payload
 
-	Step 3:
-	When Receiveing, AFTER you receive your message, pass the []byte into UnpackRecieve
-	like this:
+   Step 3:
+   When Receiveing, AFTER you receive your message, pass the []byte into UnpackRecieve
+   like this:
 
-	RETURNSLICE := UnpackReceive("Message Description" []ReceivedPayload)
-	and use RETURNSLICE for further processing.
+   RETURNSLICE := UnpackReceive("Message Description" []ReceivedPayload)
+   and use RETURNSLICE for further processing.
 
 
 */
@@ -56,10 +56,25 @@ type GoLog struct {
 	//Flag to Printf the logs made by Local Program
 	printonscreen bool
 
+	//This bools Checks to send the VC Bundled with User Data on the Wire
+	// if False, PrepareSend and UnpackReceive will simply forward their input
+	//buffer to output and locally log event. If True, VC will be encoded into packet on wire
+	VConWire bool
+
+	// This bool checks whether we should send logging data to a vecbroker whenever
+	// a message is logged.
+	realtime bool
+
 	//activates/deactivates printouts at each preparesend and unpackreceive
 	debugmode bool
 
 	logging bool
+
+	//Logfile name
+	logfile string
+
+	// Publisher to enable sending messages to a vecbroker.
+	publisher *GoPublisher
 
 	//Logfilename
 	logfile string
@@ -144,6 +159,7 @@ func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool
 	buffer.WriteString(Message)
 	buffer.WriteString("\n")
 	output := buffer.String()
+
 	file, err := os.OpenFile(gv.logfile, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		complete = false
@@ -178,6 +194,10 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 	var ok bool
 	if gv.logging == true {
 		ok = gv.LogThis(Message, gv.pid, vc.ReturnVCString())
+		if gv.realtime == true {
+			// Send local message to broker
+			gv.publisher.PublishLocalMessage(Message, gv.pid, *vc)
+		}
 	}
 
 	return ok

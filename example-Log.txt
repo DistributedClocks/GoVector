@@ -12,3 +12,15 @@ example {"example":5, "example2":2}
 Sending Message Again
 example {"example":7, "example2":2}
 -Logging is renabled here-
+ 
+=== Execution #2  ===
+example {"example":2}
+Sending Message
+example {"example":3, "example2":2}
+receivingmsg
+example {"example":4, "example2":2}
+Message Processed
+example {"example":5, "example2":2}
+Sending Message Again
+example {"example":7, "example2":2}
+-Logging is renabled here-
