@@ -324,7 +324,7 @@ func (gv *GoLog) unpack(mesg string, buf []byte, unpack interface{}) {
 	}
 }
 
-func (gv *GoLog) UnpacReceiveInto(mesg string, buf []byte, unpack interface{}) {
+func (gv *GoLog) UnpackReceiveInto(mesg string, buf []byte, unpack interface{}) {
 	gv.unpack(mesg, buf, unpack)
 }
 
@@ -341,7 +341,7 @@ func gobDecodingStrategy(programData []byte, unpack interface{}) error {
 	programDataBuffer = bytes.NewBuffer(programData)
 	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
 	msgdec := gob.NewDecoder(programDataBuffer)
-	err := msgdec.Decode(&unpack)
+	err := msgdec.Decode(unpack)
 	if err != nil {
 		err = fmt.Errorf("Unable to encode with gob encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
 		return err
@@ -354,7 +354,7 @@ func gobEncodingStrategy(buf interface{}) ([]byte, error) {
 	//first layer encoding, encoding buffer argument
 	programDataBuffer := new(bytes.Buffer)
 	programDataEncoder := gob.NewEncoder(programDataBuffer)
-	err := programDataEncoder.Encode(&buf)
+	err := programDataEncoder.Encode(buf)
 	if err != nil {
 		err = fmt.Errorf("Unable to encode with gob encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
 		return nil, err
@@ -368,9 +368,9 @@ func msgPackDecodingStrategy(programData []byte, unpack interface{}) error {
 		dec *codec.Decoder
 	)
 	dec = codec.NewDecoderBytes(programData, &codec.MsgpackHandle{})
-	err := dec.Decode(&unpack)
+	err := dec.Decode(unpack)
 	if err != nil {
-		err = fmt.Errorf("Unable to encode with gob encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
+		err = fmt.Errorf("Unable to decode with msg-pack encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
 		return err
 	}
 	return nil
@@ -385,7 +385,7 @@ func msgPackEncodingStrategy(buf interface{}) ([]byte, error) {
 	err := enc.Encode(buf)
 	fmt.Println(b)
 	if err != nil {
-		err = fmt.Errorf("Unable to encode with gob encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
+		err = fmt.Errorf("Unable to encode with msg-pack encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
 		return nil, err
 	}
 	return b, err
@@ -421,15 +421,14 @@ func Initialize(processid string, logfilename string) *GoLog {
 	gv.EnableLogging()
 
 	//set the default encoder / decoder to gob
-	/*
-		gv.encodingStrategy = gobEncodingStrategy
-		gv.decodingStrategy = gobDecodingStrategy
-	*/
+	gv.encodingStrategy = gobEncodingStrategy
+	gv.decodingStrategy = gobDecodingStrategy
 
 	//set the default encoder / decoder to msgpack
-	gv.encodingStrategy = msgPackEncodingStrategy
-	gv.decodingStrategy = msgPackDecodingStrategy
-
+	/*
+		gv.encodingStrategy = msgPackEncodingStrategy
+		gv.decodingStrategy = msgPackDecodingStrategy
+	*/
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
 	vc1.Update(processid, 1)
