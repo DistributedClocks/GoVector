@@ -1,12 +1,16 @@
-package main
+package govec
 
-import "github.com/arcaneiceman/GoVector/govec"
+import (
+	"testing"
 
-func main() {
+	"github.com/arcaneiceman/GoVector/govec"
+)
+
+func TestSendReceive(t *testing.T) {
 	Logger := govec.InitializeMutipleExecutions("example", "example")
 	Logger2 := govec.Initialize("example2", "example2")
 
-	sendbuf := []byte("messagepayload")
+	sendbuf := "messagepayload"
 	finalsend := Logger.PrepareSend("Sending Message", sendbuf)
 	finalsend = Logger2.PrepareSend("Sending Message2", sendbuf)
 	//send message
@@ -14,8 +18,12 @@ func main() {
 	//s:= string(finalsend[:])
 	//fmt.Println(s)
 
+	var recbuf string
 	//receive message
-	recbuf := Logger.UnpackReceive("receivingmsg", finalsend)
+	Logger.UnpackReceive("receivingmsg", finalsend, &recbuf)
+	if recbuf != sendbuf {
+		t.Error("send and receive inconsistant")
+	}
 
 	Logger.LogLocalEvent("Message Processed")
 	//Logger.UnpackReceive(finalsend)

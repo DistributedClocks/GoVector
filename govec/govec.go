@@ -498,6 +498,10 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 	//copy(gv.currentVC[:],vc1.Bytes())
 	gv.currentVC = vc1.Bytes()
 
+	//set the default encoder / decoder to gob
+	gv.encodingStrategy = gobEncodingStrategy
+	gv.decodingStrategy = gobDecodingStrategy
+
 	if gv.debugmode == true {
 		fmt.Println(" ###### Initialization ######")
 		fmt.Print("VCLOCK IS :")
