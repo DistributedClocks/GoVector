@@ -25,25 +25,17 @@ import "bufio"
 
    Step 2:
    When Ever You Decide to Send any []byte , before sending call PrepareSend like this:
-   SENDSLICE := PrepareSend("Message Description", []YourPayload)
+   SENDSLICE := PrepareSend("Message Description", YourPayload)
    and send the SENDSLICE instead of your Designated Payload
 
    Step 3:
    When Receiveing, AFTER you receive your message, pass the []byte into UnpackRecieve
    like this:
 
-   RETURNSLICE := UnpackReceive("Message Description" []ReceivedPayload)
+   UnpackReceive("Message Description", []ReceivedPayload, *RETURNSLICE)
    and use RETURNSLICE for further processing.
-
-
 */
-/*
-//publicly supplied encoding function
-func encode(interface{}) ([]byte, error) {}
 
-//publicly supplied decoding function
-func decode([]byte) (interface{}, error) {}
-*/
 //This is the Global Variable Struct that holds all the info needed to be maintained
 type GoLog struct {
 
@@ -88,40 +80,6 @@ type Data struct {
 	pid         []byte
 	vcinbytes   []byte
 	programdata []byte
-}
-
-//This function packs the Vector Clock with user program's data to send on wire
-func (d *Data) GobEncode() ([]byte, error) {
-	w := new(bytes.Buffer)
-	encoder := gob.NewEncoder(w)
-	err := encoder.Encode(d.pid)
-	if err != nil {
-		return nil, err
-	}
-	err = encoder.Encode(d.vcinbytes)
-	if err != nil {
-		return nil, err
-	}
-	err = encoder.Encode(d.programdata)
-	if err != nil {
-		return nil, err
-	}
-	return w.Bytes(), nil
-}
-
-//This function Unpacks packet containing the vector clock received from wire
-func (d *Data) GobDecode(buf []byte) error {
-	r := bytes.NewBuffer(buf)
-	decoder := gob.NewDecoder(r)
-	err := decoder.Decode(&d.pid)
-	if err != nil {
-		return err
-	}
-	err = decoder.Decode(&d.vcinbytes)
-	if err != nil {
-		return err
-	}
-	return decoder.Decode(&d.programdata)
 }
 
 //Prints the Data Stuct as Bytes
@@ -200,6 +158,10 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 	return ok
 }
 
+//This function is meant to be used immidatly before sending.
+//mesg will be loged along with the time of the send
+//buf is encodeable data (structure or basic type)
+//Returned is an encoded byte array with logging information
 func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	/*
 		This function is meant to be called before sending a packet. Usually,
@@ -259,7 +221,13 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	return wrapperBuffer.Bytes()
 }
 
-func (gv *GoLog) unpack(mesg string, buf []byte, unpack interface{}) {
+//UnpackReceive is used to unmarshall network data into local
+//structures
+//mesg will be logged along with the vector time the receive happened
+//buf is the network data, previously packaged by PrepareSend
+//unpack is a pointer to a structure, the same as was packed by
+//PrepareSend
+func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 	/*
 		This function is meant to be called immediatly after receiving a packet. It unpacks the data
 		by the program, the vector clock. It updates vector clock and logs it. and returns the user data
@@ -324,14 +292,61 @@ func (gv *GoLog) unpack(mesg string, buf []byte, unpack interface{}) {
 	}
 }
 
-func (gv *GoLog) UnpackReceiveInto(mesg string, buf []byte, unpack interface{}) {
-	gv.unpack(mesg, buf, unpack)
+//This function packs the Vector Clock with user program's data to send on wire
+func (d *Data) GobEncode() ([]byte, error) {
+	w := new(bytes.Buffer)
+	encoder := gob.NewEncoder(w)
+	err := encoder.Encode(d.pid)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(d.vcinbytes)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(d.programdata)
+	if err != nil {
+		return nil, err
+	}
+	return w.Bytes(), nil
 }
 
+//This function Unpacks packet containing the vector clock received from wire
+func (d *Data) GobDecode(buf []byte) error {
+	r := bytes.NewBuffer(buf)
+	decoder := gob.NewDecoder(r)
+	err := decoder.Decode(&d.pid)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&d.vcinbytes)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(&d.programdata)
+}
+
+/*
+This implementation of UnpackReceive returns the value of the unpacked
+message. Due conflicting requirements for interfaces, it has been
+removed
 func (gv *GoLog) UnpackReceive(mesg string, buf []byte) interface{} {
 	var unpackInto interface{}
-	gv.unpack(mesg, buf, unpackInto)
+	gv.unpack(mesg, buf, &unpackInto)
 	return unpackInto
+}
+*/
+
+//SetEncoderDecoder allows users to specify the encoder, and decoder
+//used by GoVec in the case the default is unable to preform a
+//required task
+//encoder a function which takes an interface, and returns a byte
+//array, and an error if encoding fails
+//decoder a function which takes an encoded byte array and a pointer
+//to a structure. The byte array should be decoded into the structure.
+func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error) {
+	gv.encodingStrategy = encoder
+	gv.decodingStrategy = decoder
 }
 
 //gobDecodingStrategy decodes user data by using the Go Object decoder
@@ -342,6 +357,7 @@ func gobDecodingStrategy(programData []byte, unpack interface{}) error {
 	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
 	msgdec := gob.NewDecoder(programDataBuffer)
 	err := msgdec.Decode(unpack)
+	fmt.Println(unpack)
 	if err != nil {
 		err = fmt.Errorf("Unable to encode with gob encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
 		return err
@@ -391,11 +407,6 @@ func msgPackEncodingStrategy(buf interface{}) ([]byte, error) {
 	return b, err
 }
 
-func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error) {
-	gv.encodingStrategy = encoder
-	gv.decodingStrategy = decoder
-}
-
 func (gv *GoLog) EnableLogging() {
 	gv.logging = true
 }
@@ -423,9 +434,8 @@ func Initialize(processid string, logfilename string) *GoLog {
 	//set the default encoder / decoder to gob
 	gv.encodingStrategy = gobEncodingStrategy
 	gv.decodingStrategy = gobDecodingStrategy
-
-	//set the default encoder / decoder to msgpack
 	/*
+		//set the default encoder / decoder to msgpack
 		gv.encodingStrategy = msgPackEncodingStrategy
 		gv.decodingStrategy = msgPackDecodingStrategy
 	*/
