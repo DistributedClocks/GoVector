@@ -357,7 +357,6 @@ func gobDecodingStrategy(programData []byte, unpack interface{}) error {
 	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
 	msgdec := gob.NewDecoder(programDataBuffer)
 	err := msgdec.Decode(unpack)
-	fmt.Println(unpack)
 	if err != nil {
 		err = fmt.Errorf("Unable to encode with gob encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
 		return err

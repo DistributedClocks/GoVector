@@ -43,5 +43,5 @@ Temporary Items
 .apdisk
 
 #swap files
-.swp
-.swo
+*.swp
+*.swo
