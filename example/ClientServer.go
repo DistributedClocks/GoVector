@@ -36,7 +36,7 @@ func (m Msg) String() string {
 }
 
 func client(listen, send string) {
-	Logger := govec.Initialize("client", "client")
+	Logger := govec.Initialize("client", "clientlogfile")
 	// sending UDP packet to specified address and port
 	conn := setupConnection(SERVERPORT, CLIENTPORT)
 
