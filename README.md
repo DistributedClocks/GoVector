@@ -19,12 +19,26 @@ PLEASE NOTE: GoVec is compatible with Go 1.4 +
 type GoLog
 ```go
 func Initialize(ProcessName, LogName string) *GoLog
+```
+```go
 func InitializeMutipleExecutions(ProcessName, LogName string) *GoLog
+```
+```go
 func PrepareSend(LogMessage string, buf interface{}) []byte
-func UnpackReceive(LogMessage string, buf []byte, unpack
+```
+```go
+func UnpackReceive(LogMessage string, buf []byte, unpack interface{})
+```
+```go
 func SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error)
+```
+```go
 func LogLocalEvent(string LogMessage)
+```
+```go
 func LogThis(Message string, ProcessID string, VCString string) bool
+```
+```go
 func DisableLogging()
 ```
 
@@ -102,7 +116,7 @@ This function is meant to be called immediatly after receiving
 a packet. It unpacks the data by the program, the vector clock. It
 updates vector clock and logs it. and returns the user data
 
-#### func SetEncoderDecoder
+##### func SetEncoderDecoder
 ```go
 func SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error)
 ```
@@ -158,7 +172,7 @@ The following is a basic example of how this library can be used
 		finalsend := Logger.PrepareSend("Sending Message", messagepayload)
 		
 		//send message
-		//connection.Write(finalsend)
+		connection.Write(finalsend)
 
 		//In Receiving Process
 		
