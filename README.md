@@ -17,13 +17,12 @@ PLEASE NOTE: GoVec is compatible with Go 1.4 +
 ### Index
 
 type GoLog
-```golang
+```go
 func Initialize(ProcessName, LogName string) *GoLog
 func InitializeMutipleExecutions(ProcessName, LogName string) *GoLog
 func PrepareSend(LogMessage string, buf interface{}) []byte
 func UnpackReceive(LogMessage string, buf []byte, unpack
 func SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error)
-
 func LogLocalEvent(string LogMessage)
 func LogThis(Message string, ProcessID string, VCString string) bool
 func DisableLogging()
@@ -43,13 +42,13 @@ command
 *gofmt* will automatically add imports for GoVec. If you do not have a
 working version of *gofmt* GoVec can be imported by adding
 
-```golang
+```go
     "import github.com/arcaneiceman/GoVector/govec"
 ```
 
 ####   type GoLog
 
-```golang
+```go
 	type GoLog struct{
 		// contains filtered or unexported fields
 	}
@@ -57,7 +56,7 @@ working version of *gofmt* GoVec can be imported by adding
  The GoLog struct provides an interface to creating and maintaining vector timestamp entries in the generated log file
  
 #####   func Initialize
-```golang
+```go
 	func Initialize(ProcessName, LogName string) *GoLog
 ```
 Returns a Go Log Struct taking in two arguments and truncates previous logs:
@@ -66,7 +65,7 @@ Returns a Go Log Struct taking in two arguments and truncates previous logs:
 
 
 #####   func InitializeMutlipleExecutions
-```golang
+```go
 	func Initialize(ProcessName, LogName string) *GoLog
 ```
 Returns a Go Log Struct taking in two arguments without truncating previous log entry:
@@ -75,7 +74,7 @@ Returns a Go Log Struct taking in two arguments without truncating previous log 
 by "=== Execution # ==="
 
 #####   func PrepareSend
-```golang
+```go
 	func PrepareSend(LogMessage string, buf interface{}) byte[]
 ```
 This function is meant to be used immidatly before sending.
@@ -89,7 +88,7 @@ using gob support and return the new byte array that should be sent onwards
 using the Send Command
 
 #####   func UnpackReceive
-```golang
+```go
 	func UnpackReceive(LogMesg, buf byte[], unpack interface{})
 ```
 
@@ -104,7 +103,7 @@ a packet. It unpacks the data by the program, the vector clock. It
 updates vector clock and logs it. and returns the user data
 
 #### func SetEncoderDecoder
-```golang
+```go
 func SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error)
 ```
 SetEncoderDecoder allows users to specify the encoder, and decoder
@@ -120,30 +119,31 @@ encoder](https://golang.org/pkg/encoding/gob/) and
 [goMsgPack](https://github.com/hashicorp/go-msgpack)
 
 #####   func LogLocalEvent
-```golang
+```go
 	func LogLocalEvent(Logmessage string)
 ```
 Increments current vector timestamp and logs it into Log File. 
 
 ##### func LogThis
 
-```golang
+```go
 func LogThis(Message string, ProcessID string, VCString string) bool
 ```
 Logs a message along with a processID and a vector clock, the VCString
 must be a vaild vector clock, true is returned on success
 
 #####   func DisableLogging
-
+```go
 	func DisableLogging()
-	
+```
+
 Disables Logging. Log messages will not appear in Log file any longer.
 Note: For the moment, the vector clocks are going to continue being updated.
 
 ###   Examples
 
 The following is a basic example of how this library can be used 
-```golang
+```go
 	package main
 
 	import "./govec"
