@@ -1,17 +1,19 @@
 package govec
 
-import "fmt"
-import "encoding/gob"
-import "bytes"
 import (
+	"bufio"
+	"bytes"
+	"encoding/gob"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
 	"github.com/arcaneiceman/GoVector/govec/vclock"
 	"github.com/hashicorp/go-msgpack/codec"
 )
-import "os"
-import "strings"
-import "strconv"
-import "io"
-import "bufio"
 
 /*
    - All licences like other licenses ...
@@ -461,6 +463,12 @@ func Initialize(processid string, logfilename string) *GoLog {
 		fmt.Println(logname, "exists! ... Deleting ")
 		os.Remove(logname)
 	}
+
+	// Create directory path to log if it doesn't exist.
+	if err := os.MkdirAll(filepath.Dir(logname), 0750); err != nil {
+		panic(err)
+	}
+
 	//Creating new Log
 	file, err := os.Create(logname)
 	if err != nil {
