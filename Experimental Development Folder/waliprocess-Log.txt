@@ -1,8 +1,0 @@
-0001 {"0001":1}
-Initilization Complete
-0001 {"0001":2}
-Sending Message
-0001 {"0001":3}
-receivingmsg
-0001 {"0001":4}
-Sending Message Again
