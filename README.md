@@ -2,17 +2,34 @@ GoVector
 ========
 
 ### Overview
-This is a small library that you can add to your Go project to
+This library can be added to a Go project to
 generate a [ShiViz](http://bestchai.bitbucket.org/shiviz/)-compatible
-vector-clock timestamped log of events in your distributed system.
-
-PLEASE NOTE: GoVec is compatible with Go 1.4 + 
+vector-clock timestamped log of events in a concurrent or distributed system.
+GoVec is compatible with Go 1.4+ 
 
 * govec/    : Contains the Library and all its dependencies
 * example/  : Contains a client server example instrumented with GoVec
 * test/     : A small set of tests for the library
 * broker/   : Automatic live integration with ShiViz (Under
   Development)
+
+### Usage
+
+To use GoVec you must have a correctly configured go development
+environment, see [How to write Go
+Code](https://golang.org/doc/code.html)
+
+Once you set up your environment, GoVec can be installed with the go
+tool command:
+
+> go get github.com/arcaneiceman/GoVector
+
+*gofmt* will automatically add imports for GoVec. If you do not have a
+working version of *gofmt* GoVec can be imported by adding:
+
+```go
+    "import github.com/arcaneiceman/GoVector/govec"
+```
 
 ### Index
 
@@ -21,7 +38,7 @@ type GoLog
 func Initialize(ProcessName, LogName string) *GoLog
 ```
 ```go
-func InitializeMutipleExecutions(ProcessName, LogName string) *GoLog
+func InitializeMultipleExecutions(ProcessName, LogName string) *GoLog
 ```
 ```go
 func PrepareSend(LogMessage string, buf interface{}) []byte
@@ -42,24 +59,6 @@ func LogThis(Message string, ProcessID string, VCString string) bool
 func DisableLogging()
 ```
 
-### Usage
-
-To use GoVec you must have a correctly configured go devlopment
-enviorment, see [How to write Go
-Code](https://golang.org/doc/code.html)
-
-After this requirement is met GoVec can be installed with the go tool
-command
-
-> go get github.com/arcaneiceman/GoVector
-
-*gofmt* will automatically add imports for GoVec. If you do not have a
-working version of *gofmt* GoVec can be imported by adding
-
-```go
-    "import github.com/arcaneiceman/GoVector/govec"
-```
-
 ####   type GoLog
 
 ```go
@@ -78,22 +77,22 @@ Returns a Go Log Struct taking in two arguments and truncates previous logs:
 * LogFileName (string) : name of the log file that will store info. Any old log with the same name will be truncated
 
 
-#####   func InitializeMutlipleExecutions
+#####   func InitializeMultipleExecutions
 ```go
-	func Initialize(ProcessName, LogName string) *GoLog
+	func InitializeMultipleExecutions(ProcessName, LogName string) *GoLog
 ```
 Returns a Go Log Struct taking in two arguments without truncating previous log entry:
 * MyProcessName (string): local process name; must be unique in your distributed system.
-* LogFileName (string) : name of the log file that will store info. Each run will append to log file seperated 
+* LogFileName (string) : name of the log file that will store info. Each run will append to log file separated 
 by "=== Execution # ==="
 
 #####   func PrepareSend
 ```go
 	func PrepareSend(LogMessage string, buf interface{}) byte[]
 ```
-This function is meant to be used immidatly before sending.
-mesg will be loged along with the time of the send
-buf is encodeable data (structure or basic type)
+This function is meant to be used immediately before sending.
+LogMessage will be logged along with the time of the send
+buf is encode-able data (structure or basic type)
 Returned is an encoded byte array with logging information
 
 This function is meant to be called before sending a packet. Usually,
@@ -103,16 +102,16 @@ using the Send Command
 
 #####   func UnpackReceive
 ```go
-	func UnpackReceive(LogMesg, buf byte[], unpack interface{})
+	func UnpackReceive(LogMessage string, buf byte[], unpack interface{})
 ```
 
-UnpackReceive is used to unmarshall network data into local structures
-mesg will be logged along with the vector time the receive happened
+UnpackReceive is used to unmarshall network data into local structures.
+LogMessage will be logged along with the vector time the receive happened
 buf is the network data, previously packaged by PrepareSend unpack is
 a pointer to a structure, the same as was packed by PrepareSend
 
 
-This function is meant to be called immediatly after receiving
+This function is meant to be called immediately after receiving
 a packet. It unpacks the data by the program, the vector clock. It
 updates vector clock and logs it. and returns the user data
 
@@ -121,7 +120,7 @@ updates vector clock and logs it. and returns the user data
 func SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error)
 ```
 SetEncoderDecoder allows users to specify the encoder, and decoder
-used by GoVec in the case the default is unable to preform a
+used by GoVec in the case the default is unable to perform a
 required task
 encoder a function which takes an interface, and returns a byte
 array, and an error if encoding fails
@@ -134,7 +133,7 @@ encoder](https://golang.org/pkg/encoding/gob/) and
 
 #####   func LogLocalEvent
 ```go
-	func LogLocalEvent(Logmessage string)
+	func LogLocalEvent(LogMessage string)
 ```
 Increments current vector timestamp and logs it into Log File. 
 
@@ -144,7 +143,7 @@ Increments current vector timestamp and logs it into Log File.
 func LogThis(Message string, ProcessID string, VCString string) bool
 ```
 Logs a message along with a processID and a vector clock, the VCString
-must be a vaild vector clock, true is returned on success
+must be a valid vector clock, true is returned on success
 
 #####   func DisableLogging
 ```go
@@ -208,7 +207,7 @@ type VectorBroker
 
 ### Usage
 
-    A simple standalone program can be found in server/broker/runbroker.go 
+    A simple stand-alone program can be found in server/broker/runbroker.go 
     which will setup a broker with command line parameters.
    	Usage is: 
     "go run ./runbroker (-logpath logpath) -pubport pubport -subport subport"
@@ -237,7 +236,7 @@ Step 1:
 
 Step 2:
 
-    Setup your GoVec so that the realtime boolean is set to true and the correct
+    Setup your GoVec so that the real-time boolean is set to true and the correct
     brokeraddr and brokerpubport values are set in the Initialize method you
     intend to use.
 
