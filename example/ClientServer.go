@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/arcaneiceman/GoVector/capture"
 	"github.com/arcaneiceman/GoVector/govec"
 )
 
@@ -32,12 +33,12 @@ func client(listen, send string) {
 	for i := 0; i < MESSAGES; i++ {
 		outgoingMessage := i
 		outBuf := Logger.PrepareSend("Sending message to server", outgoingMessage)
-		_, errWrite := conn.Write(outBuf)
+		_, errWrite := capture.Write(conn.Write, outBuf)
 		printErr(errWrite)
 
 		var inBuf [512]byte
 		var incommingMessage int
-		n, errRead := conn.Read(inBuf[0:])
+		n, errRead := capture.Read(conn.Read, inBuf[0:])
 		printErr(errRead)
 		Logger.UnpackReceive("Received Message from server", inBuf[0:n], &incommingMessage)
 		fmt.Printf("GOT BACK : %d\n", incommingMessage)
@@ -57,7 +58,7 @@ func server(listen string) {
 	var n, nMinOne, nMinTwo int
 
 	for i := 0; i < MESSAGES; i++ {
-		_, addr, err := conn.ReadFrom(buf[0:])
+		_, addr, err := capture.ReadFrom(conn.ReadFrom, buf[0:])
 		var incommingMessage int
 		Logger.UnpackReceive("Received Message From Client", buf[0:], &incommingMessage)
 		fmt.Printf("Recieved %d\n", incommingMessage)
@@ -78,7 +79,7 @@ func server(listen string) {
 			n = nMinOne + nMinTwo
 			break
 		}
-		conn.WriteTo(Logger.PrepareSend("Replying to client", n), addr)
+		capture.WriteTo(conn.WriteTo, Logger.PrepareSend("Replying to client", n), addr)
 		time.Sleep(1)
 	}
 	conn.Close()
