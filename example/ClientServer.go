@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/arcaneiceman/GoVector/capture"
 	"github.com/arcaneiceman/GoVector/govec"
 )
 
@@ -33,7 +32,7 @@ func client(listen, send string) {
 	for i := 0; i < MESSAGES; i++ {
 		outgoingMessage := i
 		outBuf := Logger.PrepareSend("Sending message to server", outgoingMessage)
-		_, errWrite := capture.Write(conn.Write, outBuf)
+		_, errWrite := conn.Write(outBuf)
 		printErr(errWrite)
 
 		var inBuf [512]byte

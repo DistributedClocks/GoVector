@@ -98,7 +98,7 @@ func InstrumentCalls (p *programslicer.ProgramWrapper, pnum,snum int) {
 				switch i:= f.X.(type){
 				case *ast.Ident:
 					for obj, conn := range netConns {
-						fmt.Printf("obj-Id%s\t obj-Pkg%s\tobj.Name%s\n",obj.Id(),obj.Pkg().Name(),i.Name)
+						fmt.Printf("obj-Id: %s\t obj-Pkg: %s\tobj.Name: %s\n",obj.Id(),obj.Pkg().Name(),i.Name)
 						if (i.Obj != nil  && obj.Pos() == i.Obj.Pos()) ||
 							(obj.Pkg().Name() == i.Name) {
 							injected = injected || checkAndInstrument(f.Sel.Name,conn.ReceivingFunctions,c,p)
