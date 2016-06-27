@@ -12,7 +12,7 @@ import(
 	"go/token"
 	"go/printer"
 	"bytes"
-
+	"golang.org/x/tools/go/ast/astutil"
 	"go/importer"
 )
 
@@ -89,6 +89,7 @@ func getProgramWrapper() (*programslicer.ProgramWrapper, error) {
 }
 
 func InstrumentCalls (p *programslicer.ProgramWrapper, pnum,snum int) {
+	injected := false
 	ast.Inspect(p.Packages[pnum].Sources[snum].Comments , func(n ast.Node) bool {
 		switch c := n.(type){
 		case *ast.CallExpr:
@@ -100,9 +101,9 @@ func InstrumentCalls (p *programslicer.ProgramWrapper, pnum,snum int) {
 						fmt.Printf("obj-Id%s\t obj-Pkg%s\tobj.Name%s\n",obj.Id(),obj.Pkg().Name(),i.Name)
 						if (i.Obj != nil  && obj.Pos() == i.Obj.Pos()) ||
 							(obj.Pkg().Name() == i.Name) {
-							checkAndInstrument(f.Sel.Name,conn.ReceivingFunctions,c,p)
-							checkAndInstrument(f.Sel.Name,conn.SenderFunctions,c,p)
-							checkAndInstrument(f.Sel.Name,conn.ConnectionFunctions,c,p)
+							injected = injected || checkAndInstrument(f.Sel.Name,conn.ReceivingFunctions,c,p)
+							injected = injected || checkAndInstrument(f.Sel.Name,conn.SenderFunctions,c,p)
+							injected = injected || checkAndInstrument(f.Sel.Name,conn.ConnectionFunctions,c,p)
 						}
 					}
 				}
@@ -110,25 +111,36 @@ func InstrumentCalls (p *programslicer.ProgramWrapper, pnum,snum int) {
 		}
 		return true
 	})
+	//if code was added, add the apropriate import
+	if injected {
+		astutil.AddImport(p.Fset,p.Packages[pnum].Sources[snum].Comments,"github.com/arcaneiceman/GoVector/capture")
+	}
 
 }
 
-func checkAndInstrument(varName string, netfuncs []*NetFunc, call *ast.CallExpr, p *programslicer.ProgramWrapper){
+
+//checkAndInstrument compaires a variable name with the nown set of
+//networking functions. If the variable is found to be a networking
+//function, it is captured.
+//If the variable is insturmented the function returns true.
+func checkAndInstrument(varName string, netfuncs []*NetFunc, call *ast.CallExpr, p *programslicer.ProgramWrapper) bool {
 	for _, netFunc := range netfuncs {
 		fmt.Printf("varName = %s, netFunc.Name = %s\n",varName,netFunc.Name)
 		if varName == netFunc.Name {
 			instrumentCall(call,netFunc)
+			return true
 			/*
 			*/
 		}
 	}
+	return false
 }
 
 
 func instrumentCall(call *ast.CallExpr, function *NetFunc){
 	funString := getFunctionString(call)
 	args := getArgsString(call.Args)
-	call.Fun = ast.NewIdent(fmt.Sprintf("dovid.%s",function.Name))
+	call.Fun = ast.NewIdent(fmt.Sprintf("capture.%s",function.Name))
 	call.Args = make([]ast.Expr,1)
 	call.Args[0] = ast.NewIdent(fmt.Sprintf("%s,%s",funString,args))
 }
@@ -202,9 +214,9 @@ func PopulateNetConns(program *programslicer.ProgramWrapper){
 		//fmt.Println(match)
 		if len(match) == 3 {
 			//type is in netvars
-			_, ok := netDB[match[2]]	//match[2] contians the type of the object
+			_, ok := NetDB[match[2]]	//match[2] contians the type of the object
 			if ok {
-				netConns[obj] = netDB[match[2]]
+				netConns[obj] = NetDB[match[2]]
 			}
 		}
 		//variables
@@ -212,9 +224,9 @@ func PopulateNetConns(program *programslicer.ProgramWrapper){
 		//fmt.Println(match)
 		if len(match) == 3 {
 			//type is in netvars
-			_, ok := netDB[match[1]]	//match[2] contians the type of the object
+			_, ok := NetDB[match[1]]	//match[2] contians the type of the object
 			if ok {
-				netConns[obj] = netDB[match[1]]
+				netConns[obj] = NetDB[match[1]]
 				fmt.Printf("Added Obj: %s to the DB\n",obj.String())
 			}
 		} 
@@ -242,7 +254,7 @@ type NetFunc struct {
 }
 
 var netConns map[types.Object]*NetConn = make(map[types.Object]*NetConn,0)
-var netDB map[string]*NetConn = map[string]*NetConn{
+var NetDB map[string]*NetConn = map[string]*NetConn{
 	"net.UDPConn" : &NetConn{
 						"net.UDPConn",
 						[]*NetFunc{
