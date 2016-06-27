@@ -12,7 +12,7 @@ import (
 const (
 	SERVERPORT = "8080"
 	CLIENTPORT = "8081"
-	MESSAGES   = 5
+	MESSAGES   = 10
 )
 
 var done chan int = make(chan int, 2)
@@ -24,34 +24,23 @@ func main() {
 	<-done
 }
 
-//Msg is the message sent over the network
-//Msg is capitolized so GoVecs encoder can acess it
-//Furthermore its variables are capitolized to make them public
-type Msg struct {
-	Content, RealTimestamp string
-}
-
-func (m Msg) String() string {
-	return "content: " + m.Content + "\ntime: " + m.RealTimestamp
-}
-
 func client(listen, send string) {
 	Logger := govec.Initialize("client", "clientlogfile")
 	// sending UDP packet to specified address and port
 	conn := setupConnection(SERVERPORT, CLIENTPORT)
 
 	for i := 0; i < MESSAGES; i++ {
-		outgoingMessage := Msg{"Hello GoVec!", time.Now().String()}
+		outgoingMessage := i
 		outBuf := Logger.PrepareSend("Sending message to server", outgoingMessage)
 		_, errWrite := conn.Write(outBuf)
 		printErr(errWrite)
 
 		var inBuf [512]byte
+		var incommingMessage int
 		n, errRead := conn.Read(inBuf[0:])
 		printErr(errRead)
-		incommingMessage := new(Msg)
 		Logger.UnpackReceive("Received Message from server", inBuf[0:n], &incommingMessage)
-		fmt.Println(incommingMessage.String())
+		fmt.Printf("GOT BACK : %d\n", incommingMessage)
 		time.Sleep(1)
 	}
 	done <- 1
@@ -65,15 +54,31 @@ func server(listen string) {
 
 	var buf [512]byte
 
+	var n, nMinOne, nMinTwo int
+
 	for i := 0; i < MESSAGES; i++ {
 		_, addr, err := conn.ReadFrom(buf[0:])
-		incommingMessage := new(Msg)
+		var incommingMessage int
 		Logger.UnpackReceive("Received Message From Client", buf[0:], &incommingMessage)
-		fmt.Println(incommingMessage.String())
+		fmt.Printf("Recieved %d\n", incommingMessage)
 		printErr(err)
 
-		outgoingMessage := Msg{"GoVecs Great?", time.Now().String()}
-		conn.WriteTo(Logger.PrepareSend("Replying to client", outgoingMessage), addr)
+		switch incommingMessage {
+		case 0:
+			nMinTwo = 0
+			n = 0
+			break
+		case 1:
+			nMinOne = 0
+			n = 1
+			break
+		default:
+			nMinTwo = nMinOne
+			nMinOne = n
+			n = nMinOne + nMinTwo
+			break
+		}
+		conn.WriteTo(Logger.PrepareSend("Replying to client", n), addr)
 		time.Sleep(1)
 	}
 	conn.Close()
