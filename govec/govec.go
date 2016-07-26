@@ -138,11 +138,11 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 	//Converting Vector Clock from Bytes and Updating the gv clock
 	vc, err := vclock.FromBytes(gv.currentVC)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
 	}
 	currenttime, found := vc.FindTicks(gv.pid)
 	if found == false {
-		panic("Couldnt find this process's id in its own vector clock!")
+		fmt.Println("Couldnt find this process's id in its own vector clock!")
 	}
 	currenttime++
 	vc.Update(gv.pid, currenttime)
@@ -174,11 +174,11 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	//Converting Vector Clock from Bytes and Updating the gv clock
 	vc, err := vclock.FromBytes(gv.currentVC)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
 	}
 	currenttime, found := vc.FindTicks(gv.pid)
 	if found == false {
-		panic("Couldnt find this process's id in its own vector clock!")
+		fmt.Println("Couldnt find this process's id in its own vector clock!")
 	}
 	currenttime++
 	vc.Update(gv.pid, currenttime)
@@ -208,7 +208,7 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	//first layer of encoding (user data)
 	d.programdata, err = gv.encodingStrategy(buf)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
 	}
 
 	//second layer wrapperEncoderoding, wrapperEncoderode wrapping structure
@@ -216,7 +216,7 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	wrapperEncoder := gob.NewEncoder(wrapperBuffer)
 	err = wrapperEncoder.Encode(&d)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
 	}
 	//return wrapperBuffer bytes which are wrapperEncoderoded as gob. Now these bytes can be sent off and
 	// received on the other end!
@@ -245,7 +245,7 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 	err := dec.Decode(e)
 	if err != nil {
 		fmt.Println("You said that I would be receiving a vector clock but I didnt! or decoding failed :P")
-		panic(err)
+		fmt.Println(err.Error())
 	}
 
 	//In this case you increment your old clock
@@ -259,10 +259,10 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 
 	currenttime, found := vc.FindTicks(gv.pid)
 	if found == false {
-		panic(fmt.Errorf("Couldnt find Local Process's ID in the Vector Clock. Could it be a stray message?"))
+		fmt.Println(fmt.Errorf("Couldnt find Local Process's ID in the Vector Clock. Could it be a stray message?"))
 	}
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
 	}
 	currenttime++
 	vc.Update(gv.pid, currenttime)
@@ -271,7 +271,7 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 	tempvc, err := vclock.FromBytes(tmp)
 
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
 	}
 	vc.Merge(tempvc)
 	if gv.debugmode == true {
@@ -290,7 +290,7 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 	}
 	err = gv.decodingStrategy(e.programdata, unpack)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
 	}
 }
 
@@ -400,7 +400,7 @@ func msgPackEncodingStrategy(buf interface{}) ([]byte, error) {
 	)
 	enc = codec.NewEncoderBytes(&b, &codec.MsgpackHandle{})
 	err := enc.Encode(buf)
-	fmt.Println(b)
+	//fmt.Println(b)
 	if err != nil {
 		err = fmt.Errorf("Unable to encode with msg-pack encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
 		return nil, err
@@ -432,14 +432,14 @@ func Initialize(processid string, logfilename string) *GoLog {
 	gv.debugmode = false     // (Debug)
 	gv.EnableLogging()
 
+	/*
 	//set the default encoder / decoder to gob
 	gv.encodingStrategy = gobEncodingStrategy
 	gv.decodingStrategy = gobDecodingStrategy
-	/*
+	*/
 		//set the default encoder / decoder to msgpack
 		gv.encodingStrategy = msgPackEncodingStrategy
 		gv.decodingStrategy = msgPackDecodingStrategy
-	*/
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
 	vc1.Update(processid, 1)
@@ -466,13 +466,13 @@ func Initialize(processid string, logfilename string) *GoLog {
 
 	// Create directory path to log if it doesn't exist.
 	if err := os.MkdirAll(filepath.Dir(logname), 0750); err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	//Creating new Log
 	file, err := os.Create(logname)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 	file.Close()
 
@@ -532,7 +532,7 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 		//Creating new Log
 		file, err := os.Create(logname)
 		if err != nil {
-			panic(err)
+			fmt.Println(err.Error())
 		}
 		file.Close()
 

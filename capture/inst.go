@@ -5,7 +5,7 @@ import(
 	"fmt"
 	"regexp"
 	"sort"
-	"bitbucket.org/wantonsolutions/dovid/programslicer"
+	"bitbucket.org/bestchai/dinv/programslicer"
 
 	"go/ast"
 	"go/types"
@@ -23,29 +23,36 @@ var (
 	Pipe		  = ""
 )
 
+//types of communication calls
+const (
+	SENDING = iota
+	RECEIVING
+	BOTH
+	NOT
+)
 
-func InsturmentComm (options map[string]string) string {
+
+func InsturmentComm (options map[string]string) map[string]string {
 	initalize(options)
 	p, err := getProgramWrapper()
 	if err != nil {
 		panic(err)
 	}
-	PopulateNetConns(p)
-	var aggregateOutput string
+	netConns := GetNetConns(p)
+	instrumentedOutput := make(map[string]string)
 	for pnum, pack := range p.Packages {
 		for snum, _ := range pack.Sources {
-			InstrumentCalls(p,pnum,snum)
+			InstrumentCalls(p,pnum,snum, netConns)
 			buf := new(bytes.Buffer)
 			printer.Fprint(buf, p.Fset, p.Packages[pnum].Sources[snum].Comments)
 			p.Packages[pnum].Sources[snum].Text = buf.String()
-			//TODO sort the output in a more usefull way so that
-			//instrumenting directories will work
-			aggregateOutput += buf.String()
+			instrumentedOutput[p.Packages[pnum].Sources[snum].Filename] = buf.String()
 		}
 	}
-	return aggregateOutput
-
+	return instrumentedOutput
 }
+
+
 
 func initalize(options map[string]string) {
 for setting := range options {
@@ -88,7 +95,91 @@ func getProgramWrapper() (*programslicer.ProgramWrapper, error) {
 	return program, nil
 }
 
-func InstrumentCalls (p *programslicer.ProgramWrapper, pnum,snum int) {
+func GetCommNodes(p *programslicer.ProgramWrapper) (sending, receiving, both []*ast.Node){
+	netConns := GetNetConns(p)
+	for _, pack := range p.Packages {
+		for _, src := range pack.Sources {
+			ast.Inspect(src.Source, func(n ast.Node) bool {
+				status := NOT // the type of call that was made
+				switch z := n.(type) {
+				case *ast.ExprStmt:
+					switch c := z.X.(type) {
+					case *ast.CallExpr:
+						status = checkCall(p,c,netConns)
+					}
+				case *ast.AssignStmt:
+					switch c := z.Rhs[0].(type) {
+					case *ast.CallExpr:
+						status = checkCall(p,c,netConns) 
+					}
+				}
+				switch status {
+				case SENDING:
+					sending = append(sending,&n)
+					break
+				case RECEIVING:
+					receiving = append(receiving,&n)
+					break
+				case BOTH:
+					both = append(both,&n)
+					break
+				default:
+					break
+				}
+			return true
+			})
+		}
+	}
+	fmt.Printf("sending %d receiving %d both %d",len(sending),len(receiving),len(both))
+	return
+}
+
+//check call takes program wrapper, call expersion and set of
+//POPULATED net connections as an arguments. The call expression is
+//checked againts the set of known net connections for type. If the
+//an enum denoting the type of connection is returned
+func checkCall(p *programslicer.ProgramWrapper, c *ast.CallExpr, netConns map[types.Object]*NetConn) int {
+	switch f := c.Fun.(type){
+	case *ast.SelectorExpr:
+		switch i:= f.X.(type){
+		case *ast.Ident:
+			for obj, conn := range netConns {
+				if (i.Obj != nil) {
+					//fmt.Printf("obj-Id: %s\t obj-Pkg: %s\tsearch-Obj.Name: %s\t searchObjPos:%d\t obj-Pos%d\n",obj.Id(),obj.Pkg().Name(),i.Name,i.Obj.Pos(),obj.Pos())
+				}
+				if (i.Obj != nil  && obj.Pos() == i.Obj.Pos()) || (obj.Pkg().Name() == i.Name) {
+					fmt.Println("MATCH")
+					if check(f.Sel.Name,conn.ReceivingFunctions,c,p){
+						return RECEIVING
+					} else if check(f.Sel.Name,conn.SenderFunctions,c,p){
+						return SENDING
+					} else if check(f.Sel.Name,conn.ConnectionFunctions,c,p) {
+						return BOTH
+					} else {
+						return NOT
+					}
+				}
+			}
+		}
+	}
+	return NOT
+}
+
+//check compaires a variable name with the nown set of
+//networking functions. If a match is made, true is returned.
+func check(varName string, netfuncs []*NetFunc, call *ast.CallExpr, p *programslicer.ProgramWrapper) bool {
+	for _, netFunc := range netfuncs {
+		fmt.Printf("varName = %s, netFunc.Name = %s\n",varName,netFunc.Name)
+		if varName == netFunc.Name {
+			return true
+		}
+	}
+	return false
+}
+
+
+
+func InstrumentCalls (p *programslicer.ProgramWrapper, pnum,snum int, netConns map[types.Object]*NetConn ){
 	injected := false
 	ast.Inspect(p.Packages[pnum].Sources[snum].Comments , func(n ast.Node) bool {
 		switch c := n.(type){
@@ -99,8 +190,8 @@ func InstrumentCalls (p *programslicer.ProgramWrapper, pnum,snum int) {
 				case *ast.Ident:
 					for obj, conn := range netConns {
 						if (i.Obj != nil) {
-							fmt.Printf("obj-Id: %s\t obj-Pkg: %s\tsearch-Obj.Name: %s\t searchObjPos:%d\t obj-Pos%d\n",obj.Id(),obj.Pkg().Name(),i.Name,i.Obj.Pos(),obj.Pos())
-					}
+							fmt.Printf("nc-obj-Pkg: %s\t nc-obj-Id: %s\t\t found-obj-name: %s\t\t searchObjPos:%d\t\t obj-Pos:%d\n",obj.Pkg().Name(),obj.Id(), i.Name,i.Obj.Pos(),obj.Pos())
+						}
 						if (i.Obj != nil  && obj.Pos() == i.Obj.Pos()) || (obj.Pkg().Name() == i.Name) {
 							fmt.Println("MATCH")
 							injected = checkAndInstrument(f.Sel.Name,conn.ReceivingFunctions,c,p) || injected
@@ -131,8 +222,6 @@ func checkAndInstrument(varName string, netfuncs []*NetFunc, call *ast.CallExpr,
 		if varName == netFunc.Name {
 			instrumentCall(call,netFunc)
 			return true
-			/*
-			*/
 		}
 	}
 	return false
@@ -174,9 +263,9 @@ func getArgsString(args []ast.Expr)string {
 
 
 //TODO merge with Get SendReceiveNodes
-//PopulateNetConns searches through a program for net connections, and
+//GetNetConns searches through a program for net connections, and
 //adds their object reference to a known database
-func PopulateNetConns(program *programslicer.ProgramWrapper){
+func GetNetConns(program *programslicer.ProgramWrapper) map[types.Object]*NetConn {
 	// Type-check the package.
     // We create an empty map for each kind of input
     // we're interested in, and Check populates them.
@@ -190,7 +279,7 @@ func PopulateNetConns(program *programslicer.ProgramWrapper){
 
 	sources := make([]*ast.File,0)
 	for _, source := range program.Packages[0].Sources {	//TODO extend to interpackage
-		sources = append(sources,source.Source)
+		sources = append(sources,source.Comments) //NOTE CHANGED FROM SOURCES (SHOULD BE SOURCES) /Trying to figure out why obj-pos() not working for the checking function
 	}
     pkg, err := conf.Check(program.Packages[0].PackageName, program.Fset, sources, &info) //TODO extend to interpackage
     if err != nil {
@@ -206,6 +295,9 @@ func PopulateNetConns(program *programslicer.ProgramWrapper){
 	//capture variables name type
 	revar := regexp.MustCompile(`var ([A-Za-z0-9_]+) \**([*.A-Za-z0-9_]+)`)
 	refunc := regexp.MustCompile(`func ([A-Za-z0-9_/]+).([A-Za-z0-9_]+)\(`)
+	var netConns map[types.Object]*NetConn = make(map[types.Object]*NetConn,0)
+
+
     for obj, uses := range usesByObj {
 		sort.Strings(uses)
 		ObjectDef := types.ObjectString(obj, types.RelativeTo(pkg))
@@ -229,13 +321,15 @@ func PopulateNetConns(program *programslicer.ProgramWrapper){
 			_, ok := NetDB[match[1]]	//match[2] contians the type of the object
 			if ok {
 				netConns[obj] = NetDB[match[1]]
-				fmt.Printf("Added Obj: %s to the DB\n",obj.String())
+				//fmt.Printf("Added Obj: %s to the DB\n",obj.String())
 			}
 		} 
 	}
 	for conn := range netConns {
 		fmt.Println(conn.String())
 	}
+
+	return netConns
 	//NOTE This is where the differences between detects
 	//GetSendReceiveNodes differes
 }
@@ -255,7 +349,6 @@ type NetFunc struct {
 	ReturnSizeLoc int
 }
 
-var netConns map[types.Object]*NetConn = make(map[types.Object]*NetConn,0)
 var NetDB map[string]*NetConn = map[string]*NetConn{
 	"net.UDPConn" : &NetConn{
 						"net.UDPConn",

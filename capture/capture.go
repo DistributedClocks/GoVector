@@ -2,7 +2,8 @@ package capture
 
 import (
 	"bufio"
-	"bitbucket.org/bestchai/dinv/instrumenter"
+	"bitbucket.org/bestchai/dinv/dinvRT"
+
 	"net"
 	"net/rpc"
 	"fmt"
@@ -17,27 +18,105 @@ Functions for appending vector clocks to the standard net package
 func Read(read func([]byte) (int, error), b []byte) (int, error) {
 	buf := make([]byte,len(b))
 	n, err := read(buf)
-	instrumenter.Unpack(buf,&b)
+	dinvRT.Unpack(buf,&b)
 	return n, err
 }
 
-//func WrapReadFrom(readFrom func([]byte) (int, net.Addr, error), b []byte) (int, net.Addr, error) {
 func ReadFrom(readFrom func([]byte) (int, net.Addr, error), b []byte) (int, net.Addr, error) {
 	buf := make([]byte,len(b))
 	n, addr, err := readFrom(buf)
-	instrumenter.Unpack(buf,&b)
+	dinvRT.Unpack(buf,&b)
 	return n, addr, err
 }
 
 func Write(write func (b []byte) (int, error), b []byte) (int, error) {
-	buf := instrumenter.Pack(b)
+	buf := dinvRT.Pack(b)
 	n, err := write(buf)
 	return n, err
 }
 
 func WriteTo(writeTo func ([]byte,net.Addr) (int, error), b []byte, addr net.Addr) (int, error) {
-	buf := instrumenter.Pack(b)
+	buf := dinvRT.Pack(b)
 	n, err := writeTo(buf, addr)
+	return n, err
+}
+
+//Protocol specific funcions
+func ReadFromIP(readfromip func([]byte) (int, *net.IPAddr, error), b[]byte ) (int, *net.IPAddr, error) {
+	buf := make([]byte,len(b))
+	n, addr, err := readfromip(buf)
+	dinvRT.Unpack(buf,&b)
+	return n, addr, err
+}
+
+func ReadMsgIP(readmsgip func([]byte,[] byte) (int, int, int, *net.IPAddr, error), b, oob []byte) (int, int, int, *net.IPAddr, error) {
+	buf := make([]byte,len(b))
+	n, oobn, flags, addr, err := readmsgip(buf,oob)
+	dinvRT.Unpack(buf,&b)
+	return n, oobn, flags, addr, err
+}
+
+func WriteMsgIP(writemsgip func([]byte, []byte, *net.IPAddr) (int, int, error), b, oob []byte, addr *net.IPAddr) (int, int, error) {
+	buf := dinvRT.Pack(b)
+	n, oobn, err := writemsgip(buf, oob, addr)
+	return n, oobn, err
+}
+
+func WriteToIP(writetoip func([]byte, *net.IPAddr) (int, error), b []byte, addr *net.IPAddr) (int, error) {
+	buf := dinvRT.Pack(b)
+	n, err := writetoip(buf,addr)
+	return n, err
+}
+
+func ReadFromUDP(readfromudp func([]byte) (int, *net.UDPAddr, error), b []byte ) (int, *net.UDPAddr, error) {
+	buf := make([]byte, len(b))
+	n, addr, err := readfromudp(buf)
+	dinvRT.Unpack(buf,&b)
+	return n, addr, err
+}
+
+func ReadMsgUDP(readmsgudp func([]byte, []byte) (int,int,int, *net.UDPAddr,error), b, oob []byte) (int,int,int,*net.UDPAddr, error) {
+	buf := make([]byte, len(b))
+	n, oobn, flags, addr, err := readmsgudp(b, oob)
+	dinvRT.Unpack(buf,&b)
+	return n, oobn, flags, addr, err
+}
+
+func WriteMsgUDP(writemsgudp func([]byte,[]byte,*net.UDPAddr) (int,int,error), b, oob []byte, addr *net.UDPAddr) (int, int, error) {
+	buf := dinvRT.Pack(b)
+	n, oobn, err := writemsgudp(buf,oob,addr)
+	return n, oobn, err
+}
+
+func WriteToUDP(writetoudp func([]byte, *net.UDPAddr) (int,error), b []byte, addr *net.UDPAddr) (int, error) {
+	buf := dinvRT.Pack(b)
+	n, err := writetoudp(buf,addr)
+	return n, err
+}
+
+func ReadFromUnix(readfromunix func([]byte)(int,*net.UnixAddr,error), b []byte ) (int,*net.UnixAddr,error) {
+	buf := make([]byte, len(b))
+	n, addr, err := readfromunix(buf)
+	dinvRT.Unpack(buf,&b)
+	return n, addr, err
+}
+
+func ReadMsgUnix(readmsgunix func([]byte, []byte) (int,int,int,*net.UnixAddr,error), b, oob []byte) (int,int,int,*net.UnixAddr,error) {
+	buf := make([]byte, len(b))
+	n, oobn, flags, addr, err := readmsgunix(b,oob)
+	dinvRT.Unpack(buf,&b)
+	return n, oobn, flags, addr, err
+}
+
+func WriteMsgUnix(writemsgunix func([]byte,[]byte,*net.UnixAddr) (int,int,error), b, oob []byte, addr *net.UnixAddr) (int, int, error) {
+	buf := dinvRT.Pack(b)
+	n, oobn, err := writemsgunix(buf,oob,addr)
+	return n, oobn, err
+}
+
+func WriteToUnix(writetounix func([]byte,*net.UnixAddr) (int, error), b []byte, addr *net.UnixAddr) (int, error) {
+	buf := dinvRT.Pack(b)
+	n, err := writetounix(buf,addr)
 	return n, err
 }
 
@@ -49,6 +128,7 @@ func Dial(dial func (string,string) (*rpc.Client, error), network, address strin
 	}
 	return rpc.NewClientWithCodec(NewClientCodec(conn)), err
 }
+
 
 //TODO
 func DialHTTP(dialHttp func (string,string) (*rpc.Client, error), network, address string) (*rpc.Client, error) {
@@ -85,6 +165,8 @@ func ServeRequest(serveRequest func(rpc.ServerCodec) error, codec rpc.ServerCode
 	return fmt.Errorf("Dinv has yet to implement an rpc.ServeRequest wrapper\n")
 }
 
+
+
 //TODO the interalfunction for the rpc.Server have yet to be
 //implemented
 
@@ -109,7 +191,7 @@ func (c *ClientClockCodec) WriteRequest(req *rpc.Request, param interface{}) (er
 	if err = c.Enc.Encode(req); err != nil {
 		return
 	}
-	buf := instrumenter.Pack(param)
+	buf := dinvRT.Pack(param)
 	if err = c.Enc.Encode(buf); err != nil {
 		return
 	}
@@ -128,7 +210,7 @@ func (c * ClientClockCodec) ReadResponseBody( body interface{}) (err error) {
 	if err = c.Dec.Decode(&buf); err != nil {
 		return
 	}
-	instrumenter.Unpack(buf,body)
+	dinvRT.Unpack(buf,body)
 	return nil
 }
 
@@ -169,7 +251,7 @@ func (c *ServerClockCodec) ReadRequestBody(body interface{}) (err error) {
 	if err = c.Dec.Decode(&buf); err != nil {
 		return
 	}
-	instrumenter.Unpack(buf,body)
+	dinvRT.Unpack(buf,body)
 	return nil
 	
 }
@@ -182,7 +264,7 @@ func (c *ServerClockCodec) WriteResponse(r *rpc.Response, body interface{}) (err
 		}
 		return
 	}
-	buf := instrumenter.Pack(body)
+	buf := dinvRT.Pack(body)
 	if err = c.Enc.Encode(buf); err != nil {
 		if c.EncBuf.Flush() == nil {
 			//Gob Encoding Error

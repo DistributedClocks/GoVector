@@ -104,19 +104,7 @@ func main() {
 		options["file"] = file
 		//get source
 		source := capture.InsturmentComm(options)
-
-		//overwrite file
-		file, err := os.OpenFile(file,os.O_RDWR,os.FileMode(0666)) // For read access.
-		defer file.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = file.Truncate(0)
-		if err != nil {
-			log.Fatal(err)
-		}
-		logger.Println("Writing over source");
-		_, err = file.WriteString(source);
+		err = writeFile(file,source[file])
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -132,11 +120,34 @@ func main() {
 		logger.Printf("Documenting Directory :%s\n", directory)
 		options["directory"] = directory
 
-		source := capture.InsturmentComm(options)
-		fmt.Println(source)
+		sources := capture.InsturmentComm(options)
+		for name, source := range sources {
+			err := writeFile(name,source)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
 
+}
 
+func writeFile(filename, source string) error {
+	//overwrite file
+	ofile, err := os.OpenFile(filename,os.O_RDWR,os.FileMode(0666)) // For read access.
+	defer ofile.Close()
+	if err != nil {
+		return err
+	}
+	err = ofile.Truncate(0)
+	if err != nil {
+		return err
+	}
+	logger.Printf("Writing over source of %s\n",filename);
+	_, err = ofile.WriteString(source);
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func validDir(dir string) (bool, error) {
