@@ -190,10 +190,10 @@ func InstrumentCalls (p *programslicer.ProgramWrapper, pnum,snum int, netConns m
 				case *ast.Ident:
 					for obj, conn := range netConns {
 						if (i.Obj != nil) {
-							fmt.Printf("nc-obj-Pkg: %s\t nc-obj-Id: %s\t\t found-obj-name: %s\t\t searchObjPos:%d\t\t obj-Pos:%d\n",obj.Pkg().Name(),obj.Id(), i.Name,i.Obj.Pos(),obj.Pos())
+							//fmt.Printf("nc-obj-Pkg: %s\t nc-obj-Id: %s\t\t found-obj-name: %s\t\t searchObjPos:%d\t\t obj-Pos:%d\n",obj.Pkg().Name(),obj.Id(), i.Name,i.Obj.Pos(),obj.Pos())
 						}
 						if (i.Obj != nil  && obj.Pos() == i.Obj.Pos()) || (obj.Pkg().Name() == i.Name) {
-							fmt.Println("MATCH")
+							//fmt.Println("MATCH")
 							injected = checkAndInstrument(f.Sel.Name,conn.ReceivingFunctions,c,p) || injected
 							injected = checkAndInstrument(f.Sel.Name,conn.SenderFunctions,c,p) || injected
 							injected = checkAndInstrument(f.Sel.Name,conn.ConnectionFunctions,c,p) || injected
@@ -218,7 +218,7 @@ func InstrumentCalls (p *programslicer.ProgramWrapper, pnum,snum int, netConns m
 //If the variable is insturmented the function returns true.
 func checkAndInstrument(varName string, netfuncs []*NetFunc, call *ast.CallExpr, p *programslicer.ProgramWrapper) bool {
 	for _, netFunc := range netfuncs {
-		fmt.Printf("varName = %s, netFunc.Name = %s\n",varName,netFunc.Name)
+		//fmt.Printf("varName = %s, netFunc.Name = %s\n",varName,netFunc.Name)
 		if varName == netFunc.Name {
 			instrumentCall(call,netFunc)
 			return true

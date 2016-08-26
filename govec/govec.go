@@ -7,12 +7,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/arcaneiceman/GoVector/govec/vclock"
 	"github.com/hashicorp/go-msgpack/codec"
+	"runtime/pprof"
+	"regexp"
 )
 
 /*
@@ -37,6 +41,8 @@ import (
    UnpackReceive("Message Description", []ReceivedPayload, *RETURNSLICE)
    and use RETURNSLICE for further processing.
 */
+
+const logToTerminal = false
 
 //This is the Global Variable Struct that holds all the info needed to be maintained
 type GoLog struct {
@@ -75,6 +81,10 @@ type GoLog struct {
 
 	//publicly supplied decoding function
 	decodingStrategy func([]byte, interface{}) error
+
+	logger *log.Logger
+
+	mutex sync.RWMutex
 }
 
 //This is the data structure that is actually end on the wire
@@ -127,25 +137,25 @@ func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool
 		complete = false
 	}
 	if gv.printonscreen == true {
-		fmt.Println(output)
+		gv.logger.Println(output)
 	}
 	return complete
 
 }
 
 func (gv *GoLog) LogLocalEvent(Message string) bool {
-
+	
+	gv.mutex.Lock()
 	//Converting Vector Clock from Bytes and Updating the gv clock
 	vc, err := vclock.FromBytes(gv.currentVC)
 	if err != nil {
-		fmt.Println(err.Error())
+		gv.logger.Println(err.Error())
 	}
-	currenttime, found := vc.FindTicks(gv.pid)
+	_ , found := vc.FindTicks(gv.pid)
 	if found == false {
-		fmt.Println("Couldnt find this process's id in its own vector clock!")
+		gv.logger.Println("Couldnt find this process's id in its own vector clock!")
 	}
-	currenttime++
-	vc.Update(gv.pid, currenttime)
+	vc.Tick(gv.pid)
 	gv.currentVC = vc.Bytes()
 
 	var ok bool
@@ -153,9 +163,10 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 		ok = gv.LogThis(Message, gv.pid, vc.ReturnVCString())
 		if gv.realtime == true {
 			// Send local message to broker
-			gv.publisher.PublishLocalMessage(Message, gv.pid, *vc)
+			//BUG go publisher never worked // gv.publisher.PublishLocalMessage(Message, gv.pid, *vc)
 		}
 	}
+	gv.mutex.Unlock()
 
 	return ok
 }
@@ -172,22 +183,22 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 		using the Send Command
 	*/
 	//Converting Vector Clock from Bytes and Updating the gv clock
+	gv.mutex.Lock()
 	vc, err := vclock.FromBytes(gv.currentVC)
 	if err != nil {
-		fmt.Println(err.Error())
+		gv.logger.Println(err.Error())
 	}
-	currenttime, found := vc.FindTicks(gv.pid)
+	_ , found := vc.FindTicks(gv.pid)
 	if found == false {
-		fmt.Println("Couldnt find this process's id in its own vector clock!")
+		gv.logger.Println("Couldnt find this process's id in its own vector clock!")
 	}
-	currenttime++
-	vc.Update(gv.pid, currenttime)
+	vc.Tick(gv.pid)
 	gv.currentVC = vc.Bytes()
 	//WILL HAVE TO CHECK THIS OUT!!!!!!!
 
 	if gv.debugmode == true {
-		fmt.Println("Sending Message")
-		fmt.Print("Current Vector Clock : ")
+		gv.logger.Println("Sending Message")
+		gv.logger.Print("Current Vector Clock : ")
 		vc.PrintVC()
 	}
 
@@ -197,7 +208,7 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	}
 
 	if ok == false {
-		fmt.Println("Something went Wrong, Could not Log!")
+		gv.logger.Println("Something went Wrong, Could not Log!")
 	}
 
 	// Create New Data Structure and add information: data to be transfered
@@ -208,7 +219,7 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	//first layer of encoding (user data)
 	d.programdata, err = gv.encodingStrategy(buf)
 	if err != nil {
-		fmt.Println(err.Error())
+		gv.logger.Println(err.Error())
 	}
 
 	//second layer wrapperEncoderoding, wrapperEncoderode wrapping structure
@@ -216,10 +227,11 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	wrapperEncoder := gob.NewEncoder(wrapperBuffer)
 	err = wrapperEncoder.Encode(&d)
 	if err != nil {
-		fmt.Println(err.Error())
+		gv.logger.Println(err.Error())
 	}
 	//return wrapperBuffer bytes which are wrapperEncoderoded as gob. Now these bytes can be sent off and
 	// received on the other end!
+	gv.mutex.Unlock()
 	return wrapperBuffer.Bytes()
 }
 
@@ -235,6 +247,7 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 		by the program, the vector clock. It updates vector clock and logs it. and returns the user data
 	*/
 
+	gv.mutex.Lock()
 	//if we are receiving a packet with a time stamp then:
 	//Create a new buffer holder and decode into E, a new Data Struct
 	buffer := new(bytes.Buffer)
@@ -243,39 +256,39 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
 	dec := gob.NewDecoder(buffer)
 	err := dec.Decode(e)
-	if err != nil {
-		fmt.Println("You said that I would be receiving a vector clock but I didnt! or decoding failed :P")
-		fmt.Println(err.Error())
+	if err != nil  && gv.debugmode {
+		callingFunc := getCallingFunctionID()
+		gv.logger.Printf("Vector clock decode failure. Likely one was not present on the incomming network payload. Bad payload received from %s, consider instrumenting the sender\n",callingFunc)
+		gv.logger.Println(err.Error())
 	}
 
 	//In this case you increment your old clock
 	vc, err := vclock.FromBytes(gv.currentVC)
-	if gv.debugmode == true {
-		fmt.Println("Received :")
+	if gv.debugmode {
+		gv.logger.Println("Received :")
 		e.PrintDataString()
-		fmt.Print("Received Vector Clock : ")
+		gv.logger.Print("Received Vector Clock : ")
 		vc.PrintVC()
 	}
 
-	currenttime, found := vc.FindTicks(gv.pid)
-	if found == false {
-		fmt.Println(fmt.Errorf("Couldnt find Local Process's ID in the Vector Clock. Could it be a stray message?"))
+	_ , found := vc.FindTicks(gv.pid)
+	if !found {
+		gv.logger.Println(fmt.Errorf("Couldnt find Local Process's ID in the Vector Clock. Could it be a stray message?"))
 	}
 	if err != nil {
-		fmt.Println(err.Error())
+		gv.logger.Println(err.Error())
 	}
-	currenttime++
-	vc.Update(gv.pid, currenttime)
+	vc.Tick(gv.pid)
 	//merge it with the new clock and update GV
 	tmp := []byte(e.vcinbytes[:])
 	tempvc, err := vclock.FromBytes(tmp)
 
-	if err != nil {
-		fmt.Println(err.Error())
+	if err != nil && gv.debugmode {
+		gv.logger.Println(err.Error())
 	}
 	vc.Merge(tempvc)
 	if gv.debugmode == true {
-		fmt.Print("Now, Vector Clock is : ")
+		gv.logger.Print("Now, Vector Clock is : ")
 		vc.PrintVC()
 	}
 	gv.currentVC = vc.Bytes()
@@ -286,12 +299,13 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 		ok = gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
 	}
 	if ok == false {
-		fmt.Println("Something went Wrong, Could not Log!")
+		gv.logger.Println("Something went Wrong, Could not Log!")
 	}
 	err = gv.decodingStrategy(e.programdata, unpack)
 	if err != nil {
-		fmt.Println(err.Error())
+		gv.logger.Println(err.Error())
 	}
+	gv.mutex.Unlock()
 }
 
 //This function packs the Vector Clock with user program's data to send on wire
@@ -427,6 +441,13 @@ func Initialize(processid string, logfilename string) *GoLog {
 	gv := New() //Simply returns a new struct
 	gv.pid = processid
 
+	if logToTerminal {
+		gv.logger = log.New(os.Stdout,"[GoVector]:",log.Lshortfile)
+	} else {
+		var buf bytes.Buffer
+		gv.logger = log.New(&buf,"[GoVector]:",log.Lshortfile)
+	}
+
 	//# These are bools that can be changed to change debuging nature of library
 	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
 	gv.debugmode = false     // (Debug)
@@ -437,22 +458,24 @@ func Initialize(processid string, logfilename string) *GoLog {
 	gv.encodingStrategy = gobEncodingStrategy
 	gv.decodingStrategy = gobDecodingStrategy
 	*/
-		//set the default encoder / decoder to msgpack
-		gv.encodingStrategy = msgPackEncodingStrategy
-		gv.decodingStrategy = msgPackDecodingStrategy
+
+	//set the default encoder / decoder to msgpack
+	gv.encodingStrategy = msgPackEncodingStrategy
+	gv.decodingStrategy = msgPackDecodingStrategy
+
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
-	vc1.Update(processid, 1)
+	vc1.Tick(processid)
 
 	//Vector Clock Stored in bytes
 	//copy(gv.currentVC[:],vc1.Bytes())
 	gv.currentVC = vc1.Bytes()
 
 	if gv.debugmode == true {
-		fmt.Println(" ###### Initialization ######")
-		fmt.Print("VCLOCK IS :")
+		gv.logger.Println(" ###### Initialization ######")
+		gv.logger.Print("VCLOCK IS :")
 		vc1.PrintVC()
-		fmt.Println(" ##### End of Initialization ")
+		gv.logger.Println(" ##### End of Initialization ")
 	}
 
 	//Starting File IO . If Log exists, Log Will be deleted and A New one will be created
@@ -460,19 +483,19 @@ func Initialize(processid string, logfilename string) *GoLog {
 
 	if _, err := os.Stat(logname); err == nil {
 		//its exists... deleting old log
-		fmt.Println(logname, "exists! ... Deleting ")
+		gv.logger.Println(logname, "exists! ... Deleting ")
 		os.Remove(logname)
 	}
 
 	// Create directory path to log if it doesn't exist.
 	if err := os.MkdirAll(filepath.Dir(logname), 0750); err != nil {
-		fmt.Println(err)
+		gv.logger.Println(err)
 	}
 
 	//Creating new Log
 	file, err := os.Create(logname)
 	if err != nil {
-		fmt.Println(err)
+		gv.logger.Println(err)
 	}
 	file.Close()
 
@@ -480,7 +503,7 @@ func Initialize(processid string, logfilename string) *GoLog {
 	//Log it
 	ok := gv.LogThis("Initialization Complete", gv.pid, vc1.ReturnVCString())
 	if ok == false {
-		fmt.Println("Something went Wrong, Could not Log!")
+		gv.logger.Println("Something went Wrong, Could not Log!")
 	}
 
 	return gv
@@ -493,13 +516,20 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 	gv := New() //Simply returns a new struct
 	gv.pid = processid
 
+	if logToTerminal {
+		gv.logger = log.New(os.Stdout,"[GoVector]:",log.Lshortfile)
+	} else {
+		var buf bytes.Buffer
+		gv.logger = log.New(&buf,"[GoVector]:",log.Lshortfile)
+	}
+
 	//# These are bools that can be changed to change debuging nature of library
 	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
 	gv.debugmode = false     // (Debug)
 	gv.EnableLogging()
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
-	vc1.Update(processid, 1)
+	vc1.Tick(processid)
 
 	//Vector Clock Stored in bytes
 	//copy(gv.currentVC[:],vc1.Bytes())
@@ -510,10 +540,10 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 	gv.decodingStrategy = gobDecodingStrategy
 
 	if gv.debugmode == true {
-		fmt.Println(" ###### Initialization ######")
-		fmt.Print("VCLOCK IS :")
+		gv.logger.Println(" ###### Initialization ######")
+		gv.logger.Print("VCLOCK IS :")
 		vc1.PrintVC()
-		fmt.Println(" ##### End of Initialization ")
+		gv.logger.Println(" ##### End of Initialization ")
 	}
 
 	//Starting File IO . If Log exists, it will find Last execution number and ++ it
@@ -522,17 +552,17 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 	gv.logfile = logname
 	if err == nil {
 		//its exists... deleting old log
-		fmt.Println(logname, " exists! ...  Looking for Last Exectution... ")
+		gv.logger.Println(logname, " exists! ...  Looking for Last Exectution... ")
 		executionnumber := FindExecutionNumber(logname)
 		executionnumber = executionnumber + 1
-		fmt.Println("Execution Number is  ", executionnumber)
+		gv.logger.Println("Execution Number is  ", executionnumber)
 		executionstring := "=== Execution #" + strconv.Itoa(executionnumber) + "  ==="
 		gv.LogThis(executionstring, "", "")
 	} else {
 		//Creating new Log
 		file, err := os.Create(logname)
 		if err != nil {
-			fmt.Println(err.Error())
+			gv.logger.Println(err.Error())
 		}
 		file.Close()
 
@@ -541,7 +571,7 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 		//Log it
 		ok = gv.LogThis("Initialization Complete", gv.pid, vc1.ReturnVCString())
 		if ok == false {
-			fmt.Println("Something went Wrong, Could not Log!")
+			gv.logger.Println("Something went Wrong, Could not Log!")
 		}
 	}
 	return gv
@@ -568,4 +598,30 @@ func FindExecutionNumber(logname string) int {
 		line, _, err = reader.ReadLine()
 	}
 	return executionnumber
+}
+
+
+//getCallingFunctionID returns the file name and line number of the
+//program which called capture.go. This function is used to determine
+//the calling function which did not receive a vector clock
+func getCallingFunctionID() string {
+	profiles := pprof.Profiles()
+	block := profiles[1]
+	var buf bytes.Buffer
+	block.WriteTo(&buf, 1)
+	//gv.logger.Printf("%s",buf)
+	passedFrontOnStack := false
+	re := regexp.MustCompile("([a-zA-Z0-9]+.go:[0-9]+)")
+	ownFilename := regexp.MustCompile("capture.go") // hardcoded own filename
+	matches := re.FindAllString(fmt.Sprintf("%s", buf), -1)
+	for _, match := range matches {
+		if passedFrontOnStack && !ownFilename.MatchString(match) {
+			return match
+		} else if ownFilename.MatchString(match) {
+			passedFrontOnStack = true
+		}
+		//fmt.Printf("found %s\n", match)
+	}
+	fmt.Printf("%s\n", buf)
+	return ""
 }

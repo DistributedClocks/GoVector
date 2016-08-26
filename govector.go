@@ -7,6 +7,8 @@ import (
 	"os"
 	"bufio"
 	"fmt"
+	"runtime/pprof"
+	"regexp"
 	"github.com/arcaneiceman/GoVector/capture"
 )
 
@@ -169,3 +171,29 @@ func fileExists(path string) (bool, error) {
 	}
 	return false, err
 }
+
+//getCallingFunctionID returns the file name and line number of the
+//program which called capture.go. This function is used to generate
+//logging statements dynamically.
+func getCallingFunctionID() string {
+	profiles := pprof.Profiles()
+	block := profiles[1]
+	var buf bytes.Buffer
+	block.WriteTo(&buf, 1)
+	//fmt.Printf("%s",buf)
+	passedFrontOnStack := false
+	re := regexp.MustCompile("([a-zA-Z0-9]+.go:[0-9]+)")
+	ownFilename := regexp.MustCompile("capture.go") // hardcoded own filename
+	matches := re.FindAllString(fmt.Sprintf("%s", buf), -1)
+	for _, match := range matches {
+		if passedFrontOnStack && !ownFilename.MatchString(match) {
+			return match
+		} else if ownFilename.MatchString(match) {
+			passedFrontOnStack = true
+		}
+		//fmt.Printf("found %s\n", match)
+	}
+	fmt.Printf("%s\n", buf)
+	return ""
+}
+
