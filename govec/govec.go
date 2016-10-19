@@ -524,7 +524,7 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 	}
 
 	//# These are bools that can be changed to change debuging nature of library
-	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
+	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
 	gv.debugmode = false     // (Debug)
 	gv.EnableLogging()
 	//we create a new Vector Clock with processname and 0 as the intial time
@@ -622,6 +622,6 @@ func getCallingFunctionID() string {
 		}
 		//fmt.Printf("found %s\n", match)
 	}
-	fmt.Printf("%s\n", buf)
+	//fmt.Printf("%s\n", buf)
 	return ""
 }

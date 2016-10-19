@@ -45,3 +45,6 @@ Temporary Items
 #swap files
 *.swp
 *.swo
+
+#logfiles
+*.log

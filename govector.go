@@ -30,6 +30,9 @@ var (
 	debug   bool
 	clean   bool
 
+	//make a shiviz log
+	shiviz = false
+
 	logger *log.Logger
 )
 
@@ -41,6 +44,7 @@ func setFlags() {
 	flag.BoolVar(&verbose, "v", false, "-v logs extensive output")
 	flag.BoolVar(&debug, "debug", false, "-debug adds pedantic level of logging")
 	flag.BoolVar(&clean, "c", false, "cleans up old insturmentation")
+	flag.BoolVar(&shiviz, "shiviz", false, "outputs shivizLog")
 	flag.Parse()
 }
 
