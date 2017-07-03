@@ -3,7 +3,7 @@ package govec
 import (
 	"testing"
 
-	"github.com/arcaneiceman/GoVector/govec"
+	"github.com/DistributedClocks/GoVector/govec"
 )
 
 func TestSendReceive(t *testing.T) {

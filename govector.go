@@ -1,22 +1,23 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"flag"
+	"fmt"
 	"log"
 	"os"
-	"bufio"
-	"fmt"
-	"runtime/pprof"
 	"regexp"
-	"github.com/arcaneiceman/GoVector/capture"
+	"runtime/pprof"
+
+	"github.com/DistributedClocks/GoVector/capture"
 )
 
 const (
 	//instrumenter defaults
 	defaultFilename  = ""
 	defaultDirectory = ""
-	defaultPipe = ""
+	defaultPipe      = ""
 )
 
 var (
@@ -72,7 +73,7 @@ func main() {
 
 	//filechecking //exclusive or with filename and directory
 	if file == defaultFilename && directory == defaultDirectory {
-		if len(os.Args) == 2 && !verbose{
+		if len(os.Args) == 2 && !verbose {
 			file = os.Args[1]
 		} else {
 			//try to read from pipe
@@ -105,12 +106,12 @@ func main() {
 			print(a)
 			logger.Fatalf("Error: : %s\n", err.Error())
 		}
-		logger.Printf("Documenting %s\n",file)
+		logger.Printf("Documenting %s\n", file)
 
 		options["file"] = file
 		//get source
 		source := capture.InsturmentComm(options)
-		err = writeFile(file,source[file])
+		err = writeFile(file, source[file])
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -128,7 +129,7 @@ func main() {
 
 		sources := capture.InsturmentComm(options)
 		for name, source := range sources {
-			err := writeFile(name,source)
+			err := writeFile(name, source)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -139,7 +140,7 @@ func main() {
 
 func writeFile(filename, source string) error {
 	//overwrite file
-	ofile, err := os.OpenFile(filename,os.O_RDWR,os.FileMode(0666)) // For read access.
+	ofile, err := os.OpenFile(filename, os.O_RDWR, os.FileMode(0666)) // For read access.
 	defer ofile.Close()
 	if err != nil {
 		return err
@@ -148,8 +149,8 @@ func writeFile(filename, source string) error {
 	if err != nil {
 		return err
 	}
-	logger.Printf("Writing over source of %s\n",filename);
-	_, err = ofile.WriteString(source);
+	logger.Printf("Writing over source of %s\n", filename)
+	_, err = ofile.WriteString(source)
 	if err != nil {
 		return err
 	}
@@ -200,4 +201,3 @@ func getCallingFunctionID() string {
 	fmt.Printf("%s\n", buf)
 	return ""
 }
-

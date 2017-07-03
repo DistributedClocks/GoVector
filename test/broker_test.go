@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcaneiceman/GoVector/broker"
-	"github.com/arcaneiceman/GoVector/govec"
-	"github.com/arcaneiceman/GoVector/govec/vclock"
+	"github.com/DistributedClocks/GoVector/broker"
+	"github.com/DistributedClocks/GoVector/govec"
+	"github.com/DistributedClocks/GoVector/govec/vclock"
 	"golang.org/x/net/websocket"
 	. "gopkg.in/check.v1"
 )

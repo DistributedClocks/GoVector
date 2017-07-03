@@ -5,18 +5,18 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/arcaneiceman/GoVector/govec/vclock"
+	/*	"github.com/hashicorp/go-msgpack/codec" */
+	"github.com/vmihailenco/msgpack"
 	"io"
-	"os"
 	"log"
+	"os"
 	"path/filepath"
+	"regexp"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/arcaneiceman/GoVector/govec/vclock"
-	"github.com/hashicorp/go-msgpack/codec"
-	"runtime/pprof"
-	"regexp"
 )
 
 /*
@@ -144,14 +144,14 @@ func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool
 }
 
 func (gv *GoLog) LogLocalEvent(Message string) bool {
-	
+
 	gv.mutex.Lock()
 	//Converting Vector Clock from Bytes and Updating the gv clock
 	vc, err := vclock.FromBytes(gv.currentVC)
 	if err != nil {
 		gv.logger.Println(err.Error())
 	}
-	_ , found := vc.FindTicks(gv.pid)
+	_, found := vc.FindTicks(gv.pid)
 	if found == false {
 		gv.logger.Println("Couldnt find this process's id in its own vector clock!")
 	}
@@ -171,8 +171,8 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 	return ok
 }
 
-//This function is meant to be used immidatly before sending.
-//mesg will be loged along with the time of the send
+//This function is meant to be used immediately before sending.
+//mesg will be logged along with the time of the send
 //buf is encodeable data (structure or basic type)
 //Returned is an encoded byte array with logging information
 func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
@@ -188,7 +188,7 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	if err != nil {
 		gv.logger.Println(err.Error())
 	}
-	_ , found := vc.FindTicks(gv.pid)
+	_, found := vc.FindTicks(gv.pid)
 	if found == false {
 		gv.logger.Println("Couldnt find this process's id in its own vector clock!")
 	}
@@ -256,9 +256,9 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
 	dec := gob.NewDecoder(buffer)
 	err := dec.Decode(e)
-	if err != nil  && gv.debugmode {
+	if err != nil && gv.debugmode {
 		callingFunc := getCallingFunctionID()
-		gv.logger.Printf("Vector clock decode failure. Likely one was not present on the incomming network payload. Bad payload received from %s, consider instrumenting the sender\n",callingFunc)
+		gv.logger.Printf("Vector clock decode failure. Likely one was not present on the incoming network payload. Bad payload received from %s, consider instrumenting the sender\n", callingFunc)
 		gv.logger.Println(err.Error())
 	}
 
@@ -271,7 +271,7 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 		vc.PrintVC()
 	}
 
-	_ , found := vc.FindTicks(gv.pid)
+	_, found := vc.FindTicks(gv.pid)
 	if !found {
 		gv.logger.Println(fmt.Errorf("Couldnt find Local Process's ID in the Vector Clock. Could it be a stray message?"))
 	}
@@ -292,7 +292,6 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 		vc.PrintVC()
 	}
 	gv.currentVC = vc.Bytes()
-
 	//Log it
 	var ok bool
 	if gv.logging == true {
@@ -360,16 +359,17 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) interface{} {
 //array, and an error if encoding fails
 //decoder a function which takes an encoded byte array and a pointer
 //to a structure. The byte array should be decoded into the structure.
-func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error) {
+/*func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error) {
 	gv.encodingStrategy = encoder
 	gv.decodingStrategy = decoder
 }
-
-//gobDecodingStrategy decodes user data by using the Go Object decoder
+*/
+/*//gobDecodingStrategy decodes user data by using the Go Object decoder
 func gobDecodingStrategy(programData []byte, unpack interface{}) error {
 	//Decode the user defined message
 	programDataBuffer := new(bytes.Buffer)
 	programDataBuffer = bytes.NewBuffer(programData)
+	fmt.Println("Test2")
 	//Decode Relevant Data... if fail it means that this doesnt not hold vector clock (probably)
 	msgdec := gob.NewDecoder(programDataBuffer)
 	err := msgdec.Decode(unpack)
@@ -392,8 +392,8 @@ func gobEncodingStrategy(buf interface{}) ([]byte, error) {
 	}
 	programdata := programDataBuffer.Bytes()
 	return programdata, nil
-}
-
+}*/
+/*
 func msgPackDecodingStrategy(programData []byte, unpack interface{}) error {
 	var (
 		dec *codec.Decoder
@@ -414,7 +414,25 @@ func msgPackEncodingStrategy(buf interface{}) ([]byte, error) {
 	)
 	enc = codec.NewEncoderBytes(&b, &codec.MsgpackHandle{})
 	err := enc.Encode(buf)
-	//fmt.Println(b)
+	if err != nil {
+		err = fmt.Errorf("Unable to encode with msg-pack encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
+		return nil, err
+	}
+	return b, err
+}*/
+
+func nativeMsgPackDecodingStrategy(programData []byte, unpack interface{}) error {
+	err := msgpack.Unmarshal(programData, unpack)
+	if err != nil {
+		err = fmt.Errorf("Unable to decode with msg-pack encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
+		return err
+	}
+	return nil
+}
+
+func nativeMsgPackEncodingStrategy(buf interface{}) ([]byte, error) {
+	b, err := msgpack.Marshal(buf)
+
 	if err != nil {
 		err = fmt.Errorf("Unable to encode with msg-pack encoder, consider using a different type or custom encoder/decoder : or : %s", err.Error())
 		return nil, err
@@ -442,26 +460,30 @@ func Initialize(processid string, logfilename string) *GoLog {
 	gv.pid = processid
 
 	if logToTerminal {
-		gv.logger = log.New(os.Stdout,"[GoVector]:",log.Lshortfile)
+		gv.logger = log.New(os.Stdout, "[GoVector]:", log.Lshortfile)
 	} else {
 		var buf bytes.Buffer
-		gv.logger = log.New(&buf,"[GoVector]:",log.Lshortfile)
+		gv.logger = log.New(&buf, "[GoVector]:", log.Lshortfile)
 	}
 
 	//# These are bools that can be changed to change debuging nature of library
-	gv.printonscreen = false //(ShouldYouSeeLoggingOnScreen)
-	gv.debugmode = false     // (Debug)
+	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
+	gv.debugmode = false    // (Debug)
 	gv.EnableLogging()
 
 	/*
-	//set the default encoder / decoder to gob
-	gv.encodingStrategy = gobEncodingStrategy
-	gv.decodingStrategy = gobDecodingStrategy
+		//set the default encoder / decoder to gob
+		gv.encodingStrategy = gobEncodingStrategy
+		gv.decodingStrategy = gobDecodingStrategy
 	*/
 
+	/*	//set the default encoder / decoder to msgpack
+		gv.encodingStrategy = msgPackEncodingStrategy
+		gv.decodingStrategy = msgPackDecodingStrategy*/
+
 	//set the default encoder / decoder to msgpack
-	gv.encodingStrategy = msgPackEncodingStrategy
-	gv.decodingStrategy = msgPackDecodingStrategy
+	gv.encodingStrategy = nativeMsgPackEncodingStrategy
+	gv.decodingStrategy = nativeMsgPackDecodingStrategy
 
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
@@ -517,15 +539,15 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 	gv.pid = processid
 
 	if logToTerminal {
-		gv.logger = log.New(os.Stdout,"[GoVector]:",log.Lshortfile)
+		gv.logger = log.New(os.Stdout, "[GoVector]:", log.Lshortfile)
 	} else {
 		var buf bytes.Buffer
-		gv.logger = log.New(&buf,"[GoVector]:",log.Lshortfile)
+		gv.logger = log.New(&buf, "[GoVector]:", log.Lshortfile)
 	}
 
 	//# These are bools that can be changed to change debuging nature of library
 	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
-	gv.debugmode = false     // (Debug)
+	gv.debugmode = true     // (Debug)
 	gv.EnableLogging()
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
@@ -535,9 +557,9 @@ func InitializeMutipleExecutions(processid string, logfilename string) *GoLog {
 	//copy(gv.currentVC[:],vc1.Bytes())
 	gv.currentVC = vc1.Bytes()
 
-	//set the default encoder / decoder to gob
-	gv.encodingStrategy = gobEncodingStrategy
-	gv.decodingStrategy = gobDecodingStrategy
+	/*	//set the default encoder / decoder to gob
+		gv.encodingStrategy = gobEncodingStrategy
+		gv.decodingStrategy = gobDecodingStrategy*/
 
 	if gv.debugmode == true {
 		gv.logger.Println(" ###### Initialization ######")
@@ -599,7 +621,6 @@ func FindExecutionNumber(logname string) int {
 	}
 	return executionnumber
 }
-
 
 //getCallingFunctionID returns the file name and line number of the
 //program which called capture.go. This function is used to determine

@@ -21,13 +21,13 @@ Code](https://golang.org/doc/code.html)
 Once you set up your environment, GoVec can be installed with the go
 tool command:
 
-> go get github.com/arcaneiceman/GoVector
+> go get github.com/DistributedClocks/GoVector
 
 *gofmt* will automatically add imports for GoVec. If you do not have a
 working version of *gofmt* GoVec can be imported by adding:
 
 ```go
-    "import github.com/arcaneiceman/GoVector/govec"
+    "import github.com/DistributedClocks/GoVector/govec"
 ```
 
 ### Index
@@ -197,7 +197,7 @@ This produces the log "LogFile.txt" :
 	Example Complete
 
 An executable example of a similar program can be found in
-[Examples/ClientServer.go](https://github.com/arcaneiceman/GoVector/blob/master/example/ClientServer.go)
+[Examples/ClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/ClientServer.go)
 
 ### VectorBroker
 
