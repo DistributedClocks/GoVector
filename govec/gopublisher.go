@@ -7,9 +7,9 @@ import (
 	"net/rpc"
 	"net/rpc/jsonrpc"
 
-	"github.com/arcaneiceman/GoVector/broker"
-	"github.com/arcaneiceman/GoVector/broker/nonce"
-	"github.com/arcaneiceman/GoVector/govec/vclock"
+	"github.com/DistributedClocks/GoVector/broker"
+	"github.com/DistributedClocks/GoVector/broker/nonce"
+	"github.com/DistributedClocks/GoVector/govec/vclock"
 )
 
 // ******************************************

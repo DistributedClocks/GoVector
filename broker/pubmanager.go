@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/arcaneiceman/GoVector/broker/nonce"
+	"github.com/DistributedClocks/GoVector/broker/nonce"
 )
 
 /*

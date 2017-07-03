@@ -21,7 +21,7 @@ GoVector capture takes either a go file or directory containing a go package as 
 The package or file is then translated into its [AST](https://golang.org/pkg/go/ast/) representation.
 GoVector traverses the AST searching for read and write calls to go's networking library. When matching calls are identified Capture 
 performs an AST rotation and injects wrapper code for the networking call. The wrapper code appends and truncates vector clocks from
-network payloads. The set of library wrapping function are in [capture.go](https://github.com/arcaneiceman/GoVector/blob/master/capture/capture.go)
+network payloads. The set of library wrapping function are in [capture.go](https://github.com/DistributedClocks/GoVector/blob/master/capture/capture.go)
 The result of running Capture is an augmented file, or directory. Case specific auto instrumentation's of both Go's RPC, and HTTP are 
 also implemented by Capture. Below is an example of a captured write.
 

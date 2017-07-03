@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"github.com/arcaneiceman/GoVector/govec/vclock"
+	"github.com/DistributedClocks/GoVector/govec/vclock"
 	/*	"github.com/hashicorp/go-msgpack/codec" */
 	"github.com/vmihailenco/msgpack"
 	"io"
@@ -359,11 +359,11 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte) interface{} {
 //array, and an error if encoding fails
 //decoder a function which takes an encoded byte array and a pointer
 //to a structure. The byte array should be decoded into the structure.
-/*func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error) {
+func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error) {
 	gv.encodingStrategy = encoder
 	gv.decodingStrategy = decoder
 }
-*/
+
 /*//gobDecodingStrategy decodes user data by using the Go Object decoder
 func gobDecodingStrategy(programData []byte, unpack interface{}) error {
 	//Decode the user defined message
