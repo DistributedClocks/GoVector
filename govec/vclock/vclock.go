@@ -98,8 +98,6 @@ func (vc VClock) ReturnVCString() string {
 	}
 	sort.Strings(ids)
 
-
-
 	var buffer bytes.Buffer
 	buffer.WriteString("{")
 	for i := range ids {
