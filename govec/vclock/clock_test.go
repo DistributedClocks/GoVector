@@ -107,4 +107,4 @@ func TestMerge(t *testing.T) {
 		t.Fatalf("decoded not the same as encoded enc = %s | dec = %s",nString,dString)
 	}
 }
-
+*/
