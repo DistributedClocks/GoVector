@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/DistributedClocks/GoVector/capture"
-	"github.com/DistributedClocks/GoVector/govec"
+	"../capture"
+	"../govec"
 )
 
 const (
@@ -61,7 +61,7 @@ func server(listen string) {
 		_, addr, err := capture.ReadFrom(conn.ReadFrom, buf[0:])
 		var incommingMessage int
 		Logger.UnpackReceive("Received Message From Client", buf[0:], &incommingMessage)
-		fmt.Printf("Recieved %d\n", incommingMessage)
+		fmt.Printf("Received %d\n", incommingMessage)
 		printErr(err)
 
 		switch incommingMessage {
