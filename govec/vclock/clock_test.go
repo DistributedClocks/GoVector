@@ -1,8 +1,8 @@
 package vclock
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestBasicInit(t *testing.T) {
@@ -10,13 +10,13 @@ func TestBasicInit(t *testing.T) {
 	n.Tick("a")
 	n.Tick("b")
 	na, isFounda := n.FindTicks("a")
-	
+
 	if !isFounda {
 		t.Fatalf("Failed on finding ticks: %s", n.ReturnVCString)
 	}
 
 	if na != 1 {
-		t.Fatalf("Tick value did not increment: %s", n.ReturnVCString)	
+		t.Fatalf("Tick value did not increment: %s", n.ReturnVCString)
 	}
 
 	n.Tick("a")
@@ -29,18 +29,18 @@ func TestBasicInit(t *testing.T) {
 	}
 
 	if na != 2 || nb != 1 {
-		t.Fatalf("Tick value did not increment: %s", n.ReturnVCString)	
+		t.Fatalf("Tick value did not increment: %s", n.ReturnVCString)
 	}
 
 }
 
-func TestCopy(t *testing.T){
-	
+func TestCopy(t *testing.T) {
+
 	n := New()
-	n.Set("a",4)
-	n.Set("b",1)
-	n.Set("c",3)
-	n.Set("d",2)
+	n.Set("a", 4)
+	n.Set("b", 1)
+	n.Set("c", 3)
+	n.Set("d", 2)
 	nc := n.Copy()
 
 	an, _ := nc.FindTicks("a")
@@ -56,38 +56,38 @@ func TestCopy(t *testing.T){
 	if an != ao || bn != bo || cn != co || dn != do {
 		nString := nc.ReturnVCString()
 		oString := n.ReturnVCString()
-		t.Fatalf("Copy not the same as the original new = %s , old = %s ",nString,oString)
+		t.Fatalf("Copy not the same as the original new = %s , old = %s ", nString, oString)
 	}
 }
 
 func TestMerge(t *testing.T) {
-	
+
 	n1 := New()
 	n2 := New()
-	
-	n1.Set("b",1)
-	n1.Set("a",2)
-	
-	n2.Set("b",3)
-	n2.Set("c",1)
+
+	n1.Set("b", 1)
+	n1.Set("a", 2)
+
+	n2.Set("b", 3)
+	n2.Set("c", 1)
 
 	n3 := n1.Copy()
 	n3.Merge(n2)
-	
+
 	an, _ := n3.FindTicks("a")
 	bn, _ := n3.FindTicks("b")
 	cn, _ := n3.FindTicks("c")
 
 	nString := n3.ReturnVCString()
-		
+
 	oString1 := n1.ReturnVCString()
 	oString2 := n2.ReturnVCString()
 
 	if an != 2 || bn != 3 || cn != 1 {
 		t.Fatalf("Merge not as expected = %s , old = %s, %s", nString, oString1, oString2)
 	}
-		
-	fmt.Printf("new = %s , old = %s, %s ",nString, oString1, oString2)
+
+	fmt.Printf("new = %s , old = %s, %s ", nString, oString1, oString2)
 
 }
 
