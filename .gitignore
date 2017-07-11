@@ -49,5 +49,6 @@ Temporary Items
 #logfiles
 *.log
 
+*-Log.txt
 test/*.txt
 example/*.txt

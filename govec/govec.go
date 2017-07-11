@@ -105,8 +105,194 @@ func (d *ClockPayload) PrintDataString() {
 }
 
 // TODO Pull request for this function
-func (gv *GoLog) GetCurrentVC() []byte {
+func (gv *GoLog) GetCurrentVCInBytes() []byte {
 	return gv.currentVC
+}
+
+func (gv *GoLog) GetCurrentVC() vclock.VClock {
+	vc, _ := vclock.FromBytes(gv.currentVC)
+	return vc
+}
+
+func New() *GoLog {
+	return &GoLog{}
+}
+
+func Initialize(processid string, logfilename string) *GoLog {
+	/*This is the Start Up Function That should be called right at the start of
+	  a program
+	*/
+	gv := New() //Simply returns a new struct
+	gv.pid = processid
+
+	if logToTerminal {
+		gv.logger = log.New(os.Stdout, "[GoVector]:", log.Lshortfile)
+	} else {
+		var buf bytes.Buffer
+		gv.logger = log.New(&buf, "[GoVector]:", log.Lshortfile)
+	}
+
+	//# These are bools that can be changed to change debuging nature of library
+	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
+	gv.debugmode = false    // (Debug)
+	gv.EnableLogging()
+
+	//we create a new Vector Clock with processname and 0 as the intial time
+	vc1 := vclock.New()
+	vc1.Tick(processid)
+
+	//Vector Clock Stored in bytes
+	//copy(gv.currentVC[:],vc1.Bytes())
+	gv.currentVC = vc1.Bytes()
+
+	if gv.debugmode == true {
+		gv.logger.Println(" ###### Initialization ######")
+		gv.logger.Print("VCLOCK IS :")
+		vc1.PrintVC()
+		gv.logger.Println(" ##### End of Initialization ")
+	}
+
+	//Starting File IO . If Log exists, Log Will be deleted and A New one will be created
+	logname := logfilename + "-Log.txt"
+
+	if _, err := os.Stat(logname); err == nil {
+		//its exists... deleting old log
+		gv.logger.Println(logname, "exists! ... Deleting ")
+		os.Remove(logname)
+	}
+
+	// Create directory path to log if it doesn't exist.
+	if err := os.MkdirAll(filepath.Dir(logname), 0750); err != nil {
+		gv.logger.Println(err)
+	}
+
+	//Creating new Log
+	file, err := os.Create(logname)
+	if err != nil {
+		gv.logger.Println(err)
+	}
+	file.Close()
+
+	gv.logfile = logname
+	//Log it
+	ok := gv.LogThis("Initialization Complete", gv.pid, vc1.ReturnVCString())
+	if ok == false {
+		gv.logger.Println("Something went Wrong, Could not Log!")
+	}
+
+	return gv
+}
+
+func InitializeMultipleExecutions(processid string, logfilename string) *GoLog {
+	/*This is the Start Up Function That should be called right at the start of
+	  a program
+	*/
+	gv := New() //Simply returns a new struct
+	gv.pid = processid
+
+	if logToTerminal {
+		gv.logger = log.New(os.Stdout, "[GoVector]:", log.Lshortfile)
+	} else {
+		var buf bytes.Buffer
+		gv.logger = log.New(&buf, "[GoVector]:", log.Lshortfile)
+	}
+
+	//# These are bools that can be changed to change debuging nature of library
+	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
+	gv.debugmode = true     // (Debug)
+	gv.EnableLogging()
+	//we create a new Vector Clock with processname and 0 as the intial time
+	vc1 := vclock.New()
+	vc1.Tick(processid)
+
+	//Vector Clock Stored in bytes
+	//copy(gv.currentVC[:],vc1.Bytes())
+	gv.currentVC = vc1.Bytes()
+
+	if gv.debugmode == true {
+		gv.logger.Println(" ###### Initialization ######")
+		gv.logger.Print("VCLOCK IS :")
+		vc1.PrintVC()
+		gv.logger.Println(" ##### End of Initialization ")
+	}
+
+	//Starting File IO . If Log exists, it will find Last execution number and ++ it
+	logname := logfilename + "-Log.txt"
+	_, err := os.Stat(logname)
+	gv.logfile = logname
+	if err == nil {
+		//its exists... deleting old log
+		gv.logger.Println(logname, " exists! ...  Looking for Last Exectution... ")
+		executionnumber := FindExecutionNumber(logname)
+		executionnumber = executionnumber + 1
+		gv.logger.Println("Execution Number is  ", executionnumber)
+		executionstring := "=== Execution #" + strconv.Itoa(executionnumber) + "  ==="
+		gv.LogThis(executionstring, "", "")
+	} else {
+		//Creating new Log
+		file, err := os.Create(logname)
+		if err != nil {
+			gv.logger.Println(err.Error())
+		}
+		file.Close()
+
+		//Mark Execution Number
+		ok := gv.LogThis("=== Execution #1 ===", " ", " ")
+		//Log it
+		ok = gv.LogThis("Initialization Complete", gv.pid, vc1.ReturnVCString())
+		if ok == false {
+			gv.logger.Println("Something went Wrong, Could not Log!")
+		}
+	}
+	return gv
+}
+
+func FindExecutionNumber(logname string) int {
+	executionnumber := 0
+	file, err := os.Open(logname)
+	if err != nil {
+		return 0
+	}
+	defer file.Close()
+	reader := bufio.NewReader(file)
+	for line, _, err := reader.ReadLine(); err != io.EOF; {
+		if strings.Contains(string(line), " Execution #") {
+			stemp := strings.Replace(string(line), "=== Execution #", "", -1)
+			stemp = strings.Replace(stemp, " ===", "", -1)
+			stemp = strings.Replace(stemp, " ", "", -1)
+			currexecnumber, _ := strconv.Atoi(stemp)
+			if currexecnumber > executionnumber {
+				executionnumber = currexecnumber
+			}
+		}
+		line, _, err = reader.ReadLine()
+	}
+	return executionnumber
+}
+
+//getCallingFunctionID returns the file name and line number of the
+//program which called capture.go. This function is used to determine
+//the calling function which did not receive a vector clock
+func getCallingFunctionID() string {
+	profiles := pprof.Profiles()
+	block := profiles[1]
+	var buf bytes.Buffer
+	block.WriteTo(&buf, 1)
+	//gv.logger.Printf("%s",buf)
+	passedFrontOnStack := false
+	re := regexp.MustCompile("([a-zA-Z0-9]+.go:[0-9]+)")
+	ownFilename := regexp.MustCompile("capture.go") // hardcoded own filename
+	matches := re.FindAllString(fmt.Sprintf("%s", buf), -1)
+	for _, match := range matches {
+		if passedFrontOnStack && !ownFilename.MatchString(match) {
+			return match
+		} else if ownFilename.MatchString(match) {
+			passedFrontOnStack = true
+		}
+		//fmt.Printf("found %s\n", match)
+	}
+	//fmt.Printf("%s\n", buf)
+	return ""
 }
 
 func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool {
@@ -185,9 +371,9 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	if found == false {
 		gv.logger.Println("Couldnt find this process's id in its own vector clock!")
 	}
+
 	vc.Tick(gv.pid)
 	gv.currentVC = vc.Bytes()
-	//WILL HAVE TO CHECK THIS OUT!!!!!!!
 
 	if gv.debugmode == true {
 		gv.logger.Println("Sending Message")
@@ -303,189 +489,4 @@ func (gv *GoLog) EnableLogging() {
 
 func (gv *GoLog) DisableLogging() {
 	gv.logging = false
-}
-
-func New() *GoLog {
-	return &GoLog{}
-}
-
-func Initialize(processid string, logfilename string) *GoLog {
-	/*This is the Start Up Function That should be called right at the start of
-	  a program
-	*/
-	gv := New() //Simply returns a new struct
-	gv.pid = processid
-
-	if logToTerminal {
-		gv.logger = log.New(os.Stdout, "[GoVector]:", log.Lshortfile)
-	} else {
-		var buf bytes.Buffer
-		gv.logger = log.New(&buf, "[GoVector]:", log.Lshortfile)
-	}
-
-	//# These are bools that can be changed to change debuging nature of library
-	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
-	gv.debugmode = false    // (Debug)
-	gv.EnableLogging()
-
-	//we create a new Vector Clock with processname and 0 as the intial time
-	vc1 := vclock.New()
-	vc1.Tick(processid)
-
-	//Vector Clock Stored in bytes
-	//copy(gv.currentVC[:],vc1.Bytes())
-	gv.currentVC = vc1.Bytes()
-
-	if gv.debugmode == true {
-		gv.logger.Println(" ###### Initialization ######")
-		gv.logger.Print("VCLOCK IS :")
-		vc1.PrintVC()
-		gv.logger.Println(" ##### End of Initialization ")
-	}
-
-	//Starting File IO . If Log exists, Log Will be deleted and A New one will be created
-	logname := logfilename + "-Log.txt"
-
-	if _, err := os.Stat(logname); err == nil {
-		//its exists... deleting old log
-		gv.logger.Println(logname, "exists! ... Deleting ")
-		os.Remove(logname)
-	}
-
-	// Create directory path to log if it doesn't exist.
-	if err := os.MkdirAll(filepath.Dir(logname), 0750); err != nil {
-		gv.logger.Println(err)
-	}
-
-	//Creating new Log
-	file, err := os.Create(logname)
-	if err != nil {
-		gv.logger.Println(err)
-	}
-	file.Close()
-
-	gv.logfile = logname
-	//Log it
-	ok := gv.LogThis("Initialization Complete", gv.pid, vc1.ReturnVCString())
-	if ok == false {
-		gv.logger.Println("Something went Wrong, Could not Log!")
-	}
-
-	return gv
-}
-
-func InitializeMultipleExecutions(processid string, logfilename string) *GoLog {
-	/*This is the Start Up Function That should be called right at the start of
-	  a program
-	*/
-	gv := New() //Simply returns a new struct
-	gv.pid = processid
-
-	if logToTerminal {
-		gv.logger = log.New(os.Stdout, "[GoVector]:", log.Lshortfile)
-	} else {
-		var buf bytes.Buffer
-		gv.logger = log.New(&buf, "[GoVector]:", log.Lshortfile)
-	}
-
-	//# These are bools that can be changed to change debuging nature of library
-	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
-	gv.debugmode = true     // (Debug)
-	gv.EnableLogging()
-	//we create a new Vector Clock with processname and 0 as the intial time
-	vc1 := vclock.New()
-	vc1.Tick(processid)
-
-	//Vector Clock Stored in bytes
-	//copy(gv.currentVC[:],vc1.Bytes())
-	gv.currentVC = vc1.Bytes()
-
-	/*	//set the default encoder / decoder to gob
-		gv.encodingStrategy = gobEncodingStrategy
-		gv.decodingStrategy = gobDecodingStrategy*/
-
-	if gv.debugmode == true {
-		gv.logger.Println(" ###### Initialization ######")
-		gv.logger.Print("VCLOCK IS :")
-		vc1.PrintVC()
-		gv.logger.Println(" ##### End of Initialization ")
-	}
-
-	//Starting File IO . If Log exists, it will find Last execution number and ++ it
-	logname := logfilename + "-Log.txt"
-	_, err := os.Stat(logname)
-	gv.logfile = logname
-	if err == nil {
-		//its exists... deleting old log
-		gv.logger.Println(logname, " exists! ...  Looking for Last Exectution... ")
-		executionnumber := FindExecutionNumber(logname)
-		executionnumber = executionnumber + 1
-		gv.logger.Println("Execution Number is  ", executionnumber)
-		executionstring := "=== Execution #" + strconv.Itoa(executionnumber) + "  ==="
-		gv.LogThis(executionstring, "", "")
-	} else {
-		//Creating new Log
-		file, err := os.Create(logname)
-		if err != nil {
-			gv.logger.Println(err.Error())
-		}
-		file.Close()
-
-		//Mark Execution Number
-		ok := gv.LogThis("=== Execution #1 ===", " ", " ")
-		//Log it
-		ok = gv.LogThis("Initialization Complete", gv.pid, vc1.ReturnVCString())
-		if ok == false {
-			gv.logger.Println("Something went Wrong, Could not Log!")
-		}
-	}
-	return gv
-}
-
-func FindExecutionNumber(logname string) int {
-	executionnumber := 0
-	file, err := os.Open(logname)
-	if err != nil {
-		return 0
-	}
-	defer file.Close()
-	reader := bufio.NewReader(file)
-	for line, _, err := reader.ReadLine(); err != io.EOF; {
-		if strings.Contains(string(line), " Execution #") {
-			stemp := strings.Replace(string(line), "=== Execution #", "", -1)
-			stemp = strings.Replace(stemp, " ===", "", -1)
-			stemp = strings.Replace(stemp, " ", "", -1)
-			currexecnumber, _ := strconv.Atoi(stemp)
-			if currexecnumber > executionnumber {
-				executionnumber = currexecnumber
-			}
-		}
-		line, _, err = reader.ReadLine()
-	}
-	return executionnumber
-}
-
-//getCallingFunctionID returns the file name and line number of the
-//program which called capture.go. This function is used to determine
-//the calling function which did not receive a vector clock
-func getCallingFunctionID() string {
-	profiles := pprof.Profiles()
-	block := profiles[1]
-	var buf bytes.Buffer
-	block.WriteTo(&buf, 1)
-	//gv.logger.Printf("%s",buf)
-	passedFrontOnStack := false
-	re := regexp.MustCompile("([a-zA-Z0-9]+.go:[0-9]+)")
-	ownFilename := regexp.MustCompile("capture.go") // hardcoded own filename
-	matches := re.FindAllString(fmt.Sprintf("%s", buf), -1)
-	for _, match := range matches {
-		if passedFrontOnStack && !ownFilename.MatchString(match) {
-			return match
-		} else if ownFilename.MatchString(match) {
-			passedFrontOnStack = true
-		}
-		//fmt.Printf("found %s\n", match)
-	}
-	//fmt.Printf("%s\n", buf)
-	return ""
 }
