@@ -1,10 +1,7 @@
 package vclock
 
 import (
-<<<<<<< Updated upstream
 	"fmt"
-=======
->>>>>>> Stashed changes
 	"testing"
 )
 
