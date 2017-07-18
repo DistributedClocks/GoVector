@@ -35,7 +35,7 @@ func TestLogLocal(t *testing.T) {
 
 }
 
-func TestSendAndUnpack(t *testing.T) {
+func TestSendAndUnpackInt(t *testing.T) {
 
 	gv := Initialize(TestPID, "TestLogFile")
 	packed := gv.PrepareSend("TestMessage1", 1337)
@@ -54,6 +54,57 @@ func TestSendAndUnpack(t *testing.T) {
 	AssertEquals(t, 1337, response, "PrepareSend: Clock value incremented.")
 	AssertEquals(t, uint64(3), n, "PrepareSend: Clock value incremented.")
 	
+}
+
+func TestSendAndUnpackStrings(t *testing.T) {
+
+	gv := Initialize(TestPID, "TestLogFile")
+	packed := gv.PrepareSend("TestMessage1", "DistClocks!")
+
+	vc := gv.GetCurrentVC()
+	n, _ := vc.FindTicks(TestPID)
+
+	AssertEquals(t, uint64(2), n, "PrepareSend: Clock value incremented. ")
+
+	var response string
+	gv.UnpackReceive("TestMessage2", packed, &response)
+
+	vc = gv.GetCurrentVC()
+	n, _ = vc.FindTicks(TestPID)
+	
+	AssertEquals(t, "DistClocks!", response, "PrepareSend: Clock value incremented.")
+	AssertEquals(t, uint64(3), n, "PrepareSend: Clock value incremented.")
+	
+}
+
+func BenchmarkPrepare(b *testing.B) {
+
+	gv := Initialize(TestPID, "TestLogFile")
+	
+	var packed []byte
+
+	for i := 0; i < b.N; i++ {
+		packed = gv.PrepareSend("TestMessage1", 1337)
+	}
+
+	var response int
+	gv.UnpackReceive("TestMessage2", packed, &response)
+
+}
+
+func BenchmarkUnpack(b *testing.B) {
+
+	gv := Initialize(TestPID, "TestLogFile")
+	
+	var packed []byte
+	packed = gv.PrepareSend("TestMessage1", 1337)
+
+	var response int
+
+	for i := 0; i < b.N; i++ {
+		gv.UnpackReceive("TestMessage2", packed, &response)
+	}	
+
 }
 
 func AssertTrue(t *testing.T, condition bool, message string) {
