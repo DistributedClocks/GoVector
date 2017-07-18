@@ -3,7 +3,6 @@ package govec
 import (
 	"bufio"
 	"bytes"
-	//"encoding/gob"
 	"fmt"
 	"github.com/DistributedClocks/GoVector/govec/vclock"
 	"github.com/vmihailenco/msgpack"
@@ -118,11 +117,12 @@ func New() *GoLog {
 	return &GoLog{}
 }
 
-func Initialize(processid string, logfilename string) *GoLog {
-	/*This is the Start Up Function That should be called right at the start of
-	  a program
-	*/
-	gv := New() //Simply returns a new struct
+/*This is the Start Up Function That should be called right at the start of
+  a program
+*/
+func InitGoVector(processid string, logfilename string) *GoLog {
+	
+	gv := New() 
 	gv.pid = processid
 
 	if logToTerminal {
@@ -142,7 +142,6 @@ func Initialize(processid string, logfilename string) *GoLog {
 	vc1.Tick(processid)
 
 	//Vector Clock Stored in bytes
-	//copy(gv.currentVC[:],vc1.Bytes())
 	gv.currentVC = vc1.Bytes()
 
 	if gv.debugmode == true {
@@ -183,10 +182,12 @@ func Initialize(processid string, logfilename string) *GoLog {
 	return gv
 }
 
-func InitializeMultipleExecutions(processid string, logfilename string) *GoLog {
-	/*This is the Start Up Function That should be called right at the start of
-	  a program
-	*/
+/*
+	This is the Start Up Function That should be called right at the start of
+	a program, without deleting the old log. It just increments the execution
+*/
+func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog {
+	
 	gv := New() //Simply returns a new struct
 	gv.pid = processid
 
@@ -289,9 +290,7 @@ func getCallingFunctionID() string {
 		} else if ownFilename.MatchString(match) {
 			passedFrontOnStack = true
 		}
-		//fmt.Printf("found %s\n", match)
 	}
-	//fmt.Printf("%s\n", buf)
 	return ""
 }
 
@@ -342,7 +341,8 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 		ok = gv.LogThis(Message, gv.pid, vc.ReturnVCString())
 		if gv.realtime == true {
 			// Send local message to broker
-			//BUG go publisher never worked // gv.publisher.PublishLocalMessage(Message, gv.pid, *vc)
+			// BUG go publisher never worked 
+			// gv.publisher.PublishLocalMessage(Message, gv.pid, *vc)
 		}
 	}
 	gv.mutex.Unlock()
@@ -354,13 +354,14 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 //mesg will be logged along with the time of the send
 //buf is encodeable data (structure or basic type)
 //Returned is an encoded byte array with logging information
+/*
+	This function is meant to be called before sending a packet. Usually,
+	it should Update the Vector Clock for its own process, package with the clock
+	using msgpack and return the new byte array that should be sent onwards
+	using the Send Command
+*/
 func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
-	/*
-		This function is meant to be called before sending a packet. Usually,
-		it should Update the Vector Clock for its own process, package with the clock
-		using gob support and return the new byte array that should be sent onwards
-		using the Send Command
-	*/
+
 	//Converting Vector Clock from Bytes and Updating the gv clock
 	gv.mutex.Lock()
 	vc, err := vclock.FromBytes(gv.currentVC)
@@ -396,19 +397,18 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	d.Vcinbytes = gv.currentVC
 	d.Payload = buf
 
-	//first layer of encoding (user data)
+	// encode the Clock Payload
 	encodedBytes, err := msgpack.Marshal(&d)
 	if err != nil {
 		gv.logger.Println(err.Error())
 	}
 
-	//return wrapperBuffer bytes which are wrapperEncoderoded as gob. Now these bytes can be sent off and
-	// received on the other end!
+	// return encodedBytes which can be sent off and received on the other end!
 	gv.mutex.Unlock()
 	return encodedBytes
 }
 
-func (gv *GoLog) MergeIncomingClock(mesg string, e ClockPayload) {
+func (gv *GoLog) mergeIncomingClock(mesg string, e ClockPayload) {
 
 	// First, tick the local clock
 	vc, err := vclock.FromBytes(gv.currentVC)
@@ -454,17 +454,16 @@ func (gv *GoLog) MergeIncomingClock(mesg string, e ClockPayload) {
 
 }
 
-//UnpackReceive is used to unmarshall network data into local
-//structures
+//UnpackReceive is used to unmarshall network data into local structures
 //mesg will be logged along with the vector time the receive happened
 //buf is the network data, previously packaged by PrepareSend
 //unpack is a pointer to a structure, the same as was packed by
 //PrepareSend
+/*
+	This function is meant to be called immediately after receiving a packet. It unpacks the data
+	by the program, the vector clock. It updates vector clock and logs it. and returns the user data
+*/
 func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
-	/*
-		This function is meant to be called immediately after receiving a packet. It unpacks the data
-		by the program, the vector clock. It updates vector clock and logs it. and returns the user data
-	*/
 
 	gv.mutex.Lock()
 
@@ -478,7 +477,7 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 	}
 
 	// Increment and merge the incoming clock
-	gv.MergeIncomingClock(mesg, e)
+	gv.mergeIncomingClock(mesg, e)
 	gv.mutex.Unlock()
 
 }

@@ -34,19 +34,16 @@ working version of *gofmt* GoVec can be imported by adding:
 
 type GoLog
 ```go
-func Initialize(ProcessName, LogName string) *GoLog
+func InitGoVector(ProcessName, LogName string) *GoLog
 ```
 ```go
-func InitializeMultipleExecutions(ProcessName, LogName string) *GoLog
+func InitGoVectorMultipleExecutions(ProcessName, LogName string) *GoLog
 ```
 ```go
 func PrepareSend(LogMessage string, buf interface{}) []byte
 ```
 ```go
 func UnpackReceive(LogMessage string, buf []byte, unpack interface{})
-```
-```go
-func SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error)
 ```
 ```go
 func LogLocalEvent(string LogMessage)
@@ -67,9 +64,9 @@ func DisableLogging()
 ```
  The GoLog struct provides an interface to creating and maintaining vector timestamp entries in the generated log file
  
-#####   func Initialize
+#####   func InitGoVector
 ```go
-	func Initialize(ProcessName, LogName string) *GoLog
+	func InitGoVector(ProcessName, LogName string) *GoLog
 ```
 Returns a Go Log Struct taking in two arguments and truncates previous logs:
 * MyProcessName (string): local process name; must be unique in your distributed system.
@@ -109,26 +106,9 @@ LogMessage will be logged along with the vector time the receive happened
 buf is the network data, previously packaged by PrepareSend unpack is
 a pointer to a structure, the same as was packed by PrepareSend
 
-
 This function is meant to be called immediately after receiving
 a packet. It unpacks the data by the program, the vector clock. It
 updates vector clock and logs it. and returns the user data
-
-##### func SetEncoderDecoder
-```go
-func SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error)
-```
-SetEncoderDecoder allows users to specify the encoder, and decoder
-used by GoVec in the case the default is unable to perform a
-required task
-encoder a function which takes an interface, and returns a byte
-array, and an error if encoding fails
-decoder a function which takes an encoded byte array and a pointer
-to a structure. The byte array should be decoded into the structure.
-
-For more information on encoders and decoders see [gob
-encoder](https://golang.org/pkg/encoding/gob/) and
-[goMsgPack](https://github.com/hashicorp/go-msgpack)
 
 #####   func LogLocalEvent
 ```go
@@ -161,7 +141,7 @@ The following is a basic example of how this library can be used
 	import "./govec"
 
 	func main() {
-		Logger := govec.Initialize("MyProcess", "LogFile")
+		Logger := govec.InitGoVector("MyProcess", "LogFile")
 		
 		//In Sending Process
 		
@@ -198,6 +178,8 @@ This produces the log "LogFile.txt" :
 
 An executable example of a similar program can be found in
 [Examples/ClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/ClientServer.go)
+
+<!-- July 2017: Brokers are no longer supported, maybe they will come back.
 
 ### VectorBroker
 
@@ -266,4 +248,4 @@ Step 3 (optional):
         subscriber.
     * SendOldMessages(nonce string, reply *string)
         Sends any messages received before the requesting subscriber subscribed.
- 
+  -->

@@ -26,7 +26,7 @@ func main() {
 }
 
 func client(listen, send string) {
-	Logger := govec.Initialize("client", "clientlogfile")
+	Logger := govec.InitGoVector("client", "clientlogfile")
 	// sending UDP packet to specified address and port
 	conn := setupConnection(SERVERPORT, CLIENTPORT)
 
@@ -49,7 +49,7 @@ func client(listen, send string) {
 }
 
 func server(listen string) {
-	Logger := govec.Initialize("server", "server")
+	Logger := govec.InitGoVector("server", "server")
 	conn, err := net.ListenPacket("udp", ":"+listen)
 	printErr(err)
 
