@@ -1,9 +1,9 @@
-package vclock_test
+package vclock
 
 import (
 	"bytes"
-	"labix.org/v1/vclock"
-	. "launchpad.net/gocheck"
+	//"labix.org/v1/vclock"
+	//. "launchpad.net/gocheck"
 	"testing"
 )
 
