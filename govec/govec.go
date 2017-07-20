@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/DistributedClocks/GoVector/govec/vclock"
+	"./vclock"
 	"github.com/vmihailenco/msgpack"
 	"io"
 	"log"

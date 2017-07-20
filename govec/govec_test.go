@@ -9,7 +9,7 @@ var TestPID string = "TestPID"
 
 func TestBasicInit(t *testing.T) {
 
-	gv := Initialize(TestPID, "TestLogFile")
+	gv := InitGoVector(TestPID, "TestLogFile")
 	
 	if gv.pid != TestPID {
 		t.Fatalf("Setting Process ID Failed.")
@@ -25,7 +25,7 @@ func TestBasicInit(t *testing.T) {
 
 func TestLogLocal(t *testing.T) {
 
-	gv := Initialize(TestPID, "TestLogFile")
+	gv := InitGoVector(TestPID, "TestLogFile")
 	gv.LogLocalEvent("TestMessage1")
 
 	vc := gv.GetCurrentVC()
@@ -37,7 +37,7 @@ func TestLogLocal(t *testing.T) {
 
 func TestSendAndUnpackInt(t *testing.T) {
 
-	gv := Initialize(TestPID, "TestLogFile")
+	gv := InitGoVector(TestPID, "TestLogFile")
 	packed := gv.PrepareSend("TestMessage1", 1337)
 
 	vc := gv.GetCurrentVC()
@@ -58,7 +58,7 @@ func TestSendAndUnpackInt(t *testing.T) {
 
 func TestSendAndUnpackStrings(t *testing.T) {
 
-	gv := Initialize(TestPID, "TestLogFile")
+	gv := InitGoVector(TestPID, "TestLogFile")
 	packed := gv.PrepareSend("TestMessage1", "DistClocks!")
 
 	vc := gv.GetCurrentVC()
@@ -79,8 +79,8 @@ func TestSendAndUnpackStrings(t *testing.T) {
 
 func BenchmarkPrepare(b *testing.B) {
 
-	gv := Initialize(TestPID, "TestLogFile")
-	
+	gv := InitGoVector(TestPID, "TestLogFile")
+
 	var packed []byte
 
 	for i := 0; i < b.N; i++ {
@@ -94,8 +94,8 @@ func BenchmarkPrepare(b *testing.B) {
 
 func BenchmarkUnpack(b *testing.B) {
 
-	gv := Initialize(TestPID, "TestLogFile")
-	
+	gv := InitGoVector(TestPID, "TestLogFile")
+
 	var packed []byte
 	packed = gv.PrepareSend("TestMessage1", 1337)
 

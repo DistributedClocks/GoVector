@@ -1,7 +1,6 @@
 package vclock
 
 import (
-	"fmt"
 	"testing"
 )
 
