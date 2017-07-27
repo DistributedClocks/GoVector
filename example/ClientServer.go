@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"../capture"
-	"../govec"
+	"github.com/DistributedClocks/GoVector/capture"
+	"github.com/DistributedClocks/GoVector/govec"
 )
 
 const (
