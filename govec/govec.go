@@ -71,6 +71,9 @@ type GoLog struct {
 	//Logfile name
 	logfile string
 
+	encodingStrategy func(interface{}) ([]byte, error)
+	decodingStrategy func([]byte, interface{}) error
+
 	// Publisher to enable sending messages to a vecbroker.
 	publisher *GoPublisher
 
@@ -103,12 +106,11 @@ func (d *ClockPayload) PrintDataString() {
 	fmt.Println("-----DATA END -----")
 }
 
-// TODO Pull request for this function
-func (gv *GoLog) GetCurrentVCInBytes() []byte {
+func (gv *GoLog) GetCurrentVC() []byte {
 	return gv.currentVC
 }
 
-func (gv *GoLog) GetCurrentVC() vclock.VClock {
+func (gv *GoLog) GetCurrentVCAsClock() vclock.VClock {
 	vc, _ := vclock.FromBytes(gv.currentVC)
 	return vc
 }
@@ -136,6 +138,10 @@ func InitGoVector(processid string, logfilename string) *GoLog {
 	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
 	gv.debugmode = false    // (Debug)
 	gv.EnableLogging()
+
+	// Use the default encoder/decoder. As of July 2017 this is msgPack.
+	gv.encodingStrategy = gv.DefaultEncoder
+	gv.decodingStrategy = gv.DefaultDecoder
 
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
@@ -202,12 +208,12 @@ func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog
 	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
 	gv.debugmode = true     // (Debug)
 	gv.EnableLogging()
+
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
 	vc1.Tick(processid)
 
 	//Vector Clock Stored in bytes
-	//copy(gv.currentVC[:],vc1.Bytes())
 	gv.currentVC = vc1.Bytes()
 
 	if gv.debugmode == true {
@@ -292,6 +298,19 @@ func getCallingFunctionID() string {
 		}
 	}
 	return ""
+}
+
+func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error) {
+	gv.encodingStrategy = encoder
+	gv.decodingStrategy = decoder
+}
+
+func (gv *GoLog) DefaultEncoder(payload interface{}) ([]byte, error) {
+	return msgpack.Marshal(payload)
+}
+
+func (gv *GoLog) DefaultDecoder(buf []byte, payload interface{}) error {
+	return msgpack.Unmarshal(buf, payload)
 }
 
 func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool {
@@ -398,7 +417,7 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	d.Payload = buf
 
 	// encode the Clock Payload
-	encodedBytes, err := msgpack.Marshal(&d)
+	encodedBytes, err := gv.encodingStrategy(&d)
 	if err != nil {
 		gv.logger.Println(err.Error())
 	}
@@ -471,7 +490,7 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 	e.Payload = unpack
 
 	// Just use msgpack directly
-	err := msgpack.Unmarshal(buf, &e)
+	err := gv.decodingStrategy(buf, &e)
 	if err != nil {
 		gv.logger.Println(err.Error())
 	}

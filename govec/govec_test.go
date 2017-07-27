@@ -15,7 +15,7 @@ func TestBasicInit(t *testing.T) {
 		t.Fatalf("Setting Process ID Failed.")
 	}
 
-	vc := gv.GetCurrentVC()
+	vc := gv.GetCurrentVCAsClock()
 	n, found := vc.FindTicks(TestPID)
 
 	AssertTrue(t, found, "Initializing clock: Init PID not found")
@@ -28,7 +28,7 @@ func TestLogLocal(t *testing.T) {
 	gv := InitGoVector(TestPID, "TestLogFile")
 	gv.LogLocalEvent("TestMessage1")
 
-	vc := gv.GetCurrentVC()
+	vc := gv.GetCurrentVCAsClock()
 	n, _ := vc.FindTicks(TestPID)
 
 	AssertEquals(t, uint64(2), n, "LogLocalEvent: Clock value not incremented")
@@ -40,7 +40,7 @@ func TestSendAndUnpackInt(t *testing.T) {
 	gv := InitGoVector(TestPID, "TestLogFile")
 	packed := gv.PrepareSend("TestMessage1", 1337)
 
-	vc := gv.GetCurrentVC()
+	vc := gv.GetCurrentVCAsClock()
 	n, _ := vc.FindTicks(TestPID)
 
 	AssertEquals(t, uint64(2), n, "PrepareSend: Clock value incremented")
@@ -48,7 +48,7 @@ func TestSendAndUnpackInt(t *testing.T) {
 	var response int
 	gv.UnpackReceive("TestMessage2", packed, &response)
 
-	vc = gv.GetCurrentVC()
+	vc = gv.GetCurrentVCAsClock()
 	n, _ = vc.FindTicks(TestPID)
 	
 	AssertEquals(t, 1337, response, "PrepareSend: Clock value incremented.")
@@ -61,7 +61,7 @@ func TestSendAndUnpackStrings(t *testing.T) {
 	gv := InitGoVector(TestPID, "TestLogFile")
 	packed := gv.PrepareSend("TestMessage1", "DistClocks!")
 
-	vc := gv.GetCurrentVC()
+	vc := gv.GetCurrentVCAsClock()
 	n, _ := vc.FindTicks(TestPID)
 
 	AssertEquals(t, uint64(2), n, "PrepareSend: Clock value incremented. ")
@@ -69,7 +69,7 @@ func TestSendAndUnpackStrings(t *testing.T) {
 	var response string
 	gv.UnpackReceive("TestMessage2", packed, &response)
 
-	vc = gv.GetCurrentVC()
+	vc = gv.GetCurrentVCAsClock()
 	n, _ = vc.FindTicks(TestPID)
 	
 	AssertEquals(t, "DistClocks!", response, "PrepareSend: Clock value incremented.")
