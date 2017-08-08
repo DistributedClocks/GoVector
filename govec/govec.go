@@ -41,6 +41,8 @@ import (
 */
 
 const logToTerminal = false
+var _ msgpack.CustomEncoder = (*ClockPayload)(nil)
+var _ msgpack.CustomDecoder = (*ClockPayload)(nil)
 
 //This is the Global Variable Struct that holds all the info needed to be maintained
 type GoLog struct {
@@ -84,15 +86,15 @@ type GoLog struct {
 
 //This is the data structure that is actually end on the wire
 type ClockPayload struct {
-	Pid         []byte
-	Vcinbytes   []byte
+	Pid         string
+	VcMap       map[string]uint64
 	Payload 	interface{}
 }
 
 //Prints the Data Stuct as Bytes
 func (d *ClockPayload) PrintDataBytes() {
 	fmt.Printf("%x \n", d.Pid)
-	fmt.Printf("%X \n", d.Vcinbytes)
+	fmt.Printf("%X \n", d.VcMap)
 	fmt.Printf("%X \n", d.Payload)
 }
 
@@ -101,7 +103,7 @@ func (d *ClockPayload) PrintDataString() {
 	fmt.Println("-----DATA START -----")
 	s := string(d.Pid[:])
 	fmt.Println(s)
-	s = string(d.Vcinbytes[:])
+	//s = string(d.VcMap)
 	fmt.Println(s)
 	fmt.Println("-----DATA END -----")
 }
@@ -305,6 +307,56 @@ func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), de
 	gv.decodingStrategy = decoder
 }
 
+/* Custom encoder function, needed for msgpack interoperability */
+func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
+    
+    var err error
+    
+    err = enc.EncodeString(d.Pid)
+    if err != nil {
+    	return err
+    }
+
+    err = enc.Encode(d.Payload)
+    if err != nil {
+    	return err
+    }
+
+    err = enc.EncodeMapLen(len(d.VcMap))
+    if err != nil {
+    	return err
+    }
+
+	for key, value := range d.VcMap {
+		
+		err = enc.EncodeString(key)
+		if err != nil {
+    		return err
+    	}
+
+		err = enc.EncodeUint(value)
+		if err != nil {
+    		return err
+    	}
+	}
+
+    return nil
+
+}
+
+/* Custom decoder function, needed for msgpack interoperability */
+func (d *ClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
+    
+	var err error
+	err = dec.Decode(&d.Pid, &d.Payload, &d.VcMap)
+
+	if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 func (gv *GoLog) DefaultEncoder(payload interface{}) ([]byte, error) {
 	return msgpack.Marshal(payload)
 }
@@ -410,10 +462,9 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 		gv.logger.Println("Something went Wrong, Could not Log!")
 	}
 
-	// Create New Data Structure and add information: data to be transfered
 	d := ClockPayload{}
-	d.Pid = []byte(gv.pid)
-	d.Vcinbytes = gv.currentVC
+	d.Pid = gv.pid
+	d.VcMap = vc.GetMap()
 	d.Payload = buf
 
 	// encode the Clock Payload
@@ -448,8 +499,8 @@ func (gv *GoLog) mergeIncomingClock(mesg string, e ClockPayload) {
 	vc.Tick(gv.pid)
 
 	// Next, merge it with the new clock and update GV
-	tmp := []byte(e.Vcinbytes[:])
-	tempvc, err := vclock.FromBytes(tmp)
+	var tempvc vclock.VClock
+	tempvc = e.VcMap
 
 	if err != nil && gv.debugmode {
 		gv.logger.Println(err.Error())

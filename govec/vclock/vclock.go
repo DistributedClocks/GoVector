@@ -38,6 +38,14 @@ func (vc VClock) Copy() VClock {
 	return cp
 }
 
+func (vc VClock) CopyFromMap(otherMap map[string]uint64) VClock {
+	return otherMap
+}
+
+func (vc VClock) GetMap() map[string]uint64 {
+	return map[string]uint64(vc)
+}
+
 func (vc VClock) Set(id string, ticks uint64) {
 	vc[id] = ticks
 }

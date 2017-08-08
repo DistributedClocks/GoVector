@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"time"
-
 	"github.com/DistributedClocks/GoVector/capture"
 	"github.com/DistributedClocks/GoVector/govec"
 )
@@ -49,13 +48,19 @@ func client(listen, send string) {
 }
 
 func server(listen string) {
+	
 	Logger := govec.InitGoVector("server", "server")
+	
+	fmt.Println("Listening on server....")
 	conn, err := net.ListenPacket("udp", ":"+listen)
 	printErr(err)
 
 	var buf [512]byte
 
 	var n, nMinOne, nMinTwo int
+	n = 1
+	nMinTwo = 1
+	nMinTwo = 1
 
 	for i := 0; i < MESSAGES; i++ {
 		_, addr, err := capture.ReadFrom(conn.ReadFrom, buf[0:])
@@ -79,7 +84,10 @@ func server(listen string) {
 			n = nMinOne + nMinTwo
 			break
 		}
-		capture.WriteTo(conn.WriteTo, Logger.PrepareSend("Replying to client", n), addr)
+
+		outBuf := Logger.PrepareSend("Replying to client", n)
+
+		capture.WriteTo(conn.WriteTo, outBuf, addr)
 		time.Sleep(1)
 	}
 	conn.Close()
