@@ -3,7 +3,6 @@ package govec
 import (
 	"bufio"
 	"bytes"
-	"encoding/gob"
 	"fmt"
 	"github.com/DistributedClocks/GoVector/govec/vclock"
 	"github.com/vmihailenco/msgpack"
@@ -309,20 +308,6 @@ func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), de
 	gv.decodingStrategy = decoder
 }
 
-func getBytes(key interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(key)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func printBytes(name string, bytes []byte) {
-	fmt.Printf("%s: [% x]\n", name, bytes)
-}
-
 /* Custom encoder function, needed for msgpack interoperability */
 func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 
@@ -333,11 +318,7 @@ func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	payload, err := getBytes(d.Payload)
-	if err != nil {
-		return err
-	}
-	err = enc.EncodeBytes(payload)
+	err = enc.Encode(d.Payload)
 	if err != nil {
 		return err
 	}
@@ -366,16 +347,23 @@ func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 /* Custom decoder function, needed for msgpack interoperability */
 func (d *ClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
+	var err error
+
 	pid, err := dec.DecodeString()
+	if err != nil {
+		return err
+	}
 	d.Pid = pid
 
-	payload, err := dec.DecodeBytes()
-	b := new(bytes.Buffer)
-	b.Write(payload)
-	gobDec := gob.NewDecoder(b)
-	err = gobDec.Decode(d.Payload)
+	err = dec.Decode(&d.Payload)
+	if err != nil {
+		return err
+	}
 
 	mapLen, err := dec.DecodeMapLen()
+	if err != nil {
+		return err
+	}
 	var vcMap map[string]uint64
 	vcMap = make(map[string]uint64)
 
@@ -392,7 +380,7 @@ func (d *ClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
 		}
 		vcMap[key] = value
 	}
-	/*	err = dec.Decode(&d.Pid, &d.Payload, &d.VcMap)*/
+	err = dec.Decode(&d.Pid, &d.Payload, &d.VcMap)
 	d.VcMap = vcMap
 	if err != nil {
 		return err

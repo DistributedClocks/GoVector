@@ -17,6 +17,7 @@ func main() {
 	//receive message
 	var incommingMessage []byte
 	Logger.UnpackReceive("Received Message from server", finalsend, &incommingMessage)
+	fmt.Printf("Received Message: %s\n", incommingMessage)
 	//Can be called at any point
 	Logger.LogLocalEvent("Example Complete")
 
