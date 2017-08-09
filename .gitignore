@@ -52,3 +52,7 @@ Temporary Items
 *-Log.txt
 test/*.txt
 example/*.txt
+
+*.sublime-workspace
+
+*.sublime-project

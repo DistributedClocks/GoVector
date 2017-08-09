@@ -3,6 +3,7 @@ package govec
 import (
 	"bufio"
 	"bytes"
+	"encoding/gob"
 	"fmt"
 	"github.com/DistributedClocks/GoVector/govec/vclock"
 	"github.com/vmihailenco/msgpack"
@@ -41,6 +42,7 @@ import (
 */
 
 const logToTerminal = false
+
 var _ msgpack.CustomEncoder = (*ClockPayload)(nil)
 var _ msgpack.CustomDecoder = (*ClockPayload)(nil)
 
@@ -86,9 +88,9 @@ type GoLog struct {
 
 //This is the data structure that is actually end on the wire
 type ClockPayload struct {
-	Pid         string
-	VcMap       map[string]uint64
-	Payload 	interface{}
+	Pid     string
+	VcMap   map[string]uint64
+	Payload interface{}
 }
 
 //Prints the Data Stuct as Bytes
@@ -125,8 +127,8 @@ func New() *GoLog {
   a program
 */
 func InitGoVector(processid string, logfilename string) *GoLog {
-	
-	gv := New() 
+
+	gv := New()
 	gv.pid = processid
 
 	if logToTerminal {
@@ -195,7 +197,7 @@ func InitGoVector(processid string, logfilename string) *GoLog {
 	a program, without deleting the old log. It just increments the execution
 */
 func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog {
-	
+
 	gv := New() //Simply returns a new struct
 	gv.pid = processid
 
@@ -307,54 +309,96 @@ func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), de
 	gv.decodingStrategy = decoder
 }
 
+func getBytes(key interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(key)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func printBytes(name string, bytes []byte) {
+	fmt.Printf("%s: [% x]\n", name, bytes)
+}
+
 /* Custom encoder function, needed for msgpack interoperability */
 func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
-    
-    var err error
-    
-    err = enc.EncodeString(d.Pid)
-    if err != nil {
-    	return err
-    }
 
-    err = enc.Encode(d.Payload)
-    if err != nil {
-    	return err
-    }
+	var err error
 
-    err = enc.EncodeMapLen(len(d.VcMap))
-    if err != nil {
-    	return err
-    }
+	err = enc.EncodeString(d.Pid)
+	if err != nil {
+		return err
+	}
+
+	payload, err := getBytes(d.Payload)
+	if err != nil {
+		return err
+	}
+	err = enc.EncodeBytes(payload)
+	if err != nil {
+		return err
+	}
+
+	err = enc.EncodeMapLen(len(d.VcMap))
+	if err != nil {
+		return err
+	}
 
 	for key, value := range d.VcMap {
-		
+
 		err = enc.EncodeString(key)
 		if err != nil {
-    		return err
-    	}
+			return err
+		}
 
 		err = enc.EncodeUint(value)
 		if err != nil {
-    		return err
-    	}
+			return err
+		}
 	}
 
-    return nil
+	return nil
 
 }
 
 /* Custom decoder function, needed for msgpack interoperability */
 func (d *ClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
-    
-	var err error
-	err = dec.Decode(&d.Pid, &d.Payload, &d.VcMap)
+	pid, err := dec.DecodeString()
+	d.Pid = pid
 
+	payload, err := dec.DecodeBytes()
+	b := new(bytes.Buffer)
+	b.Write(payload)
+	gobDec := gob.NewDecoder(b)
+	err = gobDec.Decode(d.Payload)
+
+	mapLen, err := dec.DecodeMapLen()
+	var vcMap map[string]uint64
+	vcMap = make(map[string]uint64)
+
+	for i := 0; i < mapLen; i++ {
+
+		key, err := dec.DecodeString()
+		if err != nil {
+			return err
+		}
+
+		value, err := dec.DecodeUint64()
+		if err != nil {
+			return err
+		}
+		vcMap[key] = value
+	}
+	/*	err = dec.Decode(&d.Pid, &d.Payload, &d.VcMap)*/
+	d.VcMap = vcMap
 	if err != nil {
-        return err
-    }
+		return err
+	}
 
-    return nil
+	return nil
 }
 
 func (gv *GoLog) DefaultEncoder(payload interface{}) ([]byte, error) {
@@ -412,7 +456,7 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 		ok = gv.LogThis(Message, gv.pid, vc.ReturnVCString())
 		if gv.realtime == true {
 			// Send local message to broker
-			// BUG go publisher never worked 
+			// BUG go publisher never worked
 			// gv.publisher.PublishLocalMessage(Message, gv.pid, *vc)
 		}
 	}

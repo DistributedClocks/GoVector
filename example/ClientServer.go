@@ -1,12 +1,11 @@
 package main
 
 import (
+	"../govec"
 	"fmt"
 	"net"
 	"os"
 	"time"
-	"github.com/DistributedClocks/GoVector/capture"
-	"github.com/DistributedClocks/GoVector/govec"
 )
 
 const (
@@ -32,12 +31,12 @@ func client(listen, send string) {
 	for i := 0; i < MESSAGES; i++ {
 		outgoingMessage := i
 		outBuf := Logger.PrepareSend("Sending message to server", outgoingMessage)
-		_, errWrite := capture.Write(conn.Write, outBuf)
+		_, errWrite := conn.Write(outBuf)
 		printErr(errWrite)
 
 		var inBuf [512]byte
 		var incommingMessage int
-		n, errRead := capture.Read(conn.Read, inBuf[0:])
+		n, errRead := conn.Read(inBuf[0:])
 		printErr(errRead)
 		Logger.UnpackReceive("Received Message from server", inBuf[0:n], &incommingMessage)
 		fmt.Printf("GOT BACK : %d\n", incommingMessage)
@@ -48,9 +47,9 @@ func client(listen, send string) {
 }
 
 func server(listen string) {
-	
+
 	Logger := govec.InitGoVector("server", "server")
-	
+
 	fmt.Println("Listening on server....")
 	conn, err := net.ListenPacket("udp", ":"+listen)
 	printErr(err)
@@ -63,7 +62,7 @@ func server(listen string) {
 	nMinTwo = 1
 
 	for i := 0; i < MESSAGES; i++ {
-		_, addr, err := capture.ReadFrom(conn.ReadFrom, buf[0:])
+		_, addr, err := conn.ReadFrom(buf[0:])
 		var incommingMessage int
 		Logger.UnpackReceive("Received Message From Client", buf[0:], &incommingMessage)
 		fmt.Printf("Received %d\n", incommingMessage)
@@ -87,7 +86,7 @@ func server(listen string) {
 
 		outBuf := Logger.PrepareSend("Replying to client", n)
 
-		capture.WriteTo(conn.WriteTo, outBuf, addr)
+		conn.WriteTo(outBuf, addr)
 		time.Sleep(1)
 	}
 	conn.Close()
