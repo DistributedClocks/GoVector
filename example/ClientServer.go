@@ -1,8 +1,8 @@
 package main
 
 import (
-	"../govec"
 	"fmt"
+	"github.com/DistributedClocks/GoVector/govec"
 	"net"
 	"os"
 	"time"

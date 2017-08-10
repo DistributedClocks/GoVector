@@ -1,6 +1,6 @@
 package main
 
-import "../govec"
+import "github.com/DistributedClocks/GoVector/govec"
 import "fmt"
 
 func main() {
