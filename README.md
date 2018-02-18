@@ -2,7 +2,7 @@ GoVector
 ========
 
 This library can be added to a Go project to
-generate a [ShiViz](http://bestchai.bitbucket.org/shiviz/)-compatible
+generate a [ShiViz](http://bestchai.bitbucket.io/shiviz/)-compatible
 vector-clock timestamped log of events in a concurrent or distributed system.
 GoVec is compatible with Go 1.4+ 
 
