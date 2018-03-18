@@ -73,9 +73,9 @@ Returns a Go Log Struct taking in two arguments and truncates previous logs:
 * LogFileName (string) : name of the log file that will store info. Any old log with the same name will be truncated
 
 
-#####   func InitializeMultipleExecutions
+#####   func InitGoVectorMultipleExecutions
 ```go
-	func InitializeMultipleExecutions(ProcessName, LogName string) *GoLog
+	func InitGoVectorMultipleExecutions(ProcessName, LogName string) *GoLog
 ```
 Returns a Go Log Struct taking in two arguments without truncating previous log entry:
 * MyProcessName (string): local process name; must be unique in your distributed system.
