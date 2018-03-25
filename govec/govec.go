@@ -143,8 +143,7 @@ func InitGoVector(processid string, logfilename string) *GoLog {
 	gv.EnableLogging()
 
 	// Use the default encoder/decoder. As of July 2017 this is msgPack.
-	gv.encodingStrategy = gv.DefaultEncoder
-	gv.decodingStrategy = gv.DefaultDecoder
+	gv.SetEncoderDecoder(gv.DefaultEncoder, gv.DefaultDecoder)
 
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
@@ -211,6 +210,9 @@ func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog
 	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
 	gv.debugmode = true     // (Debug)
 	gv.EnableLogging()
+
+	// Use the default encoder/decoder. As of July 2017 this is msgPack.
+	gv.SetEncoderDecoder(gv.DefaultEncoder, gv.DefaultDecoder)
 
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
