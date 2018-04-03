@@ -71,8 +71,13 @@ type GoLog struct {
 
 	logging bool
 
+	buffered bool
+
 	//Logfile name
 	logfile string
+
+	//buffered string
+	output string
 
 	encodingStrategy func(interface{}) ([]byte, error)
 	decodingStrategy func([]byte, interface{}) error
@@ -141,6 +146,8 @@ func InitGoVector(processid string, logfilename string) *GoLog {
 	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
 	gv.debugmode = false    // (Debug)
 	gv.EnableLogging()
+	gv.output = ""
+	gv.DisableBufferedWrites()
 
 	// Use the default encoder/decoder. As of July 2017 this is msgPack.
 	gv.SetEncoderDecoder(gv.DefaultEncoder, gv.DefaultDecoder)
@@ -210,6 +217,8 @@ func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog
 	gv.printonscreen = true //(ShouldYouSeeLoggingOnScreen)
 	gv.debugmode = true     // (Debug)
 	gv.EnableLogging()
+	gv.output = ""
+	gv.DisableBufferedWrites()
 
 	// Use the default encoder/decoder. As of July 2017 this is msgPack.
 	gv.SetEncoderDecoder(gv.DefaultEncoder, gv.DefaultDecoder)
@@ -310,6 +319,17 @@ func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), de
 	gv.decodingStrategy = decoder
 }
 
+func (gv *GoLog) EnableBufferedWrites() {
+	gv.buffered = true
+}
+
+func (gv *GoLog) DisableBufferedWrites() {
+	gv.buffered = false
+	if gv.output != "" {
+		gv.Flush()
+	}
+}
+
 /* Custom encoder function, needed for msgpack interoperability */
 func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 
@@ -399,6 +419,22 @@ func (gv *GoLog) DefaultDecoder(buf []byte, payload interface{}) error {
 	return msgpack.Unmarshal(buf, payload)
 }
 
+func (gv *GoLog) Flush() bool {
+	complete := true
+	file, err := os.OpenFile(gv.logfile, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		complete = false
+	}
+	defer file.Close()
+
+	if _, err = file.WriteString(gv.output); err != nil {
+		complete = false
+	}
+
+	gv.output = ""
+	return complete
+}
+
 func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool {
 	complete := true
 	var buffer bytes.Buffer
@@ -410,15 +446,11 @@ func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool
 	buffer.WriteString("\n")
 	output := buffer.String()
 
-	file, err := os.OpenFile(gv.logfile, os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		complete = false
+	gv.output += output
+	if !gv.buffered {
+		complete = gv.Flush()
 	}
-	defer file.Close()
 
-	if _, err = file.WriteString(output); err != nil {
-		complete = false
-	}
 	if gv.printonscreen == true {
 		gv.logger.Println(output)
 	}
