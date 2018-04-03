@@ -137,7 +137,7 @@ Note: For the moment, the vector clocks are going to continue being updated.
     func Flush() bool
 ```
 
-Writes the log messages stored in the buffer to the Log File.
+Writes the log messages stored in the buffer to the Log File. This function should be used by the application to also force writes in the case of interrupts and crashes.   
 Note: Calling Flush when BufferedWrites is disabled is essentially a no-op.
 
 #### func EnableBufferedWrites
