@@ -132,6 +132,32 @@ must be a valid vector clock, true is returned on success
 Disables Logging. Log messages will not appear in Log file any longer.
 Note: For the moment, the vector clocks are going to continue being updated.
 
+#### func Flush
+```go
+    func Flush() bool
+```
+
+Writes the log messages stored in the buffer to the Log File.
+Note: Calling Flush when BufferedWrites is disabled is essentially a no-op.
+
+#### func EnableBufferedWrites
+```go
+    func EnableBufferedWrites()
+```
+
+Enables buffered writes to the log file. All the log messages are only written
+to the LogFile via an explicit call to the function Flush.
+Note: Buffered writes are automatically disabled.
+
+#### func DisableBufferedWrites
+```go
+    func DisableBufferedWrites()
+```
+
+Disables buffered writes to the log file. All the log messages from now on
+will be written to the Log file immediately. Writes all the existing
+log messages that haven't been written to Log file yet.
+
 ###   Examples
 
 The following is a basic example of how this library can be used 

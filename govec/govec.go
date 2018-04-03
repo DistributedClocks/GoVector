@@ -325,6 +325,7 @@ func (gv *GoLog) EnableBufferedWrites() {
 
 func (gv *GoLog) DisableBufferedWrites() {
     gv.buffered = false
+    gv.Flush()
 }
 
 /* Custom encoder function, needed for msgpack interoperability */
