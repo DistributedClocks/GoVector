@@ -119,7 +119,7 @@ Increments current vector timestamp and logs it into Log File.
 ##### func LogThis
 
 ```go
-func LogThis(Message string, ProcessID string, VCString string) bool
+    func LogThis(Message string, ProcessID string, VCString string) bool
 ```
 Logs a message along with a processID and a vector clock, the VCString
 must be a valid vector clock, true is returned on success
@@ -134,7 +134,7 @@ Note: For the moment, the vector clocks are going to continue being updated.
 
 #### func Flush
 ```go
-    func Flush() bool
+	func Flush() bool
 ```
 
 Writes the log messages stored in the buffer to the Log File. This function should be used by the application to also force writes in the case of interrupts and crashes.   
@@ -142,7 +142,7 @@ Note: Calling Flush when BufferedWrites is disabled is essentially a no-op.
 
 #### func EnableBufferedWrites
 ```go
-    func EnableBufferedWrites()
+	func EnableBufferedWrites()
 ```
 
 Enables buffered writes to the log file. All the log messages are only written
@@ -151,12 +151,40 @@ Note: Buffered writes are automatically disabled.
 
 #### func DisableBufferedWrites
 ```go
-    func DisableBufferedWrites()
+	func DisableBufferedWrites()
 ```
 
 Disables buffered writes to the log file. All the log messages from now on
 will be written to the Log file immediately. Writes all the existing
 log messages that haven't been written to Log file yet.
+
+### RPC Capture
+
+GoVector provides support for automatically logging RPC Calls from a RPC Client to a RPC Server
+
+```go
+	type RPCClientCodec
+```
+
+An extension of the default rpc codec which uses a logger of type GoLog to capture all the calls to a RPC Server as well as responses from a RPC server.
+
+```go
+	type RPCServerCodec
+```
+
+An extension of the default rpc codec which uses a logger of type of GoLog to capture all the requests made from the client to a RPC server as well as the server's to the clients.
+
+```go
+	func RPCDial(network, address string, logger *GoLog) (*rpc.Client, error) 
+```
+
+RPCDial connects to a RPC server at the specified network address. The logger is provided to be used by the RPCClientCodec for message capture.
+
+```go
+	func ServeRPCConn(server *rpc.Server, l net.Listener, logger *GoLog)
+```
+
+Convenience function that accepts connections for a given listener and starts a new goroutine for the server to serve a new connection. The logger is provided to be used by the RPCServerCodec for message capture.
 
 ###   Examples
 
@@ -204,6 +232,9 @@ This produces the log "LogFile.txt" :
 
 An executable example of a similar program can be found in
 [Examples/ClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/ClientServer.go)
+
+An executable example of a RPC Client-Server program can be found in 
+[Examples/RpcClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/RpcClientServer.go)
 
 <!-- July 2017: Brokers are no longer supported, maybe they will come back.
 
