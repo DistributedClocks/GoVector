@@ -10,12 +10,11 @@ import (
 
 type GoTSLog struct {
 	GoLog
-	start time.Time
 }
 
 func InitGoVectorTimeStamp(processid string, logfilename string) *GoTSLog {
 	gv := InitGoVector(processid, logfilename)
-	gvts := &GoTSLog{*gv, time.Now()}
+	gvts := &GoTSLog{*gv}
 	gvts.SetLogFunc(gvts.LogThis)
 	// Need to do a reinitialization to have a timestamped initializaiton event
 	gvts.reinitialize()
@@ -50,7 +49,7 @@ func (gv *GoTSLog) reinitialize() {
 func (gv *GoTSLog) LogThis(Message string, ProcessID string, VCString string) bool {
 	complete := true
 	var buffer bytes.Buffer
-	buffer.WriteString(strconv.FormatInt(time.Since(gv.start).Nanoseconds(), 10))
+	buffer.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
 	buffer.WriteString(" ")
 	buffer.WriteString(ProcessID)
 	buffer.WriteString(" ")
