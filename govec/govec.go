@@ -82,6 +82,9 @@ type GoLog struct {
 	encodingStrategy func(interface{}) ([]byte, error)
 	decodingStrategy func([]byte, interface{}) error
 
+	//Internal Logging function
+	logFunc func(message string, pid string, VCString string) bool
+
 	// Publisher to enable sending messages to a vecbroker.
 	publisher *GoPublisher
 
@@ -188,8 +191,9 @@ func InitGoVector(processid string, logfilename string) *GoLog {
 	file.Close()
 
 	gv.logfile = logname
+	gv.logFunc = gv.LogThis
 	//Log it
-	ok := gv.LogThis("Initialization Complete", gv.pid, vc1.ReturnVCString())
+	ok := gv.logFunc("Initialization Complete", gv.pid, vc1.ReturnVCString())
 	if ok == false {
 		gv.logger.Println("Something went Wrong, Could not Log!")
 	}
@@ -241,6 +245,7 @@ func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog
 	logname := logfilename + "-Log.txt"
 	_, err := os.Stat(logname)
 	gv.logfile = logname
+	gv.logFunc = gv.LogThis
 	if err == nil {
 		//its exists... deleting old log
 		gv.logger.Println(logname, " exists! ...  Looking for Last Exectution... ")
@@ -248,7 +253,7 @@ func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog
 		executionnumber = executionnumber + 1
 		gv.logger.Println("Execution Number is  ", executionnumber)
 		executionstring := "=== Execution #" + strconv.Itoa(executionnumber) + "  ==="
-		gv.LogThis(executionstring, "", "")
+		gv.logFunc(executionstring, "", "")
 	} else {
 		//Creating new Log
 		file, err := os.Create(logname)
@@ -258,9 +263,9 @@ func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog
 		file.Close()
 
 		//Mark Execution Number
-		ok := gv.LogThis("=== Execution #1 ===", " ", " ")
+		ok := gv.logFunc("=== Execution #1 ===", " ", " ")
 		//Log it
-		ok = gv.LogThis("Initialization Complete", gv.pid, vc1.ReturnVCString())
+		ok = gv.logFunc("Initialization Complete", gv.pid, vc1.ReturnVCString())
 		if ok == false {
 			gv.logger.Println("Something went Wrong, Could not Log!")
 		}
@@ -475,7 +480,7 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 
 	var ok bool
 	if gv.logging == true {
-		ok = gv.LogThis(Message, gv.pid, vc.ReturnVCString())
+		ok = gv.logFunc(Message, gv.pid, vc.ReturnVCString())
 		if gv.realtime == true {
 			// Send local message to broker
 			// BUG go publisher never worked
@@ -521,7 +526,7 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 
 	var ok bool
 	if gv.logging == true {
-		ok = gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
+		ok = gv.logFunc(mesg, gv.pid, vc.ReturnVCString())
 	}
 
 	if ok == false {
@@ -582,7 +587,7 @@ func (gv *GoLog) mergeIncomingClock(mesg string, e ClockPayload) {
 	// Log it
 	var ok bool
 	if gv.logging == true {
-		ok = gv.LogThis(mesg, gv.pid, vc.ReturnVCString())
+		ok = gv.logFunc(mesg, gv.pid, vc.ReturnVCString())
 	}
 	if ok == false {
 		gv.logger.Println("Something went Wrong, Could not Log!")
@@ -624,4 +629,8 @@ func (gv *GoLog) EnableLogging() {
 
 func (gv *GoLog) DisableLogging() {
 	gv.logging = false
+}
+
+func (gv *GoLog) SetLogFunc(logFunc func (message, pid, VCString string) bool) {
+	gv.logFunc = logFunc
 }
