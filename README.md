@@ -233,7 +233,7 @@ If the priority of the logger is lower than or equal to the priority of this eve
 	func SetPriority(Priority LogPriority)
 ```
 
-Sets the priroity which is used to decide which future local events should be logged in the log file. Any future local event with a priority level equal to or higher than this will be logged in the log file.
+Sets the priority which is used to decide which future local events should be logged in the log file. Any future local event with a priority level equal to or higher than this will be logged in the log file.
 
 ### type GoTSLog
 ```go
