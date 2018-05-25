@@ -186,6 +186,55 @@ RPCDial connects to a RPC server at the specified network address. The logger is
 
 Convenience function that accepts connections for a given listener and starts a new goroutine for the server to serve a new connection. The logger is provided to be used by the RPCServerCodec for message capture.
 
+### type GoPriorityLog
+```go
+    type GoPriorityLog struct {
+        // Contians filtered or unexported fields
+    }    
+```
+
+The GoPriorityLog struct provides an interface to creating and maintaining vector timestamp entries in the generated log file as well as priority to local events which are printed out to console. Local events with a priority equal to or higher are logged in the log file.
+
+#### type LogPriority
+```
+    const (
+        DEBUG LogPriority = iota
+        NORMAL
+        NOTICE
+        WARNING
+        ERROR
+        CRITICAL
+    )
+```
+
+LogPriority enum provides all the valid Priority Levels that can be used to log events with.
+
+#### func InitGoVectorPriority
+```go
+	func InitGoVectorPriority(ProcessName, LogName string, Priority LogPriority) *GoLog
+```
+
+Returns a Go Log Struct taking in two arguments and truncates previous logs:
+* MyProcessName (string): local process name; must be unique in your distributed system.
+* LogFileName (string) : name of the log file that will store info. Any old log with the same name will be truncated
+* Priority (LogPriority) : priority which decides what future local events should be logged in the log file. Any local event with a priority level equal to or higher than this will be logged in the log file. This priority can be changed using SetPriority.
+
+#### func LogLocalEventWithPriority
+```go
+	func LogLocalEventWithPriority(LogMessage string, Priority LogPriority)
+```
+
+If the priority of the logger is lower than or equal to the priority of this event then the current vector timestamp is incremented and the message is logged it into the Log File. A color coded string is also printed on the console.
+* LogMessage (string) : Message to be logged
+* Priority (LogPriority) : Priority at which the message is to be logged
+
+#### func SetPriority
+```go
+	func SetPriority(Priority LogPriority)
+```
+
+Sets the priroity which is used to decide which future local events should be logged in the log file. Any future local event with a priority level equal to or higher than this will be logged in the log file.
+
 ###   Examples
 
 The following is a basic example of how this library can be used 
@@ -236,6 +285,12 @@ An executable example of a similar program can be found in
 An executable example of a RPC Client-Server program can be found in 
 [Examples/RpcClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/RpcClientServer.go)
 
+An executable example of Priority Logger can be found in
+[Examples/PriorityLoggerExample.go](example/PriorityLoggerExample.go)
+
+Here is a sample output of the priority logger
+
+![Examples/Output/PriorityLoggerOutput.png](example/output/PriorityLoggerOutput.PNG)
 <!-- July 2017: Brokers are no longer supported, maybe they will come back.
 
 ### VectorBroker
