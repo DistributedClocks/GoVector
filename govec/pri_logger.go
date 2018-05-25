@@ -84,7 +84,8 @@ func (gv *GoPriorityLog) SetPriority(Priority LogPriority) {
 
 func (gv *GoPriorityLog) LogLocalEventWithPriority(LogMessage string, Priority LogPriority) {
 	if Priority >= gv.Priority {
-		gv.LogLocalEvent(LogMessage)
+		prefix := Priority.getPrefixString() + " - "
+		gv.LogLocalEvent(prefix + LogMessage)
 	}
 	gv.printColoredMessage(LogMessage, Priority)
 }
