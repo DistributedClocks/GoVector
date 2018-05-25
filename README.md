@@ -189,7 +189,7 @@ Convenience function that accepts connections for a given listener and starts a 
 ### type GoPriorityLog
 ```go
     type GoPriorityLog struct {
-        // Contians filtered or unexported fields
+        // Contains filtered or unexported fields
     }    
 ```
 
@@ -211,10 +211,10 @@ LogPriority enum provides all the valid Priority Levels that can be used to log 
 
 #### func InitGoVectorPriority
 ```go
-	func InitGoVectorPriority(ProcessName, LogName string, Priority LogPriority) *GoLog
+	func InitGoVectorPriority(ProcessName, LogName string, Priority LogPriority) *GoPriorityLog
 ```
 
-Returns a Go Log Struct taking in two arguments and truncates previous logs:
+Returns a GoPriorityLog Struct taking in three arguments and truncates previous logs:
 * MyProcessName (string): local process name; must be unique in your distributed system.
 * LogFileName (string) : name of the log file that will store info. Any old log with the same name will be truncated
 * Priority (LogPriority) : priority which decides what future local events should be logged in the log file. Any local event with a priority level equal to or higher than this will be logged in the log file. This priority can be changed using SetPriority.
@@ -234,6 +234,24 @@ If the priority of the logger is lower than or equal to the priority of this eve
 ```
 
 Sets the priroity which is used to decide which future local events should be logged in the log file. Any future local event with a priority level equal to or higher than this will be logged in the log file.
+
+### type GoTSLog
+```go
+    type GoPriorityLog struct {
+        // Contains filtered or unexported fields
+    }
+```
+
+A vector clock logger which in addition to vector clock timestamps, also generates real time timestamps. The generated log is compatible with both Shiviz and TSViz.
+
+#### func InitGoVectorTimeStamp
+```go
+    func InitGoVectorTimeStamp(ProcessName, LogName string) *GoTSLog
+```
+
+Returns a GoTSLog struct taking in two arguments and truncates previous logs:
+* MyProcessName (string): local process name; must be unique in your distributed system.
+* LogFileName (string): name of the log file that will store info. Any old log with the same name will be truncaed.
 
 ###   Examples
 
@@ -284,6 +302,9 @@ An executable example of a similar program can be found in
 
 An executable example of a RPC Client-Server program can be found in 
 [Examples/RpcClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/RpcClientServer.go)
+
+An executable example using the GoTSLog can be found in
+[Examples/ExampleTSLog.go](example/ExampleTSLog.go)
 
 An executable example of Priority Logger can be found in
 [Examples/PriorityLoggerExample.go](example/PriorityLoggerExample.go)
