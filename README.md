@@ -253,71 +253,14 @@ Returns a GoTSLog struct taking in two arguments and truncates previous logs:
 * MyProcessName (string): local process name; must be unique in your distributed system.
 * LogFileName (string): name of the log file that will store info. Any old log with the same name will be truncaed.
 
-###   Examples
-
-The following is a basic example of how this library can be used 
-```go
-	package main
-
-	import "./govec"
-
-	func main() {
-		Logger := govec.InitGoVector("MyProcess", "LogFile")
-		
-		//In Sending Process
-		
-		//Prepare a Message
-		messagepayload := []byte("samplepayload")
-		finalsend := Logger.PrepareSend("Sending Message", messagepayload)
-		
-		//send message
-		connection.Write(finalsend)
-
-		//In Receiving Process
-		
-		//receive message
-		recbuf := Logger.UnpackReceive("Receiving Message", finalsend)
-
-		//Can be called at any point 
-		Logger.LogLocalEvent("Example Complete")
-		
-		Logger.DisableLogging()
-		//No further events will be written to log file
-	}
-```
-
-This produces the log "LogFile.txt" :
-
-	MyProcess {"MyProcess":1}
-	Initialization Complete
-	MyProcess {"MyProcess":2}
-	Sending Message
-	MyProcess {"MyProcess":3}
-	Receiving Message
-	MyProcess {"MyProcess":4}
-	Example Complete
-
-An executable example of a similar program can be found in
-[Examples/ClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/ClientServer.go)
-
-An executable example of a RPC Client-Server program can be found in 
-[Examples/RpcClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/RpcClientServer.go)
-
-An executable example using the GoTSLog can be found in
-[Examples/ExampleTSLog.go](example/ExampleTSLog.go)
-
-An executable example of Priority Logger can be found in
-[Examples/PriorityLoggerExample.go](example/PriorityLoggerExample.go)
-
-Here is a sample output of the priority logger
-
-![Examples/Output/PriorityLoggerOutput.png](example/output/PriorityLoggerOutput.PNG)
-<!-- July 2017: Brokers are no longer supported, maybe they will come back.
-
 ### VectorBroker
 
+```go
 type VectorBroker
    * func Init(logfilename string, pubport string, subport string)
+```
+
+Brokers are currently under development.
 
 ### Usage
 
@@ -381,4 +324,64 @@ Step 3 (optional):
         subscriber.
     * SendOldMessages(nonce string, reply *string)
         Sends any messages received before the requesting subscriber subscribed.
-  -->
+
+###   Examples
+
+The following is a basic example of how this library can be used 
+```go
+	package main
+
+	import "./govec"
+
+	func main() {
+		Logger := govec.InitGoVector("MyProcess", "LogFile")
+		
+		//In Sending Process
+		
+		//Prepare a Message
+		messagepayload := []byte("samplepayload")
+		finalsend := Logger.PrepareSend("Sending Message", messagepayload)
+		
+		//send message
+		connection.Write(finalsend)
+
+		//In Receiving Process
+		
+		//receive message
+		recbuf := Logger.UnpackReceive("Receiving Message", finalsend)
+
+		//Can be called at any point 
+		Logger.LogLocalEvent("Example Complete")
+		
+		Logger.DisableLogging()
+		//No further events will be written to log file
+	}
+```
+
+This produces the log "LogFile.txt" :
+
+	MyProcess {"MyProcess":1}
+	Initialization Complete
+	MyProcess {"MyProcess":2}
+	Sending Message
+	MyProcess {"MyProcess":3}
+	Receiving Message
+	MyProcess {"MyProcess":4}
+	Example Complete
+
+An executable example of a similar program can be found in
+[Examples/ClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/ClientServer.go)
+
+An executable example of a RPC Client-Server program can be found in 
+[Examples/RpcClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/RpcClientServer.go)
+
+An executable example using the GoTSLog can be found in
+[Examples/ExampleTSLog.go](example/ExampleTSLog.go)
+
+An executable example of Priority Logger can be found in
+[Examples/PriorityLoggerExample.go](example/PriorityLoggerExample.go)
+
+Here is a sample output of the priority logger
+
+![Examples/Output/PriorityLoggerOutput.png](example/output/PriorityLoggerOutput.PNG)
+
