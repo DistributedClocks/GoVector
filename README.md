@@ -9,8 +9,6 @@ GoVec is compatible with Go 1.4+
 * govec/    : Contains the Library and all its dependencies
 * example/  : Contains a client server example instrumented with GoVec
 * test/     : A small set of tests for the library
-* broker/   : Automatic live integration with ShiViz (Under
-  Development)
 
 ### Usage
 
