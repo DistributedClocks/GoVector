@@ -253,6 +253,15 @@ Returns a GoTSLog struct taking in two arguments and truncates previous logs:
 * MyProcessName (string): local process name; must be unique in your distributed system.
 * LogFileName (string): name of the log file that will store info. Any old log with the same name will be truncaed.
 
+### type BloomLog
+```go
+	type BloomLog struct {
+	    // Contains filtered or unexported fields
+	}
+``` 
+
+An experimental matrix clock logger based on Bloom Filters.
+
 ###   Examples
 
 The following is a basic example of how this library can be used 
