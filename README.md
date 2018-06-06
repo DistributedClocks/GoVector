@@ -7,10 +7,9 @@ vector-clock timestamped log of events in a concurrent or distributed system.
 GoVec is compatible with Go 1.4+ 
 
 * govec/    : Contains the Library and all its dependencies
+* gobloom/  : An experimental matrix clock logging library
 * example/  : Contains a client server example instrumented with GoVec
 * test/     : A small set of tests for the library
-* broker/   : Automatic live integration with ShiViz (Under
-  Development)
 
 ### Usage
 
