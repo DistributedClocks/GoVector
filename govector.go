@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"runtime/pprof"
 
-	"github.com/DistributedClocks/GoVector/capture"
+	"bitbucket.org/bestchai/dinv/capture"
 )
 
 const (
