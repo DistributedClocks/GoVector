@@ -85,9 +85,6 @@ type GoLog struct {
 	//Internal Logging function
 	logFunc func(message string, pid string, VCString string) bool
 
-	// Publisher to enable sending messages to a vecbroker.
-	publisher *GoPublisher
-
 	logger *log.Logger
 
 	mutex sync.RWMutex
