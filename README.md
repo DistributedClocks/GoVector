@@ -7,7 +7,7 @@ vector-clock timestamped log of events in a concurrent or distributed system.
 GoVec is compatible with Go 1.4+ 
 
 * govec/    : Contains the Library and all its dependencies
-* example/  : Contains a client server example instrumented with GoVec
+* example/  : Contains some examples instrumented with different features of GoVector
 * test/     : A small set of tests for the library
 
 ### Usage
@@ -296,16 +296,16 @@ This produces the log "LogFile.txt" :
 	Example Complete
 
 An executable example of a similar program can be found in
-[Examples/ClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/ClientServer.go)
+[Examples/ClientServer.go](example/ClientServer/ClientServer.go)
 
 An executable example of a RPC Client-Server program can be found in 
-[Examples/RpcClientServer.go](https://github.com/DistributedClocks/GoVector/blob/master/example/RpcClientServer.go)
+[Examples/RpcClientServer.go](example/RpcClientServer/RpcClientServer.go)
 
 An executable example using the GoTSLog can be found in
-[Examples/ExampleTSLog.go](example/ExampleTSLog.go)
+[Examples/ExampleTSLog.go](example/TSLogger/ExampleTSLog.go)
 
 An executable example of Priority Logger can be found in
-[Examples/PriorityLoggerExample.go](example/PriorityLoggerExample.go)
+[Examples/PriorityLoggerExample.go](example/PriorityLogger/PriorityLoggerExample.go)
 
 Here is a sample output of the priority logger
 
