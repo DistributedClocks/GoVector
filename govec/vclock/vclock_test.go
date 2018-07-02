@@ -11,11 +11,11 @@ func TestBasicInit(t *testing.T) {
 	na, isFounda := n.FindTicks("a")
 
 	if !isFounda {
-		t.Fatalf("Failed on finding ticks: %s", n.ReturnVCString)
+		t.Fatalf("Failed on finding ticks: %s", n.ReturnVCString())
 	}
 
 	if na != 2 {
-		t.Fatalf("Tick value did not increment: %s", n.ReturnVCString)
+		t.Fatalf("Tick value did not increment: %s", n.ReturnVCString())
 	}
 
 	n.Tick("b")
@@ -24,11 +24,11 @@ func TestBasicInit(t *testing.T) {
 	nb, isFoundb := n.FindTicks("b")
 
 	if !isFounda || !isFoundb {
-		t.Fatalf("Failed on finding ticks: %s", n.ReturnVCString)
+		t.Fatalf("Failed on finding ticks: %s", n.ReturnVCString())
 	}
 
 	if na != 2 || nb != 2 {
-		t.Fatalf("Tick value did not increment: %s", n.ReturnVCString)	
+		t.Fatalf("Tick value did not increment: %s", n.ReturnVCString())
 	}
 
 }

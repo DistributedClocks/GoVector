@@ -305,7 +305,7 @@ func getCallingFunctionID() string {
 	passedFrontOnStack := false
 	re := regexp.MustCompile("([a-zA-Z0-9]+.go:[0-9]+)")
 	ownFilename := regexp.MustCompile("capture.go") // hardcoded own filename
-	matches := re.FindAllString(fmt.Sprintf("%s", buf), -1)
+	matches := re.FindAllString(fmt.Sprintf("%s", buf.String()), -1)
 	for _, match := range matches {
 		if passedFrontOnStack && !ownFilename.MatchString(match) {
 			return match
