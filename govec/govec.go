@@ -188,7 +188,7 @@ func InitGoVector(processid string, logfilename string) *GoLog {
 	file.Close()
 
 	gv.logfile = logname
-	gv.logFunc = gv.LogThis
+	gv.logFunc = gv.logThis
 	//Log it
 	ok := gv.logFunc("Initialization Complete", gv.pid, vc1.ReturnVCString())
 	if ok == false {
@@ -242,7 +242,7 @@ func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog
 	logname := logfilename + "-Log.txt"
 	_, err := os.Stat(logname)
 	gv.logfile = logname
-	gv.logFunc = gv.LogThis
+	gv.logFunc = gv.logThis
 	if err == nil {
 		//its exists... deleting old log
 		gv.logger.Println(logname, " exists! ...  Looking for Last Exectution... ")
@@ -438,6 +438,13 @@ func (gv *GoLog) Flush() bool {
 }
 
 func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool {
+	gv.mutex.Lock()
+	ok := gv.logFunc(Message, ProcessID, VCString)
+	gv.mutex.Unlock()
+	return ok
+}
+
+func (gv *GoLog) logThis(Message string, ProcessID string, VCString string) bool {
 	complete := true
 	var buffer bytes.Buffer
 	buffer.WriteString(ProcessID)
