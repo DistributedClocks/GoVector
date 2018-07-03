@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/DistributedClocks/GoVector.svg?branch=master)](https://travis-ci.com/DistributedClocks/GoVector)
+
 GoVector
 ========
 
@@ -8,7 +10,6 @@ GoVec is compatible with Go 1.4+
 
 * govec/    : Contains the Library and all its dependencies
 * example/  : Contains some examples instrumented with different features of GoVector
-* test/     : A small set of tests for the library
 
 ### Usage
 
