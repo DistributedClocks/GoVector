@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/DistributedClocks/GoVector/govec/vclock"
-	"github.com/vmihailenco/msgpack"
 	"io"
 	"log"
 	"os"
@@ -13,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/DistributedClocks/GoVector/govec/vclock"
+	"github.com/vmihailenco/msgpack"
 )
 
 /*
@@ -44,7 +45,8 @@ var (
 	_             msgpack.CustomDecoder = (*ClockPayload)(nil)
 )
 
-//This is the Global Variable Struct that holds all the info needed to be maintained
+//The GoLog struct provides an interface to creating and maintaining
+//vector timestamp entries in the generated log file
 type GoLog struct {
 
 	//Local Process ID
@@ -124,9 +126,9 @@ func New() *GoLog {
 	return &GoLog{}
 }
 
-/*This is the Start Up Function That should be called right at the start of
-  a program
-*/
+//Returns a Go Log Struct taking in two arguments and truncates previous logs:
+//MyProcessName (string): local process name; must be unique in your distributed system.
+//LogFileName (string) : name of the log file that will store info. Any old log with the same name will be truncated
 func InitGoVector(processid string, logfilename string) *GoLog {
 
 	gv := New()
@@ -190,10 +192,10 @@ func InitGoVector(processid string, logfilename string) *GoLog {
 	return gv
 }
 
-/*
-	This is the Start Up Function That should be called right at the start of
-	a program, without deleting the old log. It just increments the execution
-*/
+//Returns a Go Log Struct taking in two arguments without truncating previous log entry:
+//* MyProcessName (string): local process name; must be unique in your distributed system.
+//* LogFileName (string) : name of the log file that will store info. Each run will append to log file separated
+//by "=== Execution # ==="
 func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog {
 
 	gv := New() //Simply returns a new struct
@@ -284,10 +286,16 @@ func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), de
 	gv.decodingStrategy = decoder
 }
 
+//Enables buffered writes to the log file. All the log messages are only written
+//to the LogFile via an explicit call to the function Flush.
+//Note: Buffered writes are automatically disabled.
 func (gv *GoLog) EnableBufferedWrites() {
 	gv.buffered = true
 }
 
+//Disables buffered writes to the log file. All the log messages from now on
+//will be written to the Log file immediately. Writes all the existing
+//log messages that haven't been written to Log file yet.
 func (gv *GoLog) DisableBufferedWrites() {
 	gv.buffered = false
 	if gv.output != "" {
@@ -384,6 +392,10 @@ func (gv *GoLog) DefaultDecoder(buf []byte, payload interface{}) error {
 	return msgpack.Unmarshal(buf, payload)
 }
 
+//Writes the log messages stored in the buffer to the Log File. This
+//function should be used by the application to also force writes in
+//the case of interrupts and crashes.   Note: Calling Flush when
+//BufferedWrites is disabled is essentially a no-op.
 func (gv *GoLog) Flush() bool {
 	complete := true
 	file, err := os.OpenFile(gv.logfile, os.O_APPEND|os.O_WRONLY, 0600)
@@ -400,6 +412,8 @@ func (gv *GoLog) Flush() bool {
 	return complete
 }
 
+//Logs a message along with a processID and a vector clock, the VCString
+//must be a valid vector clock, true is returned on success
 func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool {
 	gv.mutex.Lock()
 	ok := gv.logFunc(Message, ProcessID, VCString)
@@ -409,9 +423,9 @@ func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool
 
 func (gv *GoLog) logThis(Message string, ProcessID string, VCString string) bool {
 	var (
-        complete = true
-	    buffer bytes.Buffer
-    )
+		complete = true
+		buffer   bytes.Buffer
+	)
 	buffer.WriteString(ProcessID)
 	buffer.WriteString(" ")
 	buffer.WriteString(VCString)
@@ -432,6 +446,7 @@ func (gv *GoLog) logThis(Message string, ProcessID string, VCString string) bool
 
 }
 
+//Increments current vector timestamp and logs it into Log File.
 func (gv *GoLog) LogLocalEvent(Message string) (logSuccess bool) {
 	gv.mutex.Lock()
 	//Converting Vector Clock from Bytes and Updating the gv clock
@@ -452,15 +467,16 @@ func (gv *GoLog) LogLocalEvent(Message string) (logSuccess bool) {
 	return
 }
 
-//This function is meant to be used immediately before sending.
-//mesg will be logged along with the time of the send
-//buf is encodeable data (structure or basic type)
-//Returned is an encoded byte array with logging information
 /*
-	This function is meant to be called before sending a packet. Usually,
-	it should Update the Vector Clock for its own process, package with the clock
-	using msgpack and return the new byte array that should be sent onwards
-	using the Send Command
+This function is meant to be used immediately before sending.
+LogMessage will be logged along with the time of the send
+buf is encode-able data (structure or basic type)
+Returned is an encoded byte array with logging information.
+
+This function is meant to be called before sending a packet. Usually,
+it should Update the Vector Clock for its own process, package with
+the clock using gob support and return the new byte array that should
+be sent onwards using the Send Command
 */
 func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 
@@ -545,14 +561,15 @@ func debugPrint(message string, vc vclock.VClock, gv *GoLog) {
 	}
 }
 
-//UnpackReceive is used to unmarshall network data into local structures
-//mesg will be logged along with the vector time the receive happened
-//buf is the network data, previously packaged by PrepareSend
-//unpack is a pointer to a structure, the same as was packed by
-//PrepareSend
 /*
-	This function is meant to be called immediately after receiving a packet. It unpacks the data
-	by the program, the vector clock. It updates vector clock and logs it. and returns the user data
+UnpackReceive is used to unmarshall network data into local structures.
+LogMessage will be logged along with the vector time the receive happened
+buf is the network data, previously packaged by PrepareSend unpack is
+a pointer to a structure, the same as was packed by PrepareSend
+
+This function is meant to be called immediately after receiving
+a packet. It unpacks the data by the program, the vector clock. It
+updates vector clock and logs it. and returns the user data
 */
 func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 
@@ -577,6 +594,8 @@ func (gv *GoLog) EnableLogging() {
 	gv.logging = true
 }
 
+//Disables Logging. Log messages will not appear in Log file any longer.
+//Note: For the moment, the vector clocks are going to continue being updated.
 func (gv *GoLog) DisableLogging() {
 	gv.logging = false
 }

@@ -2,16 +2,26 @@ package govec
 
 import (
 	"bytes"
-	"github.com/DistributedClocks/GoVector/govec/vclock"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/DistributedClocks/GoVector/govec/vclock"
 )
 
+//A vector clock logger which in addition to vector clock timestamps,
+//also generates real time timestamps. The generated log is compatible
+//with both Shiviz and TSViz.
 type GoTSLog struct {
 	GoLog
 }
 
+//Returns a GoTSLog struct taking in two arguments and truncates
+//previous logs:
+//* MyProcessName (string): local process name; must be unique in your
+//  distributed system.
+//* LogFileName (string): name of the log file that will store info. Any
+//  old log with the same name will be truncaed.
 func InitGoVectorTimeStamp(processid string, logfilename string) *GoTSLog {
 	gv := InitGoVector(processid, logfilename)
 	gvts := &GoTSLog{*gv}

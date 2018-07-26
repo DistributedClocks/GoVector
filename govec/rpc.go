@@ -1,3 +1,5 @@
+//GoVector provides support for automatically logging RPC Calls from a
+//RPC Client to a RPC Server
 package govec
 
 import (
@@ -9,7 +11,9 @@ import (
 	"net/rpc"
 )
 
-/* Functions to add Codecs to Client RPC calls */
+//RPCDial connects to a RPC server at the specified network address. The
+//logger is provided to be used by the RPCClientCodec for message
+//capture.
 func RPCDial(network, address string, logger *GoLog) (*rpc.Client, error) {
 	conn, err := net.Dial(network, address)
 	if err != nil {
@@ -18,6 +22,10 @@ func RPCDial(network, address string, logger *GoLog) (*rpc.Client, error) {
 	return rpc.NewClientWithCodec(NewClientCodec(conn, logger)), err
 }
 
+//Convenience function that accepts connections for a given listener and
+//starts a new goroutine for the server to serve a new connection. The
+//logger is provided to be used by the RPCServerCodec for message
+//capture.
 func ServeRPCConn(server *rpc.Server, l net.Listener, logger *GoLog) {
 	for {
 		conn, err := l.Accept()
@@ -29,6 +37,9 @@ func ServeRPCConn(server *rpc.Server, l net.Listener, logger *GoLog) {
 	}
 }
 
+//An extension of the default rpc codec which uses a logger of type
+//GoLog to capture all the calls to a RPC Server as well as responses
+//from a RPC server.
 type RPCClientCodec struct {
 	C      io.Closer
 	Dec    *gob.Decoder
@@ -37,6 +48,9 @@ type RPCClientCodec struct {
 	Logger *GoLog
 }
 
+//An extension of the default rpc codec which uses a logger of type of
+//GoLog to capture all the requests made from the client to a RPC server
+//as well as the server's to the clients.
 type RPCServerCodec struct {
 	Rwc    io.ReadWriteCloser
 	Dec    *gob.Decoder
