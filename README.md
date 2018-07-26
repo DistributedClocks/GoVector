@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.com/DistributedClocks/GoVector.svg?branch=master)](https://travis-ci.com/DistributedClocks/GoVector)
 
-[GoVector](./images/GoVector.png)
+![GoVector.png](.images/GoVector.png)
 
 This library can be added to a Go project to
 generate a [ShiViz](http://bestchai.bitbucket.io/shiviz/)-compatible
