@@ -1,10 +1,10 @@
 package vclock
 
 import (
-	"encoding/gob"
 	"bytes"
-	"log"
+	"encoding/gob"
 	"fmt"
+	"log"
 )
 
 // Condition constants define how to compare a vector clock against another,
@@ -31,7 +31,7 @@ func New() VClock {
 }
 
 func (vc VClock) Copy() VClock {
-	cp := make(map[string]uint64,len(vc))
+	cp := make(map[string]uint64, len(vc))
 	for key, value := range vc {
 		cp[key] = value
 	}
@@ -54,7 +54,7 @@ func (vc VClock) Set(id string, ticks uint64) {
 func (vc VClock) Tick(id string) {
 	vc[id] = vc[id] + 1
 }
-	
+
 func (vc VClock) LastUpdate() (last uint64) {
 	for key := range vc {
 		if vc[key] > last {
@@ -97,7 +97,7 @@ func (vc VClock) PrintVC() {
 
 func (vc VClock) ReturnVCString() string {
 	//sort
-	ids := make([]string,len(vc))
+	ids := make([]string, len(vc))
 	i := 0
 	for id := range vc {
 		ids[i] = id
@@ -107,8 +107,8 @@ func (vc VClock) ReturnVCString() string {
 	var buffer bytes.Buffer
 	buffer.WriteString("{")
 	for i := range ids {
-		buffer.WriteString(fmt.Sprintf("\"%s\":%d",ids[i],vc[ids[i]]))
-		if (i +1 < len(ids) ) {
+		buffer.WriteString(fmt.Sprintf("\"%s\":%d", ids[i], vc[ids[i]]))
+		if i+1 < len(ids) {
 			buffer.WriteString(", ")
 		}
 	}
@@ -148,7 +148,7 @@ func (vc VClock) Compare(other VClock, cond Condition) bool {
 					return cond&Concurrent != 0
 				}
 			} else if other[id] < vc[id] {
-				switch otherIs{
+				switch otherIs {
 				case Equal:
 					if cond&Ancestor == 0 {
 						return false
