@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.com/DistributedClocks/GoVector.svg?branch=master)](https://travis-ci.com/DistributedClocks/GoVector)
 
-[GoVector](./images/GoVector.png)
+![GoVector.png](.images/GoVector.png)
 
 GoVector is a vector clock logging library written in Go. The [vector
 clock algorithm](https://en.wikipedia.org/wiki/Vector_clock) is used
