@@ -3,7 +3,6 @@ package govec
 import (
 	"bufio"
 	"encoding/gob"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -111,25 +110,21 @@ func (c *RPCServerCodec) ReadRequestBody(body interface{}) (err error) {
 }
 
 func (c *RPCServerCodec) WriteResponse(r *rpc.Response, body interface{}) (err error) {
-	if err = c.Enc.Encode(r); err != nil {
-		if c.EncBuf.Flush() == nil {
-			//Gob Encoding Error
-			fmt.Println("RPC Error encoding response:", err)
-			c.Close()
-		}
-		return
-	}
-	buf := c.Logger.PrepareSend("Sending response to RPC request", body)
-	if err = c.Enc.Encode(buf); err != nil {
-		if c.EncBuf.Flush() == nil {
-			//Gob Encoding Error
-			fmt.Println("RPC Error encoding body (This is likely Dinv's fault):", err)
-			c.Close()
-		}
-		return
-	}
-	return c.EncBuf.Flush()
+    Encode(c,r)
+    Encode(c,body)
+    return c.EncBuf.Flush()
 }
+
+func Encode(c *RPCServerCodec, payload interface{}) {
+	if err := c.Enc.Encode(payload); err != nil {
+		if c.EncBuf.Flush() == nil {
+			//Gob Encoding Error
+			c.Close()
+            panic(err)
+		}
+	}
+}
+    
 
 func (c *RPCServerCodec) Close() error {
 	if c.Closed {

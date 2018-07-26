@@ -105,13 +105,11 @@ func (d *ClockPayload) PrintDataBytes() {
 }
 
 //Prints the Data Struct as a String
-func (d *ClockPayload) PrintDataString() {
-	fmt.Println("-----DATA START -----")
-	s := string(d.Pid[:])
-	fmt.Println(s)
-	//s = string(d.VcMap)
-	fmt.Println(s)
-	fmt.Println("-----DATA END -----")
+func (d *ClockPayload) String() (s string) {
+	s += "-----DATA START -----\n"
+	s += string(d.Pid[:])
+	s += "-----DATA END -----\n"
+    return
 }
 
 func (gv *GoLog) GetCurrentVC() []byte {
@@ -159,12 +157,7 @@ func InitGoVector(processid string, logfilename string) *GoLog {
 	//Vector Clock Stored in bytes
 	gv.currentVC = vc1.Bytes()
 
-	if gv.debugmode == true {
-		gv.logger.Println(" ###### Initialization ######")
-		gv.logger.Print("VCLOCK IS :")
-		vc1.PrintVC()
-		gv.logger.Println(" ##### End of Initialization ")
-	}
+    debugPrint(" ##### Initialization #####",vc1,gv)
 
 	//Starting File IO . If Log exists, Log Will be deleted and A New one will be created
 	logname := logfilename + "-Log.txt"
@@ -231,13 +224,7 @@ func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog
 	//Vector Clock Stored in bytes
 	gv.currentVC = vc1.Bytes()
 
-	if gv.debugmode == true {
-		gv.logger.Println(" ###### Initialization ######")
-		gv.logger.Print("VCLOCK IS :")
-		vc1.PrintVC()
-		gv.logger.Println(" ##### End of Initialization ")
-	}
-
+    debugPrint(" ###### Initialization ######",vc1,gv)
 	//Starting File IO . If Log exists, it will find Last execution number and ++ it
 	logname := logfilename + "-Log.txt"
 	_, err := os.Stat(logname)
@@ -467,8 +454,7 @@ func (gv *GoLog) logThis(Message string, ProcessID string, VCString string) bool
 
 }
 
-func (gv *GoLog) LogLocalEvent(Message string) bool {
-
+func (gv *GoLog) LogLocalEvent(Message string) (logSuccess bool) {
 	gv.mutex.Lock()
 	//Converting Vector Clock from Bytes and Updating the gv clock
 	vc, err := vclock.FromBytes(gv.currentVC)
@@ -482,18 +468,10 @@ func (gv *GoLog) LogLocalEvent(Message string) bool {
 	vc.Tick(gv.pid)
 	gv.currentVC = vc.Bytes()
 
-	var ok bool
-	if gv.logging == true {
-		ok = gv.logFunc(Message, gv.pid, vc.ReturnVCString())
-		if gv.realtime == true {
-			// Send local message to broker
-			// BUG go publisher never worked
-			// gv.publisher.PublishLocalMessage(Message, gv.pid, *vc)
-		}
-	}
+    logSuccess = logWriteWrapper(Message,"Something went Wrong, Could not Log LocalEvent!",vc,gv)
 	gv.mutex.Unlock()
 
-	return ok
+	return
 }
 
 //This function is meant to be used immediately before sending.
@@ -522,20 +500,8 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	vc.Tick(gv.pid)
 	gv.currentVC = vc.Bytes()
 
-	if gv.debugmode == true {
-		gv.logger.Println("Sending Message")
-		gv.logger.Print("Current Vector Clock : ")
-		vc.PrintVC()
-	}
-
-	var ok bool
-	if gv.logging == true {
-		ok = gv.logFunc(mesg, gv.pid, vc.ReturnVCString())
-	}
-
-	if ok == false {
-		gv.logger.Println("Something went Wrong, Could not Log!")
-	}
+    debugPrint("Sending Message",vc,gv)
+    logWriteWrapper(mesg,"Something went wrong, could not log prepare send",vc,gv)
 
 	d := ClockPayload{}
 	d.Pid = gv.pid
@@ -557,12 +523,7 @@ func (gv *GoLog) mergeIncomingClock(mesg string, e ClockPayload) {
 
 	// First, tick the local clock
 	vc, err := vclock.FromBytes(gv.currentVC)
-	if gv.debugmode {
-		gv.logger.Println("Received :")
-		e.PrintDataString()
-		gv.logger.Print("Received Vector Clock : ")
-		vc.PrintVC()
-	}
+    debugPrint("Received" + e.String(),vc,gv)
 
 	_, found := vc.FindTicks(gv.pid)
 	if !found {
@@ -582,21 +543,28 @@ func (gv *GoLog) mergeIncomingClock(mesg string, e ClockPayload) {
 	}
 
 	vc.Merge(tempvc)
-	if gv.debugmode == true {
-		gv.logger.Print("Now, Vector Clock is : ")
-		vc.PrintVC()
-	}
+	debugPrint("Now, Vector Clock is : ",vc,gv)
 	gv.currentVC = vc.Bytes()
 
-	// Log it
-	var ok bool
-	if gv.logging == true {
-		ok = gv.logFunc(mesg, gv.pid, vc.ReturnVCString())
-	}
-	if ok == false {
-		gv.logger.Println("Something went Wrong, Could not Log!")
-	}
+    logWriteWrapper(mesg,"Something went Wrong, Could not Log!",vc,gv)
+}
 
+func logWriteWrapper(logMessage, errorMessage string, vc vclock.VClock, gv *GoLog) (success bool) {
+	if gv.logging == true {
+		success = gv.logFunc(logMessage, gv.pid, vc.ReturnVCString())
+        if !success {
+            gv.logger.Println(errorMessage)
+        }
+    }
+    return
+}
+
+func debugPrint(message string, vc vclock.VClock, gv *GoLog) {
+	if gv.debugmode == true {
+		gv.logger.Println(message)
+		gv.logger.Print("VCLOCK IS :")
+		vc.PrintVC()
+	}
 }
 
 //UnpackReceive is used to unmarshall network data into local structures
