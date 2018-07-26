@@ -2,29 +2,46 @@
 
 [GoVector](./images/GoVector.png)
 
-This library can be added to a Go project to
-generate a [ShiViz](http://bestchai.bitbucket.io/shiviz/)-compatible
-vector-clock timestamped log of events in a concurrent or distributed system.
-GoVec is compatible with Go 1.4+ 
+GoVector is a vector clock logging library written in Go. The [vector
+clock algorithm](https://en.wikipedia.org/wiki/Vector_clock) is used
+to order events in distributed systems in the absence of a centralized
+clock. GoVector implements the vector clock algorithm and provides
+feature rich logging, and encoding infrastructure. Vector clock events
+are generated using 3 key functions `PrepareSend`, `UnpackReceive`,
+and `LogLocalEvent`. PrepareSend encodes messages for network
+transport, updates GoVectors local time, and logs a sending event.
+UpackReceive decodes messages from the network, merges GoVectors local
+clock with the received clock, and logs a receiving event. LogLocalEvent
+event ticks the clock, and logs a message.
+
+This library can be added to a Go project to generate a
+[ShiViz](http://bestchai.bitbucket.io/shiviz/)-compatible vector-clock
+timestamped log of events in a concurrent or distributed system.
+GoVector is compatible with Go 1.4+ 
 
 * govec/    : Contains the Library and all its dependencies
 * example/  : Contains some examples instrumented with different features of GoVector
 
 ### Usage
 
-To use GoVec you must have a correctly configured go development
+To use GoVector you must have a correctly configured go development
 environment, see [How to write Go
 Code](https://golang.org/doc/code.html)
 
-Once you set up your environment, GoVec can be installed with the go
+Once you set up your environment, GoVector can be installed with the go
 tool command:
 
-> go get github.com/DistributedClocks/GoVector
+> go get -u github.com/DistributedClocks/GoVector
 
-*gofmt* will automatically add imports for GoVec. If you do not have a
-working version of *gofmt* GoVec can be imported by adding:
+*gofmt* will automatically add imports for GoVector. If you do not
+have a working version of *gofmt* GoVector can be imported by adding:
 
-See GoVectors library documentation [here](https://godoc.org/github.com/DistributedClocks/GoVector/govec).
+See GoVectors library documentation
+[here](https://godoc.org/github.com/DistributedClocks/GoVector/govec).
+
+- [ ] Write up priority example
+- [ ] Simple write up partial ordering
+- [ ] Write up limitations 1 process per machine
 
 ###   Examples
 
@@ -32,7 +49,7 @@ The following is a basic example of how this library can be used
 ```go
 	package main
 
-	import "./govec"
+	import "github.com/DistributedClocks/GoVector/govec"
 
 	func main() {
 		Logger := govec.InitGoVector("MyProcess", "LogFile")
