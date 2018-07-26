@@ -5,8 +5,6 @@ import (
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/DistributedClocks/GoVector/govec/vclock"
 )
 
 //A vector clock logger which in addition to vector clock timestamps,
@@ -46,11 +44,7 @@ func (gv *GoTSLog) reinitialize() {
 	if !complete {
 		gv.logger.Println("Something went wrong during re-initialization")
 	}
-	vc, err := vclock.FromBytes(gv.currentVC)
-	if err != nil {
-		gv.logger.Println(err.Error())
-	}
-	ok := gv.LogThis("Initialization Complete", gv.pid, vc.ReturnVCString())
+	ok := gv.LogThis("Initialization Complete", gv.pid, gv.currentVC.ReturnVCString())
 	if !ok {
 		gv.logger.Println("Something went wrong during re-initialization")
 	}

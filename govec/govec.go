@@ -53,7 +53,7 @@ type GoLog struct {
 	pid string
 
 	//Local vector clock in bytes
-	currentVC []byte
+	currentVC vclock.VClock
 
 	//Flag to Printf the logs made by Local Program
 	printonscreen bool
@@ -112,13 +112,9 @@ func (d *ClockPayload) String() (s string) {
 	return
 }
 
-func (gv *GoLog) GetCurrentVC() []byte {
+//Returns the current vector clock
+func (gv *GoLog) GetCurrentVC() vclock.VClock {
 	return gv.currentVC
-}
-
-func (gv *GoLog) GetCurrentVCAsClock() vclock.VClock {
-	vc, _ := vclock.FromBytes(gv.currentVC)
-	return vc
 }
 
 //Returns a Go Log Struct taking in two arguments and truncates previous logs:
@@ -149,9 +145,7 @@ func InitGoVector(processid string, logfilename string) *GoLog {
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
 	vc1.Tick(processid)
-
-	//Vector Clock Stored in bytes
-	gv.currentVC = vc1.Bytes()
+	gv.currentVC = vc1
 
 	debugPrint(" ##### Initialization #####", vc1, gv)
 
@@ -216,9 +210,7 @@ func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
 	vc1.Tick(processid)
-
-	//Vector Clock Stored in bytes
-	gv.currentVC = vc1.Bytes()
+	gv.currentVC = vc1
 
 	debugPrint(" ###### Initialization ######", vc1, gv)
 	//Starting File IO . If Log exists, it will find Last execution number and ++ it
@@ -434,29 +426,13 @@ func (gv *GoLog) logThis(Message string, ProcessID string, VCString string) bool
 
 }
 
-//TODO refactor this out, there should be no decding of clocks. It's
-//to slow
-func (gv *GoLog) decodeClock() vclock.VClock {
-	vc, err := vclock.FromBytes(gv.currentVC)
-	if err != nil {
-		gv.logger.Println(err.Error())
-	}
-	_, found := vc.FindTicks(gv.pid)
-	if found == false {
-		gv.logger.Println("Couldnt find this process's id in its own vector clock!")
-	}
-	return vc
-}
-
 //Increments current vector timestamp and logs it into Log File.
 func (gv *GoLog) LogLocalEvent(Message string) (logSuccess bool) {
 	gv.mutex.Lock()
-	//Converting Vector Clock from Bytes and Updating the gv clock
-	vc := gv.decodeClock()
-	vc.Tick(gv.pid)
-	gv.currentVC = vc.Bytes()
+	//Update the gv clock
+	gv.tickClock()
 
-	logSuccess = logWriteWrapper(Message, "Something went Wrong, Could not Log LocalEvent!", vc, gv)
+	logSuccess = logWriteWrapper(Message, "Something went Wrong, Could not Log LocalEvent!", gv.currentVC, gv)
 	gv.mutex.Unlock()
 
 	return
@@ -477,15 +453,12 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 
 	//Converting Vector Clock from Bytes and Updating the gv clock
 	gv.mutex.Lock()
-	vc := gv.decodeClock()
+	gv.tickClock()
 
-	vc.Tick(gv.pid)
-	gv.currentVC = vc.Bytes()
+	debugPrint("Sending Message", gv.currentVC, gv)
+	logWriteWrapper(mesg, "Something went wrong, could not log prepare send", gv.currentVC, gv)
 
-	debugPrint("Sending Message", vc, gv)
-	logWriteWrapper(mesg, "Something went wrong, could not log prepare send", vc, gv)
-
-	d := ClockPayload{Pid: gv.pid, VcMap: vc.GetMap(), Payload: buf}
+	d := ClockPayload{Pid: gv.pid, VcMap: gv.currentVC.GetMap(), Payload: buf}
 
 	// encode the Clock Payload
 	encodedBytes, err := gv.encodingStrategy(&d)
@@ -498,18 +471,22 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	return encodedBytes
 }
 
+func (gv *GoLog) tickClock() {
+	_, found := gv.currentVC.FindTicks(gv.pid)
+	if !found {
+		gv.logger.Println("Couldn't find this process's id in its own vector clock!")
+	}
+	gv.currentVC.Tick(gv.pid)
+}
+
 func (gv *GoLog) mergeIncomingClock(mesg string, e ClockPayload) {
 
 	// First, tick the local clock
-	vc := gv.decodeClock()
-	debugPrint("Received"+e.String(), vc, gv)
+	gv.tickClock()
+	gv.currentVC.Merge(e.VcMap)
+	debugPrint("Now, Vector Clock is : ", gv.currentVC, gv)
 
-	vc.Tick(gv.pid)
-	vc.Merge(e.VcMap)
-	debugPrint("Now, Vector Clock is : ", vc, gv)
-	gv.currentVC = vc.Bytes()
-
-	logWriteWrapper(mesg, "Something went Wrong, Could not Log!", vc, gv)
+	logWriteWrapper(mesg, "Something went Wrong, Could not Log!", gv.currentVC, gv)
 }
 
 func logWriteWrapper(logMessage, errorMessage string, vc vclock.VClock, gv *GoLog) (success bool) {
