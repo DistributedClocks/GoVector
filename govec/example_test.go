@@ -62,7 +62,9 @@ func ExampleGoPriorityLog() {
 	Logger.LogLocalEventWithPriority("Critical Priority Event", govec.CRITICAL)
 
 	Logger.DisableLogging()
-	// Output: Debug Priority Event
+	//BUG Output contains timestamps so it cant be tested with *******
+	//comments
+	//Debug Priority Event
 	//Normal Priority Event
 	//Notice Priority Event
 	//Warning Priority Event
