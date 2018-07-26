@@ -23,7 +23,7 @@ func InitGoVectorTimeStamp(processid string, logfilename string) *GoTSLog {
 
 func (gv *GoTSLog) truncate() bool {
 	complete := true
-	file, err := os.OpenFile(gv.logfile, os.O_TRUNC | os.O_WRONLY, 0600)
+	file, err := os.OpenFile(gv.logfile, os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		complete = false
 	}
@@ -40,7 +40,7 @@ func (gv *GoTSLog) reinitialize() {
 	if err != nil {
 		gv.logger.Println(err.Error())
 	}
-	ok := gv.LogThis( "Initialization Complete", gv.pid , vc.ReturnVCString())
+	ok := gv.LogThis("Initialization Complete", gv.pid, vc.ReturnVCString())
 	if !ok {
 		gv.logger.Println("Something went wrong during re-initialization")
 	}

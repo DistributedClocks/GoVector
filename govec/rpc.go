@@ -20,13 +20,13 @@ func RPCDial(network, address string, logger *GoLog) (*rpc.Client, error) {
 
 func ServeRPCConn(server *rpc.Server, l net.Listener, logger *GoLog) {
 	for {
-        conn, err := l.Accept()
-        if err != nil {
-            log.Fatal(err)
-        }
+		conn, err := l.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
 
-        go server.ServeCodec(NewServerCodec(conn, logger))
-    }
+		go server.ServeCodec(NewServerCodec(conn, logger))
+	}
 }
 
 type RPCClientCodec struct {
@@ -110,9 +110,9 @@ func (c *RPCServerCodec) ReadRequestBody(body interface{}) (err error) {
 }
 
 func (c *RPCServerCodec) WriteResponse(r *rpc.Response, body interface{}) (err error) {
-    Encode(c,r)
-    Encode(c,body)
-    return c.EncBuf.Flush()
+	Encode(c, r)
+	Encode(c, body)
+	return c.EncBuf.Flush()
 }
 
 func Encode(c *RPCServerCodec, payload interface{}) {
@@ -120,11 +120,10 @@ func Encode(c *RPCServerCodec, payload interface{}) {
 		if c.EncBuf.Flush() == nil {
 			//Gob Encoding Error
 			c.Close()
-            panic(err)
+			panic(err)
 		}
 	}
 }
-    
 
 func (c *RPCServerCodec) Close() error {
 	if c.Closed {

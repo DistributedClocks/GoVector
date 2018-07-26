@@ -10,7 +10,7 @@ var TestPID string = "TestPID"
 func TestBasicInit(t *testing.T) {
 
 	gv := InitGoVector(TestPID, "TestLogFile")
-	
+
 	if gv.pid != TestPID {
 		t.Fatalf("Setting Process ID Failed.")
 	}
@@ -50,10 +50,10 @@ func TestSendAndUnpackInt(t *testing.T) {
 
 	vc = gv.GetCurrentVCAsClock()
 	n, _ = vc.FindTicks(TestPID)
-	
+
 	AssertEquals(t, 1337, response, "PrepareSend: Clock value incremented.")
 	AssertEquals(t, uint64(3), n, "PrepareSend: Clock value incremented.")
-	
+
 }
 
 func TestSendAndUnpackStrings(t *testing.T) {
@@ -71,10 +71,10 @@ func TestSendAndUnpackStrings(t *testing.T) {
 
 	vc = gv.GetCurrentVCAsClock()
 	n, _ = vc.FindTicks(TestPID)
-	
+
 	AssertEquals(t, "DistClocks!", response, "PrepareSend: Clock value incremented.")
 	AssertEquals(t, uint64(3), n, "PrepareSend: Clock value incremented.")
-	
+
 }
 
 func BenchmarkPrepare(b *testing.B) {
@@ -103,7 +103,7 @@ func BenchmarkUnpack(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		gv.UnpackReceive("TestMessage2", packed, &response)
-	}	
+	}
 
 }
 
@@ -115,6 +115,6 @@ func AssertTrue(t *testing.T, condition bool, message string) {
 
 func AssertEquals(t *testing.T, expected interface{}, actual interface{}, message string) {
 	if expected != actual {
-		t.Fatalf(message + "Expected: %s, Actual: %s", expected, actual)	
+		t.Fatalf(message+"Expected: %s, Actual: %s", expected, actual)
 	}
 }
