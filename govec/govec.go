@@ -58,11 +58,6 @@ type GoLog struct {
 	//Flag to Printf the logs made by Local Program
 	printonscreen bool
 
-	//This bools Checks to send the VC Bundled with User Data on the Wire
-	// if False, PrepareSend and UnpackReceive will simply forward their input
-	//buffer to output and locally log event. If True, VC will be encoded into packet on wire
-	VConWire bool
-
 	// This bool checks whether we should send logging data to a vecbroker whenever
 	// a message is logged.
 	realtime bool
@@ -70,8 +65,12 @@ type GoLog struct {
 	//activates/deactivates printouts at each preparesend and unpackreceive
 	debugmode bool
 
+	//If true GoLog will write to a file
 	logging bool
 
+	//If true logs are buffered in memory and flushed to disk upon
+	//calling flush. Logs can be lost if a program stops prior to
+	//flushing buffered logs.
 	buffered bool
 
 	//Logfile name
@@ -122,16 +121,12 @@ func (gv *GoLog) GetCurrentVCAsClock() vclock.VClock {
 	return vc
 }
 
-func New() *GoLog {
-	return &GoLog{}
-}
-
 //Returns a Go Log Struct taking in two arguments and truncates previous logs:
 //MyProcessName (string): local process name; must be unique in your distributed system.
 //LogFileName (string) : name of the log file that will store info. Any old log with the same name will be truncated
 func InitGoVector(processid string, logfilename string) *GoLog {
 
-	gv := New()
+	gv := &GoLog{}
 	gv.pid = processid
 
 	if logToTerminal {
@@ -198,7 +193,7 @@ func InitGoVector(processid string, logfilename string) *GoLog {
 //by "=== Execution # ==="
 func InitGoVectorMultipleExecutions(processid string, logfilename string) *GoLog {
 
-	gv := New() //Simply returns a new struct
+	gv := &GoLog{}
 	gv.pid = processid
 
 	if logToTerminal {
@@ -414,13 +409,6 @@ func (gv *GoLog) Flush() bool {
 
 //Logs a message along with a processID and a vector clock, the VCString
 //must be a valid vector clock, true is returned on success
-func (gv *GoLog) LogThis(Message string, ProcessID string, VCString string) bool {
-	gv.mutex.Lock()
-	ok := gv.logFunc(Message, ProcessID, VCString)
-	gv.mutex.Unlock()
-	return ok
-}
-
 func (gv *GoLog) logThis(Message string, ProcessID string, VCString string) bool {
 	var (
 		complete = true
@@ -446,10 +434,9 @@ func (gv *GoLog) logThis(Message string, ProcessID string, VCString string) bool
 
 }
 
-//Increments current vector timestamp and logs it into Log File.
-func (gv *GoLog) LogLocalEvent(Message string) (logSuccess bool) {
-	gv.mutex.Lock()
-	//Converting Vector Clock from Bytes and Updating the gv clock
+//TODO refactor this out, there should be no decding of clocks. It's
+//to slow
+func (gv *GoLog) decodeClock() vclock.VClock {
 	vc, err := vclock.FromBytes(gv.currentVC)
 	if err != nil {
 		gv.logger.Println(err.Error())
@@ -458,6 +445,14 @@ func (gv *GoLog) LogLocalEvent(Message string) (logSuccess bool) {
 	if found == false {
 		gv.logger.Println("Couldnt find this process's id in its own vector clock!")
 	}
+	return vc
+}
+
+//Increments current vector timestamp and logs it into Log File.
+func (gv *GoLog) LogLocalEvent(Message string) (logSuccess bool) {
+	gv.mutex.Lock()
+	//Converting Vector Clock from Bytes and Updating the gv clock
+	vc := gv.decodeClock()
 	vc.Tick(gv.pid)
 	gv.currentVC = vc.Bytes()
 
@@ -482,14 +477,7 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 
 	//Converting Vector Clock from Bytes and Updating the gv clock
 	gv.mutex.Lock()
-	vc, err := vclock.FromBytes(gv.currentVC)
-	if err != nil {
-		gv.logger.Println(err.Error())
-	}
-	_, found := vc.FindTicks(gv.pid)
-	if found == false {
-		gv.logger.Println("Couldnt find this process's id in its own vector clock!")
-	}
+	vc := gv.decodeClock()
 
 	vc.Tick(gv.pid)
 	gv.currentVC = vc.Bytes()
@@ -497,10 +485,7 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	debugPrint("Sending Message", vc, gv)
 	logWriteWrapper(mesg, "Something went wrong, could not log prepare send", vc, gv)
 
-	d := ClockPayload{}
-	d.Pid = gv.pid
-	d.VcMap = vc.GetMap()
-	d.Payload = buf
+	d := ClockPayload{Pid: gv.pid, VcMap: vc.GetMap(), Payload: buf}
 
 	// encode the Clock Payload
 	encodedBytes, err := gv.encodingStrategy(&d)
@@ -516,27 +501,11 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 func (gv *GoLog) mergeIncomingClock(mesg string, e ClockPayload) {
 
 	// First, tick the local clock
-	vc, err := vclock.FromBytes(gv.currentVC)
+	vc := gv.decodeClock()
 	debugPrint("Received"+e.String(), vc, gv)
 
-	_, found := vc.FindTicks(gv.pid)
-	if !found {
-		gv.logger.Println(fmt.Errorf("Couldnt find Local Process's ID in the Vector Clock. Could it be a stray message?"))
-	}
-	if err != nil {
-		gv.logger.Println(err.Error())
-	}
 	vc.Tick(gv.pid)
-
-	// Next, merge it with the new clock and update GV
-	var tempvc vclock.VClock
-	tempvc = e.VcMap
-
-	if err != nil && gv.debugmode {
-		gv.logger.Println(err.Error())
-	}
-
-	vc.Merge(tempvc)
+	vc.Merge(e.VcMap)
 	debugPrint("Now, Vector Clock is : ", vc, gv)
 	gv.currentVC = vc.Bytes()
 
