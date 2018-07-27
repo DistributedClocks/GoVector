@@ -127,7 +127,8 @@ func (c *RPCServerCodec) ReadRequestBody(body interface{}) (err error) {
 
 func (c *RPCServerCodec) WriteResponse(r *rpc.Response, body interface{}) (err error) {
 	Encode(c, r)
-	Encode(c, body)
+	buf := c.Logger.PrepareSend("Sending response to RPC request", body)
+	Encode(c, buf)
 	return c.EncBuf.Flush()
 }
 
