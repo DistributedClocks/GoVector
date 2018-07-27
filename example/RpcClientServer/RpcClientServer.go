@@ -3,10 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/DistributedClocks/GoVector/govec"
 	"log"
 	"net"
 	"net/rpc"
+
+	"github.com/DistributedClocks/GoVector/govec"
+	"github.com/DistributedClocks/GoVector/govec/vrpc"
 )
 
 var done chan int = make(chan int, 1)
@@ -38,23 +40,23 @@ func (t *Arith) Divide(args *Args, quo *Quotient) error {
 func rpcserver() {
 	fmt.Println("Starting server")
 	logger := govec.InitGoVector("server", "serverlogfile")
-    arith := new(Arith)
-	
+	arith := new(Arith)
+
 	server := rpc.NewServer()
 	server.Register(arith)
-	
+
 	l, e := net.Listen("tcp", ":8080")
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
 
-	govec.ServeRPCConn(server, l, logger)
+	vrpc.ServeRPCConn(server, l, logger)
 }
 
 func rpcclient() {
 	fmt.Println("Starting client")
 	logger := govec.InitGoVector("client", "clientlogfile")
-	client, err := govec.RPCDial("tcp", "127.0.0.1:8080", logger)
+	client, err := vrpc.RPCDial("tcp", "127.0.0.1:8080", logger)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,5 +77,5 @@ func rpcclient() {
 func main() {
 	go rpcserver()
 	go rpcclient()
-	<- done
+	<-done
 }

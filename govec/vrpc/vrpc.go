@@ -1,6 +1,6 @@
 //GoVector provides support for automatically logging RPC Calls from a
 //RPC Client to a RPC Server
-package govec
+package vrpc
 
 import (
 	"bufio"
@@ -9,31 +9,33 @@ import (
 	"log"
 	"net"
 	"net/rpc"
+
+	"github.com/DistributedClocks/GoVector/govec"
 )
 
 //RPCDial connects to a RPC server at the specified network address. The
 //logger is provided to be used by the RPCClientCodec for message
 //capture.
-func RPCDial(network, address string, logger *GoLog) (*rpc.Client, error) {
+func RPCDial(network, address string, logger *govec.GoLog) (*rpc.Client, error) {
 	conn, err := net.Dial(network, address)
 	if err != nil {
 		return nil, err
 	}
-	return rpc.NewClientWithCodec(NewClientCodec(conn, logger)), err
+	return rpc.NewClientWithCodec(newClientCodec(conn, logger)), err
 }
 
 //Convenience function that accepts connections for a given listener and
 //starts a new goroutine for the server to serve a new connection. The
 //logger is provided to be used by the RPCServerCodec for message
 //capture.
-func ServeRPCConn(server *rpc.Server, l net.Listener, logger *GoLog) {
+func ServeRPCConn(server *rpc.Server, l net.Listener, logger *govec.GoLog) {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		go server.ServeCodec(NewServerCodec(conn, logger))
+		go server.ServeCodec(newServerCodec(conn, logger))
 	}
 }
 
@@ -45,7 +47,7 @@ type RPCClientCodec struct {
 	Dec    *gob.Decoder
 	Enc    *gob.Encoder
 	EncBuf *bufio.Writer
-	Logger *GoLog
+	Logger *govec.GoLog
 }
 
 //An extension of the default rpc codec which uses a logger of type of
@@ -56,15 +58,15 @@ type RPCServerCodec struct {
 	Dec    *gob.Decoder
 	Enc    *gob.Encoder
 	EncBuf *bufio.Writer
-	Logger *GoLog
+	Logger *govec.GoLog
 	Closed bool
 }
 
-func NewClient(conn io.ReadWriteCloser, logger *GoLog) *rpc.Client {
-	return rpc.NewClientWithCodec(NewClientCodec(conn, logger))
+func NewClient(conn io.ReadWriteCloser, logger *govec.GoLog) *rpc.Client {
+	return rpc.NewClientWithCodec(newClientCodec(conn, logger))
 }
 
-func NewClientCodec(conn io.ReadWriteCloser, logger *GoLog) rpc.ClientCodec {
+func newClientCodec(conn io.ReadWriteCloser, logger *govec.GoLog) rpc.ClientCodec {
 	encBuf := bufio.NewWriter(conn)
 	return &RPCClientCodec{conn, gob.NewDecoder(conn), gob.NewEncoder(encBuf), encBuf, logger}
 }
@@ -98,7 +100,7 @@ func (c *RPCClientCodec) Close() error {
 	return c.C.Close()
 }
 
-func NewServerCodec(conn io.ReadWriteCloser, logger *GoLog) rpc.ServerCodec {
+func newServerCodec(conn io.ReadWriteCloser, logger *govec.GoLog) rpc.ServerCodec {
 	buf := bufio.NewWriter(conn)
 	srv := &RPCServerCodec{
 		Rwc:    conn,
