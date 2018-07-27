@@ -27,9 +27,9 @@ GoVector is compatible with Go 1.4+
 * govec/    : Contains the Library and all its dependencies
 * example/  : Contains some examples instrumented with different features of GoVector
 
-### Usage
+### Installation
 
-To use GoVector you must have a correctly configured go development
+To install GoVector you must have a correctly configured go development
 environment, see [How to write Go
 Code](https://golang.org/doc/code.html)
 
@@ -41,14 +41,7 @@ tool command:
 *gofmt* will automatically add imports for GoVector. If you do not
 have a working version of *gofmt* GoVector can be imported by adding:
 
-See GoVectors library documentation
-[here](https://godoc.org/github.com/DistributedClocks/GoVector/govec).
-
-- [ ] Write up priority example
-- [ ] Simple write up partial ordering
-- [ ] Write up limitations 1 process per machine
-
-###   Examples
+###   Usage
 
 The following is a basic example of how this library can be used 
 ```go
@@ -57,29 +50,30 @@ The following is a basic example of how this library can be used
 	import "github.com/DistributedClocks/GoVector/govec"
 
 	func main() {
+		//Initialize GoVector logger
 		Logger := govec.InitGoVector("MyProcess", "LogFile")
 		
-		//In Sending Process
-		
-		//Prepare a Message
+		//Encode message, and update vector clock
 		messagepayload := []byte("samplepayload")
-		finalsend := Logger.PrepareSend("Sending Message", messagepayload)
+		vectorclockmessage := Logger.PrepareSend("Sending Message", messagepayload)
 		
 		//send message
-		connection.Write(finalsend)
+		connection.Write(vectorclockmessage)
 
 		//In Receiving Process
-		
-		//receive message
-		recbuf := Logger.UnpackReceive("Receiving Message", finalsend)
+		connection.Read(vectorclockmessage)
+		//Decode message, and update local vector clock with received clock
+		Logger.UnpackReceive("Receiving Message", &messagepayload, vectorclockmessage)
 
-		//Can be called at any point 
+		//Log a local event
 		Logger.LogLocalEvent("Example Complete")
-		
-		Logger.DisableLogging()
-		//No further events will be written to log file
 	}
 ```
+For complete documentation and examples see GoVectors [GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector/govec), 
+
+### Motivation
+
+### Output
 
 This produces the log "LogFile.txt" :
 
