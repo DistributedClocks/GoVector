@@ -7,7 +7,7 @@ import (
 )
 
 func ExampleGoLog() {
-	Logger := govec.InitGoVector("MyProcess", "LogFile")
+	Logger := govec.InitGoVector("MyProcess", "LogFile", govec.GetDefaultConfig())
 
 	//In Sending Process
 
@@ -23,15 +23,14 @@ func ExampleGoLog() {
 	fmt.Printf("Received Message: %s\n", incommingMessage)
 	//Can be called at any point
 	Logger.LogLocalEvent("Example Complete")
-
-	Logger.DisableLogging()
-	//No further events will be written to log file
 
 	// Output: Received Message: samplepayload
 }
 
 func ExampleGoTSLog() {
-	Logger := govec.InitGoVectorTimeStamp("MyProcess", "LogFile")
+	config := govec.GetDefaultConfig()
+	config.UseTimestamps = true
+	Logger := govec.InitGoVector("MyProcess", "LogFile", config)
 
 	//In Sending Process
 
@@ -47,27 +46,26 @@ func ExampleGoTSLog() {
 	//Can be called at any point
 	Logger.LogLocalEvent("Example Complete")
 
-	Logger.DisableLogging()
 	// Output: Received Message: samplepayload
 }
 
 func ExampleGoPriorityLog() {
-	Logger := govec.InitGoVectorPriority("MyProcess", "PrioritisedLogFile", govec.NORMAL)
+	config := govec.GetDefaultConfig()
+	config.Priority = govec.DEBUG
+	config.PrintOnScreen = true
+	Logger := govec.InitGoVector("MyProcess", "PrioritisedLogFile", config)
 
 	Logger.LogLocalEventWithPriority("Debug Priority Event", govec.DEBUG)
-	Logger.LogLocalEventWithPriority("Normal Priority Event", govec.NORMAL)
-	Logger.LogLocalEventWithPriority("Notice Priority Event", govec.NOTICE)
+	Logger.LogLocalEventWithPriority("Info Priority Event", govec.INFO)
 	Logger.LogLocalEventWithPriority("Warning Priority Event", govec.WARNING)
 	Logger.LogLocalEventWithPriority("Error Priority Event", govec.ERROR)
-	Logger.LogLocalEventWithPriority("Critical Priority Event", govec.CRITICAL)
+	Logger.LogLocalEventWithPriority("Fatal Priority Event", govec.FATAL)
 
-	Logger.DisableLogging()
 	//BUG Output contains timestamps so it cant be tested with *******
 	//comments
 	//Debug Priority Event
-	//Normal Priority Event
-	//Notice Priority Event
+	//Info Priority Event
 	//Warning Priority Event
 	//Error Priority Event
-	//Critical Priority Event
+	//Fatal Priority Event
 }
