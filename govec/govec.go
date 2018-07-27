@@ -3,15 +3,16 @@ package govec
 import (
 	"bytes"
 	"fmt"
-	"github.com/DistributedClocks/GoVector/govec/vclock"
-	"github.com/daviddengcn/go-colortext"
-	"github.com/vmihailenco/msgpack"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/DistributedClocks/GoVector/govec/vclock"
+	"github.com/daviddengcn/go-colortext"
+	"github.com/vmihailenco/msgpack"
 )
 
 /*
@@ -43,6 +44,8 @@ var (
 	_             msgpack.CustomDecoder = (*ClockPayload)(nil)
 )
 
+//LogPriority controls the minumum priority of logging events which
+//will be logged.
 type LogPriority int
 
 //LogPriority enum provides all the valid Priority Levels that can be
@@ -80,7 +83,7 @@ func (l LogPriority) getPrefixString() string {
 	case DEBUG:
 		prefix = "DEBUG"
 	case INFO:
-		prefix = "NORMAL"
+		prefix = "INFO"
 	case WARNING:
 		prefix = "WARNING"
 	case ERROR:
@@ -93,20 +96,37 @@ func (l LogPriority) getPrefixString() string {
 	return prefix
 }
 
+//GoLogConfig controls the logging parameters of GoLog and is taken as
+//input to GoLog initialization. See defaults in GetDefaultsConfig
 type GoLogConfig struct {
-	Buffered         bool
-	PrintOnScreen    bool
-	AppendLog        bool
-	UseTimestamps    bool
+	//If true logging events are buffered until flushed. This option
+	//increase logging performance at the cost of saftey.
+	Buffered bool
+	//Logging events are printed to screen
+	PrintOnScreen bool
+	//Continue writing to a log from a prior execution
+	AppendLog bool
+	//Log real time timestamps for TSVis
+	UseTimestamps bool
+	//Encoding and decoding strateges for customizable
+	//interoperability
 	EncodingStrategy func(interface{}) ([]byte, error)
 	DecodingStrategy func([]byte, interface{}) error
-	LogToFile        bool
-	Priority         LogPriority
+	//Write logging events to a file
+	LogToFile bool
+	//The minimum priority event to log
+	Priority LogPriority
 }
 
 //Returns the default GoLogConfig with default values for various fields.
 func GetDefaultConfig() GoLogConfig {
-	config := GoLogConfig{Buffered: false, PrintOnScreen: false, AppendLog: false, UseTimestamps: false, LogToFile: true, Priority: INFO}
+	config := GoLogConfig{
+		Buffered:      false,
+		PrintOnScreen: false,
+		AppendLog:     false,
+		UseTimestamps: false,
+		LogToFile:     true,
+		Priority:      INFO}
 	return config
 }
 
@@ -249,9 +269,11 @@ type GoLog struct {
 	//buffered string
 	output string
 
+	//encoding and decoding strategies for network messages
 	encodingStrategy func(interface{}) ([]byte, error)
 	decodingStrategy func([]byte, interface{}) error
 
+	//Internal logger for printing errors
 	logger *log.Logger
 
 	mutex sync.RWMutex
@@ -273,6 +295,7 @@ func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoL
 		gv.logger = log.New(&buf, "[GoVector]:", log.Lshortfile)
 	}
 
+	//Set parameters from config
 	gv.printonscreen = config.PrintOnScreen
 	gv.usetimestamps = config.UseTimestamps
 	gv.priority = config.Priority
@@ -283,7 +306,7 @@ func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoL
 
 	// Use the default encoder/decoder. As of July 2017 this is msgPack.
 	if config.EncodingStrategy == nil || config.DecodingStrategy == nil {
-		gv.setEncoderDecoder(gv.DefaultEncoder, gv.DefaultDecoder)
+		gv.setEncoderDecoder(defaultEncoder, defaultDecoder)
 	} else {
 		gv.setEncoderDecoder(config.EncodingStrategy, config.DecodingStrategy)
 	}
@@ -355,11 +378,13 @@ func (gv *GoLog) setEncoderDecoder(encoder func(interface{}) ([]byte, error), de
 	gv.decodingStrategy = decoder
 }
 
-func (gv *GoLog) DefaultEncoder(payload interface{}) ([]byte, error) {
+//By default encoding is performed by msgpack
+func defaultEncoder(payload interface{}) ([]byte, error) {
 	return msgpack.Marshal(payload)
 }
 
-func (gv *GoLog) DefaultDecoder(buf []byte, payload interface{}) error {
+//By default decoding network payloads is perfomed by msgpack
+func defaultDecoder(buf []byte, payload interface{}) error {
 	return msgpack.Unmarshal(buf, payload)
 }
 
@@ -450,6 +475,7 @@ func (gv *GoLog) logWriteWrapper(logMessage, errorMessage string, Priority LogPr
 	return
 }
 
+//Increment GoVectors local clock by 1
 func (gv *GoLog) tickClock() {
 	_, found := gv.currentVC.FindTicks(gv.pid)
 	if !found {
@@ -567,8 +593,8 @@ func (gv *GoLog) UnpackReceiveWithPriority(mesg string, buf []byte, unpack inter
 
 		// Increment and merge the incoming clock
 		gv.mergeIncomingClock(mesg, e, Priority)
-		gv.mutex.Unlock()
 	}
+	gv.mutex.Unlock()
 
 }
 
