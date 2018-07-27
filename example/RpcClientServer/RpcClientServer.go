@@ -3,12 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/DistributedClocks/GoVector/govec"
+	"github.com/DistributedClocks/GoVector/govec/vrpc"
 	"log"
 	"net"
 	"net/rpc"
 	"time"
-	"github.com/DistributedClocks/GoVector/govec"
-	"github.com/DistributedClocks/GoVector/govec/vrpc"
 )
 
 var done chan int = make(chan int, 1)

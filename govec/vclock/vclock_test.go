@@ -33,7 +33,7 @@ func TestBasicInit(t *testing.T) {
 
 }
 
-func TestCopy(t *testing.T){
+func TestCopy(t *testing.T) {
 	n := New()
 	n.Set("a", 4)
 	n.Set("b", 1)
@@ -52,23 +52,23 @@ func TestCopy(t *testing.T){
 	do, _ := n.FindTicks("d")
 
 	if an != ao || bn != bo || cn != co || dn != do {
-		failComparison(t,"Copy not the same as the original new = %s , old = %s ",nc,n)
+		failComparison(t, "Copy not the same as the original new = %s , old = %s ", nc, n)
 	} else if !n.Compare(nc, Equal) {
-		failComparison(t,"Copy not the same as the original new = %s , old = %s ",n,nc)
+		failComparison(t, "Copy not the same as the original new = %s , old = %s ", n, nc)
 	}
 }
 
 func TestCompareAndMerge(t *testing.T) {
 	n1 := New()
 	n2 := New()
-    
-	n1.Set("a",2)
-	n1.Set("b",1)
-	n1.Set("c",1)
-	
-	n2.Set("a",1)
-	n2.Set("b",3)
-	n2.Set("c",1)
+
+	n1.Set("a", 2)
+	n1.Set("b", 1)
+	n1.Set("c", 1)
+
+	n2.Set("a", 1)
+	n2.Set("b", 3)
+	n2.Set("c", 1)
 
 	n3 := n1.Copy()
 	n3.Merge(n2)
@@ -85,11 +85,11 @@ func TestCompareAndMerge(t *testing.T) {
 	if an != 2 || bn != 3 || cn != 1 {
 		t.Fatalf("Merge not as expected = %s , old = %s, %s", nString, oString1, oString2)
 	} else if !n1.Compare(n3, Descendant) {
-        failComparison(t,"Clocks not defined as Descendant: n1 = %s | n2 = %s",n1,n3)
+		failComparison(t, "Clocks not defined as Descendant: n1 = %s | n2 = %s", n1, n3)
 	} else if !n2.Compare(n3, Descendant) {
-		failComparison(t,"Clocks not defined as Descendant: n1 = %s | n2 = %s",n2,n3)
+		failComparison(t, "Clocks not defined as Descendant: n1 = %s | n2 = %s", n2, n3)
 	}
-    /* 
+	/*
 		//TODO cfung: This test fails, I think it is a bug
 		else if !n1.Compare(n2, Concurrent) {
 		failComparison(t,"Clocks not defined as concurrent: n1 = %s | n2 = %s",n1,n2)
@@ -97,16 +97,16 @@ func TestCompareAndMerge(t *testing.T) {
 }
 
 func failComparison(t *testing.T, failMessage string, clock1, clock2 VClock) {
-    t.Fatalf(failMessage,clock1.ReturnVCString(),clock2.ReturnVCString())
+	t.Fatalf(failMessage, clock1.ReturnVCString(), clock2.ReturnVCString())
 }
 
 func TestEncodeDecode(t *testing.T) {
 	n := New()
-	n.Set("a",4)
-	n.Set("b",1)
-	n.Set("c",8)
-	n.Set("d",32)
-	
+	n.Set("a", 4)
+	n.Set("b", 1)
+	n.Set("c", 8)
+	n.Set("d", 32)
+
 	byteClock := n.Bytes()
 	decoded, err := FromBytes(byteClock)
 
@@ -115,6 +115,6 @@ func TestEncodeDecode(t *testing.T) {
 	} else if !n.Compare(decoded, Equal) {
 		nString := n.ReturnVCString()
 		dString := decoded.ReturnVCString()
-		t.Fatalf("decoded not the same as encoded enc = %s | dec = %s",nString,dString)
+		t.Fatalf("decoded not the same as encoded enc = %s | dec = %s", nString, dString)
 	}
 }

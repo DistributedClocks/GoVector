@@ -3,15 +3,15 @@ package govec
 import (
 	"bytes"
 	"fmt"
+	"github.com/DistributedClocks/GoVector/govec/vclock"
+	"github.com/daviddengcn/go-colortext"
+	"github.com/vmihailenco/msgpack"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
-	"github.com/DistributedClocks/GoVector/govec/vclock"
-	"github.com/vmihailenco/msgpack"
-	"github.com/daviddengcn/go-colortext"
 )
 
 /*
@@ -94,14 +94,14 @@ func (l LogPriority) getPrefixString() string {
 }
 
 type GoLogConfig struct {
-	Buffered bool
-	PrintOnScreen bool
-	AppendLog bool
-	UseTimestamps bool
-	LogToFile bool
-	Priority LogPriority
+	Buffered         bool
+	PrintOnScreen    bool
+	AppendLog        bool
+	UseTimestamps    bool
 	EncodingStrategy func(interface{}) ([]byte, error)
 	DecodingStrategy func([]byte, interface{}) error
+	LogToFile        bool
+	Priority         LogPriority
 }
 
 //Returns the default GoLogConfig with default values for various fields.
@@ -282,13 +282,12 @@ func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoL
 	gv.output = ""
 
 	// Use the default encoder/decoder. As of July 2017 this is msgPack.
-    if config.EncodingStrategy == nil || config.DecodingStrategy == nil {
-	    gv.setEncoderDecoder(gv.DefaultEncoder, gv.DefaultDecoder)
-    } else {
-	    gv.setEncoderDecoder(config.EncodingStrategy, config.DecodingStrategy)
-    }
-    print(config.EncodingStrategy)
-    
+	if config.EncodingStrategy == nil || config.DecodingStrategy == nil {
+		gv.setEncoderDecoder(gv.DefaultEncoder, gv.DefaultDecoder)
+	} else {
+		gv.setEncoderDecoder(config.EncodingStrategy, config.DecodingStrategy)
+	}
+	print(config.EncodingStrategy)
 
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
@@ -304,8 +303,8 @@ func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoL
 }
 
 func (gv *GoLog) prepareLogFile() {
-	 _, err := os.Stat(gv.logfile)
-	if err == nil{
+	_, err := os.Stat(gv.logfile)
+	if err == nil {
 		if !gv.appendLog {
 			gv.logger.Println(gv.logfile, "exists! ... Deleting ")
 			os.Remove(gv.logfile)
@@ -471,13 +470,13 @@ func (gv *GoLog) LogLocalEvent(Message string) (logSuccess bool) {
 //printed on the console.
 //* LogMessage (string) : Message to be logged
 //* Priority (LogPriority) : Priority at which the message is to be logged
-func (gv *GoLog) LogLocalEventWithPriority(LogMessage string, Priority LogPriority) (logSuccess bool){
+func (gv *GoLog) LogLocalEventWithPriority(LogMessage string, Priority LogPriority) (logSuccess bool) {
 	logSuccess = true
 	gv.mutex.Lock()
 	if Priority >= gv.priority {
 		prefix := Priority.getPrefixString() + " - "
 		gv.tickClock()
-		logSuccess = gv.logWriteWrapper(prefix + LogMessage, "Something went Wrong, Could not Log LocalEvent!", Priority)
+		logSuccess = gv.logWriteWrapper(prefix+LogMessage, "Something went Wrong, Could not Log LocalEvent!", Priority)
 	}
 	gv.mutex.Unlock()
 	return
@@ -586,4 +585,3 @@ updates vector clock and logs it. and returns the user data
 func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 	gv.UnpackReceiveWithPriority(mesg, buf, unpack, gv.priority)
 }
-
