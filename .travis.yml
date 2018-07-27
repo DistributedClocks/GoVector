@@ -6,4 +6,8 @@ go:
  - master
 
 script:
- go test -v ./...
+ - go test -v ./...
+ - ./test.sh
+
+after_success:
+ - bash <(curl -s https://codecov.io/bash) -t 6e0ff3d8-4792-4b3e-aedf-c589ad356179
