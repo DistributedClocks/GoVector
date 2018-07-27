@@ -100,6 +100,8 @@ type GoLogConfig struct {
 	UseTimestamps bool
 	LogToFile bool
 	Priority LogPriority
+	EncodingStrategy func(interface{}) ([]byte, error)
+	DecodingStrategy func([]byte, interface{}) error
 }
 
 //Returns the default GoLogConfig with default values for various fields.
@@ -280,7 +282,13 @@ func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoL
 	gv.output = ""
 
 	// Use the default encoder/decoder. As of July 2017 this is msgPack.
-	gv.SetEncoderDecoder(gv.DefaultEncoder, gv.DefaultDecoder)
+    if config.EncodingStrategy == nil || config.DecodingStrategy == nil {
+	    gv.setEncoderDecoder(gv.DefaultEncoder, gv.DefaultDecoder)
+    } else {
+	    gv.setEncoderDecoder(config.EncodingStrategy, config.DecodingStrategy)
+    }
+    print(config.EncodingStrategy)
+    
 
 	//we create a new Vector Clock with processname and 0 as the intial time
 	vc1 := vclock.New()
@@ -343,7 +351,7 @@ func (gv *GoLog) GetCurrentVC() vclock.VClock {
 //Sets the Encoding and Decoding functions which are to be used by the logger
 //Encoder (func(interface{}) ([]byte, error)) : function to be used for encoding
 //Decoder (func([]byte, interface{}) error) : function to be used for decoding
-func (gv *GoLog) SetEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error) {
+func (gv *GoLog) setEncoderDecoder(encoder func(interface{}) ([]byte, error), decoder func([]byte, interface{}) error) {
 	gv.encodingStrategy = encoder
 	gv.decodingStrategy = decoder
 }
