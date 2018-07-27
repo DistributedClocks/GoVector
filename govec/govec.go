@@ -58,42 +58,21 @@ const (
 	FATAL
 )
 
-func (l LogPriority) getColor() ct.Color {
-	var color ct.Color
-	switch l {
-	case DEBUG:
-		color = ct.Green
-	case INFO:
-		color = ct.White
-	case WARNING:
-		color = ct.Yellow
-	case ERROR:
-		color = ct.Red
-	case FATAL:
-		color = ct.Magenta
-	default:
-		color = ct.None
-	}
-	return color
+//array of status to string from runtime/proc.go
+var colorLookup = [...]ct.Color{
+	DEBUG:   ct.Green,
+	INFO:    ct.White,
+	WARNING: ct.Yellow,
+	ERROR:   ct.Red,
+	FATAL:   ct.Magenta,
 }
 
-func (l LogPriority) getPrefixString() string {
-	var prefix string
-	switch l {
-	case DEBUG:
-		prefix = "DEBUG"
-	case INFO:
-		prefix = "INFO"
-	case WARNING:
-		prefix = "WARNING"
-	case ERROR:
-		prefix = "ERROR"
-	case FATAL:
-		prefix = "FATAL"
-	default:
-		prefix = ""
-	}
-	return prefix
+var prefixLookup = [...]string{
+	DEBUG:   "DEBUG",
+	INFO:    "INFO",
+	WARNING: "WARNING",
+	ERROR:   "ERROR",
+	FATAL:   "FATAL",
 }
 
 //GoLogConfig controls the logging parameters of GoLog and is taken as
@@ -426,8 +405,8 @@ func (gv *GoLog) Flush() bool {
 }
 
 func (gv *GoLog) printColoredMessage(LogMessage string, Priority LogPriority) {
-	color := Priority.getColor()
-	prefix := Priority.getPrefixString()
+	color := colorLookup[Priority]
+	prefix := prefixLookup[Priority]
 	ct.Foreground(color, true)
 	fmt.Print(time.Now().Format(time.UnixDate) + ":" + prefix + "-")
 	ct.ResetColor()
@@ -435,7 +414,9 @@ func (gv *GoLog) printColoredMessage(LogMessage string, Priority LogPriority) {
 }
 
 //Logs a message along with a processID and a vector clock, the VCString
-//must be a valid vector clock, true is returned on success
+//must be a valid vector clock, true is returned on success. logThis
+//is the innermost logging function internally used by all other
+//logging functions
 func (gv *GoLog) logThis(Message string, ProcessID string, VCString string, Priority LogPriority) bool {
 	var (
 		complete = true
@@ -462,9 +443,10 @@ func (gv *GoLog) logThis(Message string, ProcessID string, VCString string, Prio
 		gv.printColoredMessage(Message, Priority)
 	}
 	return complete
-
 }
 
+//logWriteWrapper is a helper function for wrapping common logging
+//behaviour assosciated with logThis
 func (gv *GoLog) logWriteWrapper(logMessage, errorMessage string, Priority LogPriority) (success bool) {
 	if gv.logging == true {
 		success = gv.logThis(logMessage, gv.pid, gv.currentVC.ReturnVCString(), Priority)
@@ -500,7 +482,7 @@ func (gv *GoLog) LogLocalEventWithPriority(LogMessage string, Priority LogPriori
 	logSuccess = true
 	gv.mutex.Lock()
 	if Priority >= gv.priority {
-		prefix := Priority.getPrefixString() + " - "
+		prefix := prefixLookup[Priority]
 		gv.tickClock()
 		logSuccess = gv.logWriteWrapper(prefix+LogMessage, "Something went Wrong, Could not Log LocalEvent!", Priority)
 	}
