@@ -4,7 +4,7 @@
 [![GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector?status.svg)](https://godoc.org/github.com/DistributedClocks/GoVector)
 [![Go Report Card](https://goreportcard.com/badge/github.com/DistributedClocks/GoVector)](https://goreportcard.com/report/github.com/DistributedClocks/GoVector)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
+[![Coverage Status](https://img.shields.io/codecov/c/github/DistributedClocks/GoVector/master.svg)](https://codecov.io/gh/DistributedClocks/GoVector)
 
 
 GoVector is a vector clock logging library written in Go. The [vector
