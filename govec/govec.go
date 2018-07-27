@@ -40,8 +40,8 @@ import (
 
 var (
 	logToTerminal                       = false
-	_             msgpack.CustomEncoder = (*ClockPayload)(nil)
-	_             msgpack.CustomDecoder = (*ClockPayload)(nil)
+	_             msgpack.CustomEncoder = (*VClockPayload)(nil)
+	_             msgpack.CustomDecoder = (*VClockPayload)(nil)
 )
 
 //LogPriority controls the minumum priority of logging events which
@@ -110,21 +110,21 @@ func GetDefaultConfig() GoLogConfig {
 }
 
 //This is the data structure that is actually end on the wire
-type ClockPayload struct {
+type VClockPayload struct {
 	Pid     string
 	VcMap   map[string]uint64
 	Payload interface{}
 }
 
 //Prints the Data Stuct as Bytes
-func (d *ClockPayload) PrintDataBytes() {
+func (d *VClockPayload) PrintDataBytes() {
 	fmt.Printf("%x \n", d.Pid)
 	fmt.Printf("%X \n", d.VcMap)
 	fmt.Printf("%X \n", d.Payload)
 }
 
 //Prints the Data Struct as a String
-func (d *ClockPayload) String() (s string) {
+func (d *VClockPayload) String() (s string) {
 	s += "-----DATA START -----\n"
 	s += string(d.Pid[:])
 	s += "-----DATA END -----\n"
@@ -132,7 +132,7 @@ func (d *ClockPayload) String() (s string) {
 }
 
 /* Custom encoder function, needed for msgpack interoperability */
-func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
+func (d *VClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 	var err error
 
@@ -169,7 +169,7 @@ func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 /* Custom decoder function, needed for msgpack interoperability */
-func (d *ClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
+func (d *VClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
 	var err error
 
 	pid, err := dec.DecodeString()
@@ -510,7 +510,7 @@ func (gv *GoLog) PrepareSendWithPriority(mesg string, buf interface{}, Priority 
 
 		gv.logWriteWrapper(mesg, "Something went wrong, could not log prepare send", Priority)
 
-		d := ClockPayload{Pid: gv.pid, VcMap: gv.currentVC.GetMap(), Payload: buf}
+		d := VClockPayload{Pid: gv.pid, VcMap: gv.currentVC.GetMap(), Payload: buf}
 
 		// encode the Clock Payload
 		var err error
@@ -540,7 +540,7 @@ func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
 	return gv.PrepareSendWithPriority(mesg, buf, gv.priority)
 }
 
-func (gv *GoLog) mergeIncomingClock(mesg string, e ClockPayload, Priority LogPriority) {
+func (gv *GoLog) mergeIncomingClock(mesg string, e VClockPayload, Priority LogPriority) {
 
 	// First, tick the local clock
 	gv.tickClock()
@@ -564,7 +564,7 @@ func (gv *GoLog) UnpackReceiveWithPriority(mesg string, buf []byte, unpack inter
 	gv.mutex.Lock()
 
 	if Priority >= gv.priority {
-		e := ClockPayload{}
+		e := VClockPayload{}
 		e.Payload = unpack
 
 		// Just use msgpack directly
