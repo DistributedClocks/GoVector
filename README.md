@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.com/DistributedClocks/GoVector.svg?branch=master)](https://travis-ci.com/DistributedClocks/GoVector)
 [![GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector?status.svg)](https://godoc.org/github.com/DistributedClocks/GoVector)
-[![Go Report Card](https://goreportcard.com/badge/github.com/DIstributedClocks/GoVector)](https://goreportcard.com/badge/github.com/DIstributedClocks/GoVector)
+[![Go Report Card](https://goreportcard.com/badge/github.com/DistributedClocks/GoVector)](https://goreportcard.com/report/github.com/DistributedClocks/GoVector)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ![GoVector.png](.images/GoVector.png)
