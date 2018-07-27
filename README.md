@@ -24,8 +24,10 @@ This library can be added to a Go project to generate a
 timestamped log of events in a concurrent or distributed system.
 GoVector is compatible with Go 1.4+ 
 
-* govec/    : Contains the Library and all its dependencies
-* example/  : Contains some examples instrumented with different features of GoVector
+* govec/    	: Contains the Library and all its dependencies
+* govec/vclock	: Pure vector clock library
+* govec/vrpc	: Go's rpc with GoVector integration
+* example/  	: Contains some examples instrumented with different features of GoVector
 
 ### Installation
 
@@ -69,7 +71,12 @@ The following is a basic example of how this library can be used
 		Logger.LogLocalEvent("Example Complete")
 	}
 ```
-For complete documentation and examples see GoVectors [GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector/govec), 
+For complete documentation and small examples see GoVectors [GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector/govec), 
+
+### End to End Examples
+
+* Client-Server GoVector insturmentation [Examples/ClientServer.go](example/ClientServer/ClientServer.go)
+* RPC Client-Server program [Examples/RpcClientServer.go](example/RpcClientServer/RpcClientServer.go)
 
 ### Motivation
 
@@ -86,11 +93,7 @@ This produces the log "LogFile.txt" :
 	MyProcess {"MyProcess":4}
 	Example Complete
 
-An executable example of a similar program can be found in
-[Examples/ClientServer.go](example/ClientServer/ClientServer.go)
 
-An executable example of a RPC Client-Server program can be found in 
-[Examples/RpcClientServer.go](example/RpcClientServer/RpcClientServer.go)
 
 
 Here is a sample output of the priority logger
