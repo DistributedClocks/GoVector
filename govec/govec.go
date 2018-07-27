@@ -538,8 +538,8 @@ func (gv *GoLog) PrepareSendWithPriority(mesg string, buf interface{}, Priority 
 		}
 
 		// return encodedBytes which can be sent off and received on the other end!
-		gv.mutex.Unlock()
 	}
+	gv.mutex.Unlock()
 	return
 }
 
