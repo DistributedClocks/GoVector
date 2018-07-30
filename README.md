@@ -11,7 +11,9 @@ GoVector is a vector clock logging library written in Go. The [vector
 clock algorithm](https://en.wikipedia.org/wiki/Vector_clock) is used
 to order events in distributed systems in the absence of a centralized
 clock. GoVector implements the vector clock algorithm and provides
-feature rich logging, and encoding infrastructure. Vector clock events
+feature rich logging, and encoding infrastructure. 
+
+Vector clock events
 are generated using 3 key functions `PrepareSend`, `UnpackReceive`,
 and `LogLocalEvent`. PrepareSend encodes messages for network
 transport, updates GoVectors local time, and logs a sending event.
@@ -80,9 +82,13 @@ For complete documentation and small examples see GoVectors [GoDoc](https://godo
 
 ### Motivation
 
-### Output
+GoVector was initially developed as a pedagogical tool for students attending UBC's computer science course on distributed systems (CPSC 416). Students new to the development of distributed systems can reason about event orderings by visualizing their executions with [ShiViz](http://bestchai.bitbucket.io/shiviz/). Furthermore GoVectors marshaling functionality reduces student effort in writing networking code which is largely  boiler plate.
 
-This produces the log "LogFile.txt" :
+As a result of student requests GoVector transformed into a general purpose logging tool. Additional features include optimized IO, priority logging, [TSViz](https://bestchai.bitbucket.io/tsviz/) compatibility and RPC instrumentation.
+
+### Output Example
+
+The source code from the useage example produces the following log into a file named "LogFile.txt" :
 
 	MyProcess {"MyProcess":1}
 	Initialization Complete
