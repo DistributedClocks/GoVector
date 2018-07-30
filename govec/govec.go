@@ -1,3 +1,4 @@
+//GoVector vector clock logging library
 package govec
 
 import (
@@ -14,29 +15,6 @@ import (
 	"github.com/daviddengcn/go-colortext"
 	"github.com/vmihailenco/msgpack"
 )
-
-/*
-   - All licences like other licenses ...
-
-   How to Use This Library
-
-   Step 1:
-   Create a Global Variable and Initialize it using like this =
-
-   Logger:= Initialize("MyProcess",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
-
-   Step 2:
-   When Ever You Decide to Send any []byte , before sending call PrepareSend like this:
-   SENDSLICE := PrepareSend("Message Description", YourPayload)
-   and send the SENDSLICE instead of your Designated Payload
-
-   Step 3:
-   When Receiveing, AFTER you receive your message, pass the []byte into UnpackRecieve
-   like this:
-
-   UnpackReceive("Message Description", []ReceivedPayload, *RETURNSLICE)
-   and use RETURNSLICE for further processing.
-*/
 
 var (
 	logToTerminal                       = false
@@ -67,6 +45,7 @@ var colorLookup = [...]ct.Color{
 	FATAL:   ct.Magenta,
 }
 
+//translates priority enums into strings
 var prefixLookup = [...]string{
 	DEBUG:   "DEBUG",
 	INFO:    "INFO",
@@ -213,7 +192,9 @@ func (d *VClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
 }
 
 //The GoLog struct provides an interface to creating and maintaining
-//vector timestamp entries in the generated log file
+//vector timestamp entries in the generated log file. GoLogs are
+//initialized with Configs which control logger output, format, and
+//frequency.
 type GoLog struct {
 
 	//Local Process ID
@@ -258,10 +239,9 @@ type GoLog struct {
 	mutex sync.RWMutex
 }
 
-//Returns a Go Log Struct taking in two arguments and truncates previous logs:
-//MyProcessName (string): local process name; must be unique in your distributed system.
-//LogFileName (string) : name of the log file that will store info. Any old log with the same name will be truncated
-//Config (GoLogConfig) : config struct defining the values of the options of GoLog logger
+//InitGoVector returns a GoLog which generates a logs prefixed with
+//processid, to a file name logfilename.log. Any old log with the same
+//name will be trucated. Config controls logging options. See GoLogConfig for more details.
 func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoLog {
 
 	gv := &GoLog{}
