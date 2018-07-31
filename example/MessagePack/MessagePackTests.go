@@ -7,6 +7,8 @@ import (
 	"github.com/vmihailenco/msgpack"
 )
 
+//ClockPayload is the wire type for vector clocks, and their
+//associated payloads
 type ClockPayload struct {
 	Pid     string
 	VcMap   map[string]uint64

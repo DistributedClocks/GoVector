@@ -22,7 +22,7 @@ var (
 	_             msgpack.CustomDecoder = (*VClockPayload)(nil)
 )
 
-//LogPriority controls the minumum priority of logging events which
+//LogPriority controls the minimum priority of logging events which
 //will be logged.
 type LogPriority int
 
@@ -58,7 +58,7 @@ var prefixLookup = [...]string{
 //input to GoLog initialization. See defaults in GetDefaultsConfig
 type GoLogConfig struct {
 	//If true logging events are buffered until flushed. This option
-	//increase logging performance at the cost of saftey.
+	//increase logging performance at the cost of safety.
 	Buffered bool
 	//Logging events are printed to screen
 	PrintOnScreen bool
@@ -273,7 +273,7 @@ func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoL
 	}
 	print(config.EncodingStrategy)
 
-	//we create a new Vector Clock with processname and 0 as the intial time
+	//we create a new Vector Clock with processname and 0 as the initial time
 	vc1 := vclock.New()
 	vc1.Tick(processid)
 	gv.currentVC = vc1

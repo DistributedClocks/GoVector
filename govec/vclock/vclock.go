@@ -11,6 +11,8 @@ import (
 // and may be ORed together when being provided to the Compare method.
 type Condition int
 
+//Constants define compairison conditions between pairs of vector
+//clocks
 const (
 	Equal Condition = 1 << iota
 	Ancestor
@@ -18,6 +20,8 @@ const (
 	Concurrent
 )
 
+//Vector clocks are maps of string to uint64 where the string is the
+//id of the process, and the uint64 is the clock value
 type VClock map[string]uint64
 
 //FindTicks returns the clock value for a given id, if a value is not
@@ -130,7 +134,7 @@ func (vc VClock) ReturnVCString() string {
 }
 
 //Compare takes another clock and determines if it is Equal, an
-//Ancestor, Decendent, or Concurrent with the callees clock.
+//Ancestor, Descendant, or Concurrent with the callees clock.
 func (vc VClock) Compare(other VClock, cond Condition) bool {
 	var otherIs Condition
 	// Preliminary qualification based on length
