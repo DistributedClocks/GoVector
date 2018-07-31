@@ -1,5 +1,5 @@
-//GoVector provides support for automatically logging RPC Calls from a
-//RPC Client to a RPC Server
+//Package vrpc provides support for automatically logging RPC Calls
+//from a RPC Client to a RPC Server
 package vrpc
 
 import (
@@ -24,10 +24,10 @@ func RPCDial(network, address string, logger *govec.GoLog) (*rpc.Client, error) 
 	return rpc.NewClientWithCodec(newClientCodec(conn, logger)), err
 }
 
-//Convenience function that accepts connections for a given listener and
-//starts a new goroutine for the server to serve a new connection. The
-//logger is provided to be used by the RPCServerCodec for message
-//capture.
+//ServeRPCCon is a convenience function that accepts connections for a
+//given listener and starts a new goroutine for the server to serve a
+//new connection. The logger is provided to be used by the
+//RPCServerCodec for message capture.
 func ServeRPCConn(server *rpc.Server, l net.Listener, logger *govec.GoLog) {
 	for {
 		conn, err := l.Accept()
@@ -39,9 +39,9 @@ func ServeRPCConn(server *rpc.Server, l net.Listener, logger *govec.GoLog) {
 	}
 }
 
-//An extension of the default rpc codec which uses a logger of type
-//GoLog to capture all the calls to a RPC Server as well as responses
-//from a RPC server.
+//RPCClientCodec is an extension of the default rpc codec which uses a
+//logger of type GoLog to capture all the calls to a RPC Server as
+//well as responses from a RPC server.
 type RPCClientCodec struct {
 	C      io.Closer
 	Dec    *gob.Decoder
@@ -50,9 +50,9 @@ type RPCClientCodec struct {
 	Logger *govec.GoLog
 }
 
-//An extension of the default rpc codec which uses a logger of type of
-//GoLog to capture all the requests made from the client to a RPC server
-//as well as the server's to the clients.
+//RPCServerCodec is an extension of the default rpc codec which uses a
+//logger of type of GoLog to capture all the requests made from the
+//client to a RPC server as well as the server's to the clients.
 type RPCServerCodec struct {
 	Rwc    io.ReadWriteCloser
 	Dec    *gob.Decoder
@@ -62,6 +62,7 @@ type RPCServerCodec struct {
 	Closed bool
 }
 
+//NewClient returs an rpc.Client insturmented with vector clocks.
 func NewClient(conn io.ReadWriteCloser, logger *govec.GoLog) *rpc.Client {
 	return rpc.NewClientWithCodec(newClientCodec(conn, logger))
 }
@@ -71,6 +72,8 @@ func newClientCodec(conn io.ReadWriteCloser, logger *govec.GoLog) rpc.ClientCode
 	return &RPCClientCodec{conn, gob.NewDecoder(conn), gob.NewEncoder(encBuf), encBuf, logger}
 }
 
+//WriteRequest marshalls and sends an rpc request, and it's associated
+//parameters to an RPC server
 func (c *RPCClientCodec) WriteRequest(req *rpc.Request, param interface{}) (err error) {
 	if err = c.Enc.Encode(req); err != nil {
 		return
@@ -83,10 +86,13 @@ func (c *RPCClientCodec) WriteRequest(req *rpc.Request, param interface{}) (err 
 	return c.EncBuf.Flush()
 }
 
+//ReadResponseHeader deacodes an RPC response header on the client
 func (c *RPCClientCodec) ReadResponseHeader(resp *rpc.Response) error {
 	return c.Dec.Decode(resp)
 }
 
+//ReadResponseBody decodes a response body and updates it's local
+//vector clock with that of the server.
 func (c *RPCClientCodec) ReadResponseBody(body interface{}) (err error) {
 	var buf []byte
 	if err = c.Dec.Decode(&buf); err != nil {
@@ -96,6 +102,7 @@ func (c *RPCClientCodec) ReadResponseBody(body interface{}) (err error) {
 	return nil
 }
 
+//Close closes an RPCClientCodecs internal TCP connection
 func (c *RPCClientCodec) Close() error {
 	return c.C.Close()
 }
@@ -112,10 +119,13 @@ func newServerCodec(conn io.ReadWriteCloser, logger *govec.GoLog) rpc.ServerCode
 	return srv
 }
 
+//ReadRequestHeader decodes a server rpc request header
 func (c *RPCServerCodec) ReadRequestHeader(r *rpc.Request) error {
 	return c.Dec.Decode(r)
 }
 
+//ReadRequestBody decodes a clinet request and updates the servers
+//local vector clock with the clients values
 func (c *RPCServerCodec) ReadRequestBody(body interface{}) (err error) {
 	var buf []byte
 	if err = c.Dec.Decode(&buf); err != nil {
@@ -125,6 +135,8 @@ func (c *RPCServerCodec) ReadRequestBody(body interface{}) (err error) {
 	return nil
 }
 
+//WriteResponse sends an rpc response, and it's associated result back
+//to the client
 func (c *RPCServerCodec) WriteResponse(r *rpc.Response, body interface{}) (err error) {
 	Encode(c, r)
 	buf := c.Logger.PrepareSend("Sending response to RPC request", body)
@@ -132,6 +144,8 @@ func (c *RPCServerCodec) WriteResponse(r *rpc.Response, body interface{}) (err e
 	return c.EncBuf.Flush()
 }
 
+//Encode is a convience function which writes to the wire and handels
+//RPC errors
 func Encode(c *RPCServerCodec, payload interface{}) {
 	if err := c.Enc.Encode(payload); err != nil {
 		if c.EncBuf.Flush() == nil {
@@ -142,6 +156,7 @@ func Encode(c *RPCServerCodec, payload interface{}) {
 	}
 }
 
+//Close ends the underlying server TCP session
 func (c *RPCServerCodec) Close() error {
 	if c.Closed {
 		return nil
