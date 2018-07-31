@@ -20,16 +20,19 @@ const (
 
 type VClock map[string]uint64
 
+//FindTicks returns the clock value for a given id, if a value is not
+//found false is returned
 func (vc VClock) FindTicks(id string) (uint64, bool) {
 	ticks, ok := vc[id]
 	return ticks, ok
 }
 
-//returns a new vector clock
+//New returns a new vector clock
 func New() VClock {
 	return VClock{}
 }
 
+//Copy returs a copy of the clock
 func (vc VClock) Copy() VClock {
 	cp := make(map[string]uint64, len(vc))
 	for key, value := range vc {
@@ -38,14 +41,17 @@ func (vc VClock) Copy() VClock {
 	return cp
 }
 
+//CopyFromMap copys a map to a vector clock
 func (vc VClock) CopyFromMap(otherMap map[string]uint64) VClock {
 	return otherMap
 }
 
+//GetMap returns the map typed vector clock
 func (vc VClock) GetMap() map[string]uint64 {
 	return map[string]uint64(vc)
 }
 
+//Set assigns a clock value to a clock index
 func (vc VClock) Set(id string, ticks uint64) {
 	vc[id] = ticks
 }
@@ -55,6 +61,7 @@ func (vc VClock) Tick(id string) {
 	vc[id] = vc[id] + 1
 }
 
+//LastUpdate returns the clock value of the oldest clock
 func (vc VClock) LastUpdate() (last uint64) {
 	for key := range vc {
 		if vc[key] > last {
@@ -64,6 +71,8 @@ func (vc VClock) LastUpdate() (last uint64) {
 	return last
 }
 
+//Merge takes the max of all clock values in other and updates the
+//values of the callee
 func (vc VClock) Merge(other VClock) {
 	for id := range other {
 		if vc[id] < other[id] {
@@ -72,6 +81,7 @@ func (vc VClock) Merge(other VClock) {
 	}
 }
 
+//Bytes returns an encoded vector clock
 func (vc VClock) Bytes() []byte {
 	b := new(bytes.Buffer)
 	enc := gob.NewEncoder(b)
@@ -82,6 +92,7 @@ func (vc VClock) Bytes() []byte {
 	return b.Bytes()
 }
 
+//FromBytes decodes a vector clock
 func FromBytes(data []byte) (vc VClock, err error) {
 	b := new(bytes.Buffer)
 	b.Write(data)
@@ -91,10 +102,12 @@ func FromBytes(data []byte) (vc VClock, err error) {
 	return clock, err
 }
 
+//PrintVC prints the callees vector clock to stdout
 func (vc VClock) PrintVC() {
 	fmt.Println(vc.ReturnVCString())
 }
 
+//ReturnVCString returns a string encoding of a vector clock
 func (vc VClock) ReturnVCString() string {
 	//sort
 	ids := make([]string, len(vc))
@@ -116,6 +129,8 @@ func (vc VClock) ReturnVCString() string {
 	return buffer.String()
 }
 
+//Compare takes another clock and determines if it is Equal, an
+//Ancestor, Decendent, or Concurrent with the callees clock.
 func (vc VClock) Compare(other VClock, cond Condition) bool {
 	var otherIs Condition
 	// Preliminary qualification based on length
