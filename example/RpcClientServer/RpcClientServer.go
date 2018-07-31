@@ -3,31 +3,37 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/DistributedClocks/GoVector/govec"
-	"github.com/DistributedClocks/GoVector/govec/vrpc"
 	"log"
 	"net"
 	"net/rpc"
 	"time"
+
+	"github.com/DistributedClocks/GoVector/govec"
+	"github.com/DistributedClocks/GoVector/govec/vrpc"
 )
 
 var done chan int = make(chan int, 1)
 
+//Args are matematical arguments for the rpc operations
 type Args struct {
 	A, B int
 }
 
+//Quotient is the result of a Divide RPC
 type Quotient struct {
 	Quo, Rem int
 }
 
+//Arith is an RPC math server type
 type Arith int
 
+//Multiply performs multiplication on two integers
 func (t *Arith) Multiply(args *Args, reply *int) error {
 	*reply = args.A * args.B
 	return nil
 }
 
+//Divide divides a by b and returns a quotient with a remainder
 func (t *Arith) Divide(args *Args, quo *Quotient) error {
 	if args.B == 0 {
 		return errors.New("divide by zero")
