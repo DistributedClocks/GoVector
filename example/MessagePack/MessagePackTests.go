@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/DistributedClocks/GoVector/govec/vclock"
 	"github.com/vmihailenco/msgpack"
 )
@@ -15,6 +16,7 @@ type ClockPayload struct {
 var _ msgpack.CustomEncoder = (*ClockPayload)(nil)
 var _ msgpack.CustomDecoder = (*ClockPayload)(nil)
 
+//EncodeMsgpack is a custom encoder function, needed for msgpack interoperability
 func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 	var err error
@@ -51,6 +53,8 @@ func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 }
 
+//DecodeMsgpack is a custom decoder function, needed for msgpack
+//interoperability
 func (d *ClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	var err error

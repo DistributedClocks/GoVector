@@ -5,7 +5,7 @@ import (
 	//"fmt"
 )
 
-var TestPID string = "TestPID"
+var TestPID = "TestPID"
 
 func TestBasicInit(t *testing.T) {
 
