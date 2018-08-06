@@ -11,6 +11,7 @@ func ExampleGoLog_basic() {
 	//Initialize logger with default configuration. This can be done in
 	//a var block to ensure that GoVector is initialized at boot time.
 	Logger := govec.InitGoVector("MyProcess", "LogFile", govec.GetDefaultConfig())
+	opts := govec.GetDefaultLogOptions()
 
 	//An example message
 	messagepayload := []byte("samplepayload")
@@ -18,7 +19,7 @@ func ExampleGoLog_basic() {
 	//Prior to sending a message, call PrepareSend on the payload to
 	//encode the payload and append this processes vector clock to the
 	//payload
-	encodedVCpayload := Logger.PrepareSend("Sending Message", messagepayload)
+	encodedVCpayload := Logger.PrepareSend("Sending Message", messagepayload, opts)
 
 	//encodedVCpayload is ready to be written to the network
 	//ex) conn.Write(encodedVCpayload)
@@ -34,12 +35,12 @@ func ExampleGoLog_basic() {
 
 	//Call UnpackReceive on received messages to update local vector
 	//clock values, and decode the original message.
-	Logger.UnpackReceive("Received Message from server", encodedVCpayload, &incommingMessage)
+	Logger.UnpackReceive("Received Message from server", encodedVCpayload, &incommingMessage, opts)
 	fmt.Printf("Received Message: %s\n", incommingMessage)
 
 	//Important local events can be timestamped with vector clocks
 	//using LogLocalEvent, which also increments the local clock.
-	Logger.LogLocalEvent("Example Complete")
+	Logger.LogLocalEvent("Example Complete", opts)
 
 	// Output: Received Message: samplepayload
 }
@@ -55,12 +56,13 @@ func ExampleGoLog_priority() {
 	config.PrintOnScreen = true
 	//Initialize GoVector
 	Logger := govec.InitGoVector("MyProcess", "PrioritisedLogFile", config)
+	opts := govec.GetDefaultLogOptions()
 
-	Logger.LogLocalEventWithPriority("Debug Priority Event", govec.DEBUG)
-	Logger.LogLocalEventWithPriority("Info Priority Event", govec.INFO)
-	Logger.LogLocalEventWithPriority("Warning Priority Event", govec.WARNING)
-	Logger.LogLocalEventWithPriority("Error Priority Event", govec.ERROR)
-	Logger.LogLocalEventWithPriority("Fatal Priority Event", govec.FATAL)
+	Logger.LogLocalEvent("Debug Priority Event", opts.SetPriority(govec.DEBUG))
+	Logger.LogLocalEvent("Info Priority Event", opts.SetPriority(govec.INFO))
+	Logger.LogLocalEvent("Warning Priority Event", opts.SetPriority(govec.WARNING))
+	Logger.LogLocalEvent("Error Priority Event", opts.SetPriority(govec.ERROR))
+	Logger.LogLocalEvent("Fatal Priority Event", opts.SetPriority(govec.FATAL))
 
 	//BUG Output contains timestamps so it cant be tested with *******
 	//comments
@@ -79,20 +81,21 @@ func ExampleGoLog_tSVizCompatable() {
 	config.UseTimestamps = true
 	//Initalize GoVector
 	Logger := govec.InitGoVector("MyProcess", "LogFile", config)
+	opts := govec.GetDefaultLogOptions()
 
 	//In Sending Process
 
 	//Prepare a Message
 	messagepayload := []byte("samplepayload")
-	finalsend := Logger.PrepareSend("Sending Message", messagepayload)
+	finalsend := Logger.PrepareSend("Sending Message", messagepayload, opts)
 	//In Receiving Process
 
 	//receive message
 	var incommingMessage []byte
-	Logger.UnpackReceive("Received Message from server", finalsend, &incommingMessage)
+	Logger.UnpackReceive("Received Message from server", finalsend, &incommingMessage, opts)
 	fmt.Printf("Received Message: %s\n", incommingMessage)
 	//Can be called at any point
-	Logger.LogLocalEvent("Example Complete")
+	Logger.LogLocalEvent("Example Complete", opts)
 
 	// Output: Received Message: samplepayload
 }
