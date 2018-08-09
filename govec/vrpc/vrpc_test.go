@@ -1,4 +1,4 @@
-package main
+package vrpc
 
 import (
 	"errors"
@@ -7,9 +7,9 @@ import (
 	"net"
 	"net/rpc"
 	"time"
+	"testing"
 
 	"github.com/DistributedClocks/GoVector/govec"
-	"github.com/DistributedClocks/GoVector/govec/vrpc"
 )
 
 var done chan int = make(chan int, 1)
@@ -43,9 +43,8 @@ func (t *Arith) Divide(args *Args, quo *Quotient) error {
 	return nil
 }
 
-func rpcserver() {
+func rpcserver(logger *govec.GoLog) {
 	fmt.Println("Starting server")
-	logger := govec.InitGoVector("server", "serverlogfile", govec.GetDefaultConfig())
 	arith := new(Arith)
 	server := rpc.NewServer()
 	server.Register(arith)
@@ -55,14 +54,13 @@ func rpcserver() {
 	}
 
 	options := govec.GetDefaultLogOptions()
-	vrpc.ServeRPCConn(server, l, logger, options)
+	ServeRPCConn(server, l, logger, options)
 }
 
-func rpcclient() {
+func rpcclient(logger *govec.GoLog) {
 	fmt.Println("Starting client")
-	logger := govec.InitGoVector("client", "clientlogfile", govec.GetDefaultConfig())
 	options := govec.GetDefaultLogOptions()
-	client, err := vrpc.RPCDial("tcp", "127.0.0.1:8080", logger, options)
+	client, err := RPCDial("tcp", "127.0.0.1:8080", logger, options)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,9 +78,24 @@ func rpcclient() {
 	done <- 1
 }
 
-func main() {
-	go rpcserver()
+func TestRPC(t *testing.T) {
+	serverlogger := govec.InitGoVector("server", "serverlogfile", govec.GetDefaultConfig())
+	clientlogger := govec.InitGoVector("client", "clientlogfile", govec.GetDefaultConfig())
+	go rpcserver(serverlogger)
 	time.Sleep(time.Millisecond)
-	go rpcclient()
+	go rpcclient(clientlogger)
 	<-done
+	server_vc := serverlogger.GetCurrentVC()
+	server_ticks, _ := server_vc.FindTicks("server")
+	client_vc := clientlogger.GetCurrentVC()
+	client_ticks, _ := client_vc.FindTicks("client")
+
+	AssertEquals(t, uint64(5), server_ticks, "Server Clock value not incremented")
+	AssertEquals(t, uint64(5), client_ticks, "Client Clock value not incremented")
+}
+
+func AssertEquals(t *testing.T, expected interface{}, actual interface{}, message string) {
+	if expected != actual {
+		t.Fatalf(message+"Expected: %s, Actual: %s", expected, actual)
+	}
 }
