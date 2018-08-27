@@ -11,10 +11,10 @@ GoVector is a vector clock logging library written in Go. The [vector
 clock algorithm](https://en.wikipedia.org/wiki/Vector_clock) is used
 to order events in distributed systems in the absence of a centralized
 clock. GoVector implements the vector clock algorithm and provides
-feature rich logging, and encoding infrastructure. 
+feature-rich logging and encoding infrastructure. 
 
 Vector clock events
-are generated using 3 key functions `PrepareSend`, `UnpackReceive`,
+are generated using 3 key functions, `PrepareSend`, `UnpackReceive`,
 and `LogLocalEvent`. PrepareSend encodes messages for network
 transport, updates GoVectors local time, and logs a sending event.
 UpackReceive decodes messages from the network, merges GoVectors local
@@ -26,7 +26,7 @@ This library can be added to a Go project to generate a
 timestamped log of events in a concurrent or distributed system.
 This library can also be used to generate [TSViz](https://bestchai.bitbucket.io/tsviz/)-compatible
 log of events.
-GoVector is compatible with Go 1.4+ 
+GoVector is compatible with Go 1.4+. 
 
 * govec/    	: Contains the Library and all its dependencies
 * govec/vclock	: Pure vector clock library
@@ -36,20 +36,18 @@ GoVector is compatible with Go 1.4+
 ### Installation
 
 To install GoVector you must have a correctly configured go development
-environment, see [How to write Go
-Code](https://golang.org/doc/code.html)
+environment. See [How to Write Go
+Code](https://golang.org/doc/code.html).
 
 Once you set up your environment, GoVector can be installed with the go
 tool command:
 
 > go get -u github.com/DistributedClocks/GoVector
 
-*gofmt* will automatically add imports for GoVector. If you do not
-have a working version of *gofmt* GoVector can be imported by adding:
-
 ###   Usage
 
-The following is a basic example of how this library can be used 
+The following is a basic example of how this library can be used:
+
 ```go
 	package main
 
@@ -75,22 +73,22 @@ The following is a basic example of how this library can be used
 		Logger.LogLocalEvent("Example Complete")
 	}
 ```
-For complete documentation and small examples see GoVectors [GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector/govec), 
+For complete documentation with examples see GoVector's [GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector/govec).
 
-### End to End Examples
+### End-to-End Examples
 
-* Client-Server GoVector insturmentation [Examples/ClientServer.go](example/ClientServer/ClientServer.go)
+* Client-Server GoVector instrumentation [Examples/ClientServer.go](example/ClientServer/ClientServer.go)
 * RPC Client-Server program [Examples/RpcClientServer.go](example/RpcClientServer/RpcClientServer.go)
 
 ### Motivation
 
-GoVector was initially developed as a pedagogical tool for students attending UBC's computer science course on distributed systems (CPSC 416). Students new to the development of distributed systems can reason about event orderings by visualizing their executions with [ShiViz](http://bestchai.bitbucket.io/shiviz/). Furthermore GoVectors marshaling functionality reduces student effort in writing networking code which is largely  boiler plate.
+GoVector was initially developed as a pedagogical tool for UBC's computer science course on distributed systems (CPSC 416). Students new to the development of distributed systems can feed generated logs into [ShiViz](http://bestchai.bitbucket.io/shiviz/) to visualize their program executions and reason about event orderings. Furthermore, GoVector's marshaling functionality reduces the effort needed to write networking code that is largely boilerplate.
 
-As a result of student requests GoVector transformed into a general purpose logging tool. Additional features include optimized IO, priority logging, [TSViz](https://bestchai.bitbucket.io/tsviz/) compatibility and RPC instrumentation.
+Eventually, as a result of student requests, GoVector has been transformed into a general-purpose logging tool. Additional features include optimized IO, priority logging, [TSViz](https://bestchai.bitbucket.io/tsviz/) compatibility, and RPC instrumentation.
 
 ### Dependencies
 
-GoVector has the following dependencies : 
+GoVector has the following dependencies: 
 
 + [msgpack](https://github.com/vmihailenco/msgpack)
 + [go-colortext](https://github.com/daviddengcn/go-colortext)
@@ -106,7 +104,7 @@ GoVector has the following dependencies :
 
 ### Output Example
 
-The source code from the useage example produces the following log into a file named "LogFile.txt" :
+The source code from the useage example produces the following log into a file named "LogFile.txt":
 
 	MyProcess {"MyProcess":1}
 	Initialization Complete
@@ -120,11 +118,11 @@ The source code from the useage example produces the following log into a file n
 
 
 
-Here is a sample output of the priority logger
+Here is a sample output of the priority logger:
 ![PriorityLoggerOutput.png](.images/PriorityLoggerOutput.png)
 
 Here is an example of ShiViz output generated by an RPC client server
-interaction
+interaction:
 ![ShivizExample.png](.images/shiviz_output.png)
 
 <!-- July 2017: Brokers are no longer supported, maybe they will come back.
