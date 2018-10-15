@@ -5,7 +5,7 @@ import (
 	//"fmt"
 )
 
-var TestPID string = "TestPID"
+var TestPID = "TestPID"
 
 func TestBasicInit(t *testing.T) {
 
@@ -26,7 +26,8 @@ func TestBasicInit(t *testing.T) {
 func TestLogLocal(t *testing.T) {
 
 	gv := InitGoVector(TestPID, "TestLogFile", GetDefaultConfig())
-	gv.LogLocalEvent("TestMessage1")
+	opts := GetDefaultLogOptions()
+	gv.LogLocalEvent("TestMessage1", opts)
 
 	vc := gv.GetCurrentVC()
 	n, _ := vc.FindTicks(TestPID)
@@ -38,7 +39,8 @@ func TestLogLocal(t *testing.T) {
 func TestSendAndUnpackInt(t *testing.T) {
 
 	gv := InitGoVector(TestPID, "TestLogFile", GetDefaultConfig())
-	packed := gv.PrepareSend("TestMessage1", 1337)
+	opts := GetDefaultLogOptions()
+	packed := gv.PrepareSend("TestMessage1", 1337, opts)
 
 	vc := gv.GetCurrentVC()
 	n, _ := vc.FindTicks(TestPID)
@@ -46,7 +48,7 @@ func TestSendAndUnpackInt(t *testing.T) {
 	AssertEquals(t, uint64(2), n, "PrepareSend: Clock value incremented")
 
 	var response int
-	gv.UnpackReceive("TestMessage2", packed, &response)
+	gv.UnpackReceive("TestMessage2", packed, &response, opts)
 
 	vc = gv.GetCurrentVC()
 	n, _ = vc.FindTicks(TestPID)
@@ -59,7 +61,8 @@ func TestSendAndUnpackInt(t *testing.T) {
 func TestSendAndUnpackStrings(t *testing.T) {
 
 	gv := InitGoVector(TestPID, "TestLogFile", GetDefaultConfig())
-	packed := gv.PrepareSend("TestMessage1", "DistClocks!")
+	opts := GetDefaultLogOptions()
+	packed := gv.PrepareSend("TestMessage1", "DistClocks!", opts)
 
 	vc := gv.GetCurrentVC()
 	n, _ := vc.FindTicks(TestPID)
@@ -67,7 +70,7 @@ func TestSendAndUnpackStrings(t *testing.T) {
 	AssertEquals(t, uint64(2), n, "PrepareSend: Clock value incremented. ")
 
 	var response string
-	gv.UnpackReceive("TestMessage2", packed, &response)
+	gv.UnpackReceive("TestMessage2", packed, &response, opts)
 
 	vc = gv.GetCurrentVC()
 	n, _ = vc.FindTicks(TestPID)
@@ -80,29 +83,31 @@ func TestSendAndUnpackStrings(t *testing.T) {
 func BenchmarkPrepare(b *testing.B) {
 
 	gv := InitGoVector(TestPID, "TestLogFile", GetDefaultConfig())
+	opts := GetDefaultLogOptions()
 
 	var packed []byte
 
 	for i := 0; i < b.N; i++ {
-		packed = gv.PrepareSend("TestMessage1", 1337)
+		packed = gv.PrepareSend("TestMessage1", 1337, opts)
 	}
 
 	var response int
-	gv.UnpackReceive("TestMessage2", packed, &response)
+	gv.UnpackReceive("TestMessage2", packed, &response, opts)
 
 }
 
 func BenchmarkUnpack(b *testing.B) {
 
 	gv := InitGoVector(TestPID, "TestLogFile", GetDefaultConfig())
+	opts := GetDefaultLogOptions()
 
 	var packed []byte
-	packed = gv.PrepareSend("TestMessage1", 1337)
+	packed = gv.PrepareSend("TestMessage1", 1337, opts)
 
 	var response int
 
 	for i := 0; i < b.N; i++ {
-		gv.UnpackReceive("TestMessage2", packed, &response)
+		gv.UnpackReceive("TestMessage2", packed, &response, opts)
 	}
 
 }

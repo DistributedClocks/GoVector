@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/DistributedClocks/GoVector/govec"
 	"net"
 	"os"
 	"time"
+
+	"github.com/DistributedClocks/GoVector/govec"
 )
 
+//Hardcoded client/sever port values, and total messages sent
 const (
 	SERVERPORT = "8080"
 	CLIENTPORT = "8081"
@@ -27,10 +29,11 @@ func client(listen, send string) {
 	Logger := govec.InitGoVector("client", "clientlogfile", govec.GetDefaultConfig())
 	// sending UDP packet to specified address and port
 	conn := setupConnection(SERVERPORT, CLIENTPORT)
+	opts := govec.GetDefaultLogOptions()
 
 	for i := 0; i < MESSAGES; i++ {
 		outgoingMessage := i
-		outBuf := Logger.PrepareSend("Sending message to server", outgoingMessage)
+		outBuf := Logger.PrepareSend("Sending message to server", outgoingMessage, opts)
 		_, errWrite := conn.Write(outBuf)
 		printErr(errWrite)
 
@@ -38,7 +41,7 @@ func client(listen, send string) {
 		var incommingMessage int
 		n, errRead := conn.Read(inBuf[0:])
 		printErr(errRead)
-		Logger.UnpackReceive("Received Message from server", inBuf[0:n], &incommingMessage)
+		Logger.UnpackReceive("Received Message from server", inBuf[0:n], &incommingMessage, opts)
 		fmt.Printf("GOT BACK : %d\n", incommingMessage)
 		time.Sleep(1)
 	}
@@ -60,11 +63,12 @@ func server(listen string) {
 	n = 1
 	nMinTwo = 1
 	nMinTwo = 1
+	opts := govec.GetDefaultLogOptions()
 
 	for i := 0; i < MESSAGES; i++ {
 		_, addr, err := conn.ReadFrom(buf[0:])
 		var incommingMessage int
-		Logger.UnpackReceive("Received Message From Client", buf[0:], &incommingMessage)
+		Logger.UnpackReceive("Received Message From Client", buf[0:], &incommingMessage, opts)
 		fmt.Printf("Received %d\n", incommingMessage)
 		printErr(err)
 
@@ -84,7 +88,7 @@ func server(listen string) {
 			break
 		}
 
-		outBuf := Logger.PrepareSend("Replying to client", n)
+		outBuf := Logger.PrepareSend("Replying to client", n, opts)
 
 		conn.WriteTo(outBuf, addr)
 		time.Sleep(1)

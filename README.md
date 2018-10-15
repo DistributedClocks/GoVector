@@ -4,15 +4,17 @@
 [![GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector?status.svg)](https://godoc.org/github.com/DistributedClocks/GoVector)
 [![Go Report Card](https://goreportcard.com/badge/github.com/DistributedClocks/GoVector)](https://goreportcard.com/report/github.com/DistributedClocks/GoVector)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
+[![Coverage Status](https://img.shields.io/codecov/c/github/DistributedClocks/GoVector/master.svg)](https://codecov.io/gh/DistributedClocks/GoVector)
 
 
 GoVector is a vector clock logging library written in Go. The [vector
 clock algorithm](https://en.wikipedia.org/wiki/Vector_clock) is used
 to order events in distributed systems in the absence of a centralized
 clock. GoVector implements the vector clock algorithm and provides
-feature rich logging, and encoding infrastructure. Vector clock events
-are generated using 3 key functions `PrepareSend`, `UnpackReceive`,
+feature-rich logging and encoding infrastructure. 
+
+Vector clock events
+are generated using 3 key functions, `PrepareSend`, `UnpackReceive`,
 and `LogLocalEvent`. PrepareSend encodes messages for network
 transport, updates GoVectors local time, and logs a sending event.
 UpackReceive decodes messages from the network, merges GoVectors local
@@ -22,66 +24,87 @@ event ticks the clock, and logs a message.
 This library can be added to a Go project to generate a
 [ShiViz](http://bestchai.bitbucket.io/shiviz/)-compatible vector-clock
 timestamped log of events in a concurrent or distributed system.
-GoVector is compatible with Go 1.4+ 
+This library can also be used to generate [TSViz](https://bestchai.bitbucket.io/tsviz/)-compatible
+log of events.
+GoVector is compatible with Go 1.4+. 
 
-* govec/    : Contains the Library and all its dependencies
-* example/  : Contains some examples instrumented with different features of GoVector
+* govec/    	: Contains the Library and all its dependencies
+* govec/vclock	: Pure vector clock library
+* govec/vrpc	: Go's rpc with GoVector integration
+* example/  	: Contains some examples instrumented with different features of GoVector
 
-### Usage
+### Installation
 
-To use GoVector you must have a correctly configured go development
-environment, see [How to write Go
-Code](https://golang.org/doc/code.html)
+To install GoVector you must have a correctly configured go development
+environment. See [How to Write Go
+Code](https://golang.org/doc/code.html).
 
 Once you set up your environment, GoVector can be installed with the go
 tool command:
 
 > go get -u github.com/DistributedClocks/GoVector
 
-*gofmt* will automatically add imports for GoVector. If you do not
-have a working version of *gofmt* GoVector can be imported by adding:
+###   Usage
 
-See GoVectors library documentation
-[here](https://godoc.org/github.com/DistributedClocks/GoVector/govec).
+The following is a basic example of how this library can be used:
 
-- [ ] Write up priority example
-- [ ] Simple write up partial ordering
-- [ ] Write up limitations 1 process per machine
-
-###   Examples
-
-The following is a basic example of how this library can be used 
 ```go
 	package main
 
 	import "github.com/DistributedClocks/GoVector/govec"
 
 	func main() {
+		//Initialize GoVector logger
 		Logger := govec.InitGoVector("MyProcess", "LogFile")
 		
-		//In Sending Process
-		
-		//Prepare a Message
+		//Encode message, and update vector clock
 		messagepayload := []byte("samplepayload")
-		finalsend := Logger.PrepareSend("Sending Message", messagepayload)
+		vectorclockmessage := Logger.PrepareSend("Sending Message", messagepayload)
 		
 		//send message
-		connection.Write(finalsend)
+		connection.Write(vectorclockmessage)
 
 		//In Receiving Process
-		
-		//receive message
-		recbuf := Logger.UnpackReceive("Receiving Message", finalsend)
+		connection.Read(vectorclockmessage)
+		//Decode message, and update local vector clock with received clock
+		Logger.UnpackReceive("Receiving Message", &messagepayload, vectorclockmessage)
 
-		//Can be called at any point 
+		//Log a local event
 		Logger.LogLocalEvent("Example Complete")
-		
-		Logger.DisableLogging()
-		//No further events will be written to log file
 	}
 ```
+For complete documentation with examples see GoVector's [GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector/govec).
 
-This produces the log "LogFile.txt" :
+### End-to-End Examples
+
+* Client-Server GoVector instrumentation [Examples/ClientServer.go](example/ClientServer/ClientServer.go)
+* RPC Client-Server program [Examples/RpcClientServer.go](example/RpcClientServer/RpcClientServer.go)
+
+### Motivation
+
+GoVector was initially developed as a pedagogical tool for UBC's computer science course on distributed systems (CPSC 416). Students new to the development of distributed systems can feed generated logs into [ShiViz](http://bestchai.bitbucket.io/shiviz/) to visualize their program executions and reason about event orderings. Furthermore, GoVector's marshaling functionality reduces the effort needed to write networking code that is largely boilerplate.
+
+Eventually, as a result of student requests, GoVector has been transformed into a general-purpose logging tool. Additional features include optimized IO, priority logging, [TSViz](https://bestchai.bitbucket.io/tsviz/) compatibility, and RPC instrumentation.
+
+### Dependencies
+
+GoVector has the following dependencies: 
+
++ [msgpack](https://github.com/vmihailenco/msgpack)
++ [go-colortext](https://github.com/daviddengcn/go-colortext)
+
+### Contributors
+
++ Ivan Beschastnikh
++ Mike Fink
++ Stewart Grant
++ Clement Fung
++ Fabian Ruffy
++ Vaastav Anand
+
+### Output Example
+
+The source code from the useage example produces the following log into a file named "LogFile.txt":
 
 	MyProcess {"MyProcess":1}
 	Initialization Complete
@@ -92,19 +115,16 @@ This produces the log "LogFile.txt" :
 	MyProcess {"MyProcess":4}
 	Example Complete
 
-An executable example of a similar program can be found in
-[Examples/ClientServer.go](example/ClientServer/ClientServer.go)
-
-An executable example of a RPC Client-Server program can be found in 
-[Examples/RpcClientServer.go](example/RpcClientServer/RpcClientServer.go)
 
 
-Here is a sample output of the priority logger
+
+Here is a sample output of the priority logger:
 ![PriorityLoggerOutput.png](.images/PriorityLoggerOutput.png)
 
 Here is an example of ShiViz output generated by an RPC client server
-interaction
+interaction:
 ![ShivizExample.png](.images/shiviz_output.png)
+
 <!-- July 2017: Brokers are no longer supported, maybe they will come back.
 
 ### VectorBroker

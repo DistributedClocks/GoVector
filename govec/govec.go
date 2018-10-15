@@ -1,3 +1,4 @@
+//Package govec is a vector clock logging library
 package govec
 
 import (
@@ -15,36 +16,13 @@ import (
 	"github.com/vmihailenco/msgpack"
 )
 
-/*
-   - All licences like other licenses ...
-
-   How to Use This Library
-
-   Step 1:
-   Create a Global Variable and Initialize it using like this =
-
-   Logger:= Initialize("MyProcess",ShouldYouSeeLoggingOnScreen,ShouldISendVectorClockonWire,Debug)
-
-   Step 2:
-   When Ever You Decide to Send any []byte , before sending call PrepareSend like this:
-   SENDSLICE := PrepareSend("Message Description", YourPayload)
-   and send the SENDSLICE instead of your Designated Payload
-
-   Step 3:
-   When Receiveing, AFTER you receive your message, pass the []byte into UnpackRecieve
-   like this:
-
-   UnpackReceive("Message Description", []ReceivedPayload, *RETURNSLICE)
-   and use RETURNSLICE for further processing.
-*/
-
 var (
 	logToTerminal                       = false
 	_             msgpack.CustomEncoder = (*VClockPayload)(nil)
 	_             msgpack.CustomDecoder = (*VClockPayload)(nil)
 )
 
-//LogPriority controls the minumum priority of logging events which
+//LogPriority controls the minimum priority of logging events which
 //will be logged.
 type LogPriority int
 
@@ -67,6 +45,7 @@ var colorLookup = [...]ct.Color{
 	FATAL:   ct.Magenta,
 }
 
+//translates priority enums into strings
 var prefixLookup = [...]string{
 	DEBUG:   "DEBUG",
 	INFO:    "INFO",
@@ -79,7 +58,7 @@ var prefixLookup = [...]string{
 //input to GoLog initialization. See defaults in GetDefaultsConfig
 type GoLogConfig struct {
 	//If true logging events are buffered until flushed. This option
-	//increase logging performance at the cost of saftey.
+	//increase logging performance at the cost of safety.
 	Buffered bool
 	//Logging events are printed to screen
 	PrintOnScreen bool
@@ -97,7 +76,8 @@ type GoLogConfig struct {
 	Priority LogPriority
 }
 
-//Returns the default GoLogConfig with default values for various fields.
+//GetDefaultConfig returns the default GoLogConfig with default values
+//for various fields.
 func GetDefaultConfig() GoLogConfig {
 	config := GoLogConfig{
 		Buffered:      false,
@@ -109,21 +89,43 @@ func GetDefaultConfig() GoLogConfig {
 	return config
 }
 
-//This is the data structure that is actually end on the wire
+//GoLogOptions provides logging parameters for individual logging statements
+type GoLogOptions struct {
+	// The Log priority for this event
+	Priority LogPriority
+}
+
+//GetDefaultLogOptions returns the default GoLogOptions with default values
+//for the fields
+func GetDefaultLogOptions() GoLogOptions {
+	o := GoLogOptions{Priority: INFO}
+	return o
+}
+
+//SetPriority returns a new GoLogOptions object with its priority field
+//set to Priority. Follows the builder pattern.
+// Priority : (GoLogPriority) The Priority that the new GoLogOptions object must have
+func (o *GoLogOptions) SetPriority(Priority LogPriority) GoLogOptions {
+	opts := *o
+	opts.Priority = Priority
+	return opts
+}
+
+//VClockPayload is the data structure that is actually end on the wire
 type VClockPayload struct {
 	Pid     string
 	VcMap   map[string]uint64
 	Payload interface{}
 }
 
-//Prints the Data Stuct as Bytes
+//PrintDataBytes prints the Data Stuct as Bytes
 func (d *VClockPayload) PrintDataBytes() {
 	fmt.Printf("%x \n", d.Pid)
 	fmt.Printf("%X \n", d.VcMap)
 	fmt.Printf("%X \n", d.Payload)
 }
 
-//Prints the Data Struct as a String
+//String returns VClockPayload's pid as a string
 func (d *VClockPayload) String() (s string) {
 	s += "-----DATA START -----\n"
 	s += string(d.Pid[:])
@@ -131,7 +133,7 @@ func (d *VClockPayload) String() (s string) {
 	return
 }
 
-/* Custom encoder function, needed for msgpack interoperability */
+//EncodeMsgpack is a custom encoder function, needed for msgpack interoperability
 func (d *VClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 	var err error
@@ -168,7 +170,8 @@ func (d *VClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 }
 
-/* Custom decoder function, needed for msgpack interoperability */
+//DecodeMsgpack is a custom decoder function, needed for msgpack
+//interoperability
 func (d *VClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
 	var err error
 
@@ -213,7 +216,9 @@ func (d *VClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
 }
 
 //The GoLog struct provides an interface to creating and maintaining
-//vector timestamp entries in the generated log file
+//vector timestamp entries in the generated log file. GoLogs are
+//initialized with Configs which control logger output, format, and
+//frequency.
 type GoLog struct {
 
 	//Local Process ID
@@ -258,10 +263,9 @@ type GoLog struct {
 	mutex sync.RWMutex
 }
 
-//Returns a Go Log Struct taking in two arguments and truncates previous logs:
-//MyProcessName (string): local process name; must be unique in your distributed system.
-//LogFileName (string) : name of the log file that will store info. Any old log with the same name will be truncated
-//Config (GoLogConfig) : config struct defining the values of the options of GoLog logger
+//InitGoVector returns a GoLog which generates a logs prefixed with
+//processid, to a file name logfilename.log. Any old log with the same
+//name will be trucated. Config controls logging options. See GoLogConfig for more details.
 func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoLog {
 
 	gv := &GoLog{}
@@ -291,7 +295,7 @@ func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoL
 	}
 	print(config.EncodingStrategy)
 
-	//we create a new Vector Clock with processname and 0 as the intial time
+	//we create a new Vector Clock with processname and 0 as the initial time
 	vc1 := vclock.New()
 	vc1.Tick(processid)
 	gv.currentVC = vc1
@@ -344,7 +348,7 @@ func (gv *GoLog) prepareLogFile() {
 	}
 }
 
-//Returns the current vector clock
+//GetCurrentVC returns the current vector clock
 func (gv *GoLog) GetCurrentVC() vclock.VClock {
 	return gv.currentVC
 }
@@ -367,16 +371,18 @@ func defaultDecoder(buf []byte, payload interface{}) error {
 	return msgpack.Unmarshal(buf, payload)
 }
 
-//Enables buffered writes to the log file. All the log messages are only written
-//to the LogFile via an explicit call to the function Flush.
-//Note: Buffered writes are automatically disabled.
+//EnableBufferedWrites enables buffered writes to the log file. All
+//the log messages are only written to the LogFile via an explicit
+//call to the function Flush.  Note: Buffered writes are automatically
+//disabled.
 func (gv *GoLog) EnableBufferedWrites() {
 	gv.buffered = true
 }
 
-//Disables buffered writes to the log file. All the log messages from now on
-//will be written to the Log file immediately. Writes all the existing
-//log messages that haven't been written to Log file yet.
+//DisableBufferedWrites disables buffered writes to the log file. All
+//the log messages from now on will be written to the Log file
+//immediately. Writes all the existing log messages that haven't been
+//written to Log file yet.
 func (gv *GoLog) DisableBufferedWrites() {
 	gv.buffered = false
 	if gv.output != "" {
@@ -384,9 +390,9 @@ func (gv *GoLog) DisableBufferedWrites() {
 	}
 }
 
-//Writes the log messages stored in the buffer to the Log File. This
-//function should be used by the application to also force writes in
-//the case of interrupts and crashes.   Note: Calling Flush when
+//Flush writes the log messages stored in the buffer to the Log File.
+//This function should be used by the application to also force writes
+//in the case of interrupts and crashes.   Note: Calling Flush when
 //BufferedWrites is disabled is essentially a no-op.
 func (gv *GoLog) Flush() bool {
 	complete := true
@@ -466,49 +472,42 @@ func (gv *GoLog) tickClock() {
 	gv.currentVC.Tick(gv.pid)
 }
 
-//Increments current vector timestamp and logs it into Log File.
-//* LogMessage (string) : Message to be logged
-func (gv *GoLog) LogLocalEvent(Message string) (logSuccess bool) {
-	return gv.LogLocalEventWithPriority(Message, gv.priority)
-}
-
-//If the priority of the logger is lower than or equal to the priority
-//of this event then the current vector timestamp is incremented and the
-//message is logged it into the Log File. A color coded string is also
-//printed on the console.
+//LogLocalEventWithPriority implements LogLocalEvent with priority
+//levels. If the priority of the logger is lower than or equal to the
+//priority of this event then the current vector timestamp is
+//incremented and the message is logged it into the Log File. A color
+//coded string is also printed on the console.
 //* LogMessage (string) : Message to be logged
 //* Priority (LogPriority) : Priority at which the message is to be logged
-func (gv *GoLog) LogLocalEventWithPriority(LogMessage string, Priority LogPriority) (logSuccess bool) {
+func (gv *GoLog) LogLocalEvent(LogMessage string, opts GoLogOptions) (logSuccess bool) {
 	logSuccess = true
 	gv.mutex.Lock()
-	if Priority >= gv.priority {
-		prefix := prefixLookup[Priority]
+	if opts.Priority >= gv.priority {
+		prefix := prefixLookup[opts.Priority]
 		gv.tickClock()
-		logSuccess = gv.logWriteWrapper(prefix+LogMessage, "Something went Wrong, Could not Log LocalEvent!", Priority)
+		logSuccess = gv.logWriteWrapper(prefix+LogMessage, "Something went Wrong, Could not Log LocalEvent!", opts.Priority)
 	}
 	gv.mutex.Unlock()
 	return
 }
 
-/*
-This function is meant to be used immediately before sending.
-LogMessage will be logged along with the time of the send
-buf is encode-able data (structure or basic type)
-Returned is an encoded byte array with logging information.
-
-This function is meant to be called before sending a packet. Usually,
-it should Update the Vector Clock for its own process, package with
-the clock using gob support and return the new byte array that should
-be sent onwards using the Send Command
-*/
-func (gv *GoLog) PrepareSendWithPriority(mesg string, buf interface{}, Priority LogPriority) (encodedBytes []byte) {
+//PrepareSend is meant to be used immediately before sending.
+//LogMessage will be logged along with the time of the send
+//buf is encode-able data (structure or basic type)
+//Returned is an encoded byte array with logging information.
+//
+//This function is meant to be called before sending a packet. Usually,
+//it should Update the Vector Clock for its own process, package with
+//the clock using gob support and return the new byte array that should
+//be sent onwards using the Send Command
+func (gv *GoLog) PrepareSend(mesg string, buf interface{}, opts GoLogOptions) (encodedBytes []byte) {
 
 	//Converting Vector Clock from Bytes and Updating the gv clock
 	gv.mutex.Lock()
-	if Priority >= gv.priority {
+	if opts.Priority >= gv.priority {
 		gv.tickClock()
 
-		gv.logWriteWrapper(mesg, "Something went wrong, could not log prepare send", Priority)
+		gv.logWriteWrapper(mesg, "Something went wrong, could not log prepare send", opts.Priority)
 
 		d := VClockPayload{Pid: gv.pid, VcMap: gv.currentVC.GetMap(), Payload: buf}
 
@@ -525,21 +524,6 @@ func (gv *GoLog) PrepareSendWithPriority(mesg string, buf interface{}, Priority 
 	return
 }
 
-/*
-This function is meant to be used immediately before sending.
-LogMessage will be logged along with the time of the send
-buf is encode-able data (structure or basic type)
-Returned is an encoded byte array with logging information.
-
-This function is meant to be called before sending a packet. Usually,
-it should Update the Vector Clock for its own process, package with
-the clock using gob support and return the new byte array that should
-be sent onwards using the Send Command
-*/
-func (gv *GoLog) PrepareSend(mesg string, buf interface{}) []byte {
-	return gv.PrepareSendWithPriority(mesg, buf, gv.priority)
-}
-
 func (gv *GoLog) mergeIncomingClock(mesg string, e VClockPayload, Priority LogPriority) {
 
 	// First, tick the local clock
@@ -549,21 +533,19 @@ func (gv *GoLog) mergeIncomingClock(mesg string, e VClockPayload, Priority LogPr
 	gv.logWriteWrapper(mesg, "Something went Wrong, Could not Log!", Priority)
 }
 
-/*
-UnpackReceive is used to unmarshall network data into local structures.
-LogMessage will be logged along with the vector time the receive happened
-buf is the network data, previously packaged by PrepareSend unpack is
-a pointer to a structure, the same as was packed by PrepareSend
-
-This function is meant to be called immediately after receiving
-a packet. It unpacks the data by the program, the vector clock. It
-updates vector clock and logs it. and returns the user data
-*/
-func (gv *GoLog) UnpackReceiveWithPriority(mesg string, buf []byte, unpack interface{}, Priority LogPriority) {
+//UnpackReceive is used to unmarshall network data into local structures.
+//LogMessage will be logged along with the vector time the receive happened
+//buf is the network data, previously packaged by PrepareSend unpack is
+//a pointer to a structure, the same as was packed by PrepareSend
+//
+//This function is meant to be called immediately after receiving
+//a packet. It unpacks the data by the program, the vector clock. It
+//updates vector clock and logs it. and returns the user data
+func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}, opts GoLogOptions) {
 
 	gv.mutex.Lock()
 
-	if Priority >= gv.priority {
+	if opts.Priority >= gv.priority {
 		e := VClockPayload{}
 		e.Payload = unpack
 
@@ -574,22 +556,9 @@ func (gv *GoLog) UnpackReceiveWithPriority(mesg string, buf []byte, unpack inter
 		}
 
 		// Increment and merge the incoming clock
-		gv.mergeIncomingClock(mesg, e, Priority)
+		gv.mergeIncomingClock(mesg, e, opts.Priority)
 	}
 	gv.mutex.Unlock()
 
 }
 
-/*
-UnpackReceive is used to unmarshall network data into local structures.
-LogMessage will be logged along with the vector time the receive happened
-buf is the network data, previously packaged by PrepareSend unpack is
-a pointer to a structure, the same as was packed by PrepareSend
-
-This function is meant to be called immediately after receiving
-a packet. It unpacks the data by the program, the vector clock. It
-updates vector clock and logs it. and returns the user data
-*/
-func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
-	gv.UnpackReceiveWithPriority(mesg, buf, unpack, gv.priority)
-}
