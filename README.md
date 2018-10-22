@@ -80,6 +80,26 @@ For complete documentation with examples see GoVector's [GoDoc](https://godoc.or
 * Client-Server GoVector instrumentation [Examples/ClientServer.go](example/ClientServer/ClientServer.go)
 * RPC Client-Server program [Examples/RpcClientServer.go](example/RpcClientServer/RpcClientServer.go)
 
+### Generating ShiViz/TSViz comaptible logs
+
+By default, when you download the GoVector package using the go get command, the command installs a binary of the to-level file govec.go by the name of GoVector in the directory "**$GOPATH/bin**". As long as this directory is part of your path, you can run the GoVector binary to generate a ShiViz or TSViz compatible log from all the logs in a given directory.
+
+**Note** : Make sure that you are running the GoVector binary on a directory that contains log files from the same execution of the system. If it contains logs from multiple executions, then ShiViz and TSViz won't be able to interpret the log file.
+
+#### Usage
+
+To generate a ShiViz-compatible log file called "hello.log" from all log files in the diretory "a/b/c" do the following,
+
+```
+    > GoVector --log_type shiviz --log_dir a/b/c --outfile hello.log
+```
+
+Similarly, to generate a TSViz-compatible log file called "hello-ts.log" from all log files in the directory "d/e/f" do the following,
+
+```
+    > GoVector --log_type tsviz --log_dir d/e/f --outfile hello-ts.log
+```
+
 ### Motivation
 
 GoVector was initially developed as a pedagogical tool for UBC's computer science course on distributed systems (CPSC 416). Students new to the development of distributed systems can feed generated logs into [ShiViz](http://bestchai.bitbucket.io/shiviz/) to visualize their program executions and reason about event orderings. Furthermore, GoVector's marshaling functionality reduces the effort needed to write networking code that is largely boilerplate.
