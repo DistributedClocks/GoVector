@@ -70,7 +70,7 @@ The following is a basic example of how this library can be used:
 		Logger.UnpackReceive("Receiving Message", vectorclockmessage, &messagepayload, govec.GetDefaultLogOptions())
 
 		//Log a local event
-		Logger.LogLocalEvent("Example Complete")
+		Logger.LogLocalEvent("Example Complete", govec.GetDefaultLogOptions())
 	}
 ```
 For complete documentation with examples see GoVector's [GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector/govec).
