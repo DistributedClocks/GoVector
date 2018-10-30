@@ -59,7 +59,7 @@ The following is a basic example of how this library can be used:
 		
 		//Encode message, and update vector clock
 		messagepayload := []byte("samplepayload")
-		vectorclockmessage := Logger.PrepareSend("Sending Message", messagepayload)
+		vectorclockmessage := Logger.PrepareSend("Sending Message", messagepayload, govec.GetDefaultLogOptions())
 		
 		//send message
 		connection.Write(vectorclockmessage)
@@ -67,10 +67,10 @@ The following is a basic example of how this library can be used:
 		//In Receiving Process
 		connection.Read(vectorclockmessage)
 		//Decode message, and update local vector clock with received clock
-		Logger.UnpackReceive("Receiving Message", &messagepayload, vectorclockmessage)
+		Logger.UnpackReceive("Receiving Message", vectorclockmessage, &messagepayload, govec.GetDefaultLogOptions())
 
 		//Log a local event
-		Logger.LogLocalEvent("Example Complete")
+		Logger.LogLocalEvent("Example Complete", govec.GetDefaultLogOptions())
 	}
 ```
 For complete documentation with examples see GoVector's [GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector/govec).
