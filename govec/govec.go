@@ -293,7 +293,6 @@ func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoL
 	} else {
 		gv.setEncoderDecoder(config.EncodingStrategy, config.DecodingStrategy)
 	}
-	print(config.EncodingStrategy)
 
 	//we create a new Vector Clock with processname and 0 as the initial time
 	vc1 := vclock.New()
