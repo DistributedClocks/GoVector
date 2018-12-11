@@ -471,7 +471,7 @@ func (gv *GoLog) tickClock() {
 	gv.currentVC.Tick(gv.pid)
 }
 
-//LogLocalEventWithPriority implements LogLocalEvent with priority
+//LogLocalEvent implements LogLocalEvent with priority
 //levels. If the priority of the logger is lower than or equal to the
 //priority of this event then the current vector timestamp is
 //incremented and the message is logged it into the Log File. A color
@@ -484,7 +484,7 @@ func (gv *GoLog) LogLocalEvent(LogMessage string, opts GoLogOptions) (logSuccess
 	if opts.Priority >= gv.priority {
 		prefix := prefixLookup[opts.Priority]
 		gv.tickClock()
-		logSuccess = gv.logWriteWrapper(prefix+LogMessage, "Something went Wrong, Could not Log LocalEvent!", opts.Priority)
+		logSuccess = gv.logWriteWrapper(prefix + "-" + LogMessage, "Something went Wrong, Could not Log LocalEvent!", opts.Priority)
 	}
 	gv.mutex.Unlock()
 	return
