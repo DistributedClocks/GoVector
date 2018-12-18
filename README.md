@@ -55,7 +55,7 @@ The following is a basic example of how this library can be used:
 
 	func main() {
 		//Initialize GoVector logger
-		Logger := govec.InitGoVector("MyProcess", "LogFile")
+		Logger := govec.InitGoVector("MyProcess", "LogFile", govec.GetDefaultConfig())
 		
 		//Encode message, and update vector clock
 		messagepayload := []byte("samplepayload")
