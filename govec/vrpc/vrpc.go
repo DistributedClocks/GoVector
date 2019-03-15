@@ -24,7 +24,7 @@ func RPCDial(network, address string, logger *govec.GoLog, options govec.GoLogOp
 	return rpc.NewClientWithCodec(newClientCodec(conn, logger, options)), err
 }
 
-//ServerRPCCon is a convenience function that accepts connections for a
+//ServeRPCConn is a convenience function that accepts connections for a
 //given listener and starts a new goroutine for the server to serve a
 //new connection. The logger is provided to be used by the
 //RPCServerCodec for message capture.
