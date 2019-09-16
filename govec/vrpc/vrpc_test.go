@@ -6,8 +6,8 @@ import (
 	"log"
 	"net"
 	"net/rpc"
-	"time"
 	"testing"
+	"time"
 
 	"github.com/DistributedClocks/GoVector/govec"
 )
