@@ -484,7 +484,7 @@ func (gv *GoLog) LogLocalEvent(LogMessage string, opts GoLogOptions) (logSuccess
 	if opts.Priority >= gv.priority {
 		prefix := prefixLookup[opts.Priority]
 		gv.tickClock()
-		logSuccess = gv.logWriteWrapper(prefix + "-" + LogMessage, "Something went Wrong, Could not Log LocalEvent!", opts.Priority)
+		logSuccess = gv.logWriteWrapper(prefix+"-"+LogMessage, "Something went Wrong, Could not Log LocalEvent!", opts.Priority)
 	}
 	gv.mutex.Unlock()
 	return
@@ -560,4 +560,3 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}, opts
 	gv.mutex.Unlock()
 
 }
-

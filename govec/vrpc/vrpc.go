@@ -43,11 +43,11 @@ func ServeRPCConn(server *rpc.Server, l net.Listener, logger *govec.GoLog, optio
 //logger of type GoLog to capture all the calls to a RPC Server as
 //well as responses from a RPC server.
 type RPCClientCodec struct {
-	C      io.Closer
-	Dec    *gob.Decoder
-	Enc    *gob.Encoder
-	EncBuf *bufio.Writer
-	Logger *govec.GoLog
+	C       io.Closer
+	Dec     *gob.Decoder
+	Enc     *gob.Encoder
+	EncBuf  *bufio.Writer
+	Logger  *govec.GoLog
 	Options govec.GoLogOptions
 }
 
@@ -55,13 +55,13 @@ type RPCClientCodec struct {
 //logger of type of GoLog to capture all the requests made from the
 //client to a RPC server as well as the server's to the clients.
 type RPCServerCodec struct {
-	Rwc    io.ReadWriteCloser
-	Dec    *gob.Decoder
-	Enc    *gob.Encoder
-	EncBuf *bufio.Writer
-	Logger *govec.GoLog
+	Rwc     io.ReadWriteCloser
+	Dec     *gob.Decoder
+	Enc     *gob.Encoder
+	EncBuf  *bufio.Writer
+	Logger  *govec.GoLog
 	Options govec.GoLogOptions
-	Closed bool
+	Closed  bool
 }
 
 //NewClient returs an rpc.Client insturmented with vector clocks.
@@ -113,11 +113,11 @@ func (c *RPCClientCodec) Close() error {
 func newServerCodec(conn io.ReadWriteCloser, logger *govec.GoLog, options govec.GoLogOptions) rpc.ServerCodec {
 	buf := bufio.NewWriter(conn)
 	srv := &RPCServerCodec{
-		Rwc:    conn,
-		Dec:    gob.NewDecoder(conn),
-		Enc:    gob.NewEncoder(buf),
-		EncBuf: buf,
-		Logger: logger,
+		Rwc:     conn,
+		Dec:     gob.NewDecoder(conn),
+		Enc:     gob.NewEncoder(buf),
+		EncBuf:  buf,
+		Logger:  logger,
 		Options: options,
 	}
 	return srv
