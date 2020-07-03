@@ -17,7 +17,7 @@ Vector clock events
 are generated using 3 key functions, `PrepareSend`, `UnpackReceive`,
 and `LogLocalEvent`. PrepareSend encodes messages for network
 transport, updates GoVectors local time, and logs a sending event.
-UpackReceive decodes messages from the network, merges GoVectors local
+UnpackReceive decodes messages from the network, merges GoVectors local
 clock with the received clock, and logs a receiving event. LogLocalEvent
 event ticks the clock, and logs a message.
 
@@ -80,7 +80,7 @@ For complete documentation with examples see GoVector's [GoDoc](https://godoc.or
 * Client-Server GoVector instrumentation [Examples/ClientServer.go](example/ClientServer/ClientServer.go)
 * RPC Client-Server program [Examples/RpcClientServer.go](example/RpcClientServer/RpcClientServer.go)
 
-### Generating ShiViz/TSViz comaptible logs
+### Generating ShiViz/TSViz compatible logs
 
 By default, when you download the GoVector package using the go get command, the command installs a binary of the to-level file govec.go by the name of GoVector in the directory "**$GOPATH/bin**". As long as this directory is part of your path, you can run the GoVector binary to generate a ShiViz or TSViz compatible log from all the logs in a given directory.
 
@@ -88,7 +88,7 @@ By default, when you download the GoVector package using the go get command, the
 
 #### Usage
 
-To generate a ShiViz-compatible log file called "hello.log" from all log files in the diretory "a/b/c" do the following,
+To generate a ShiViz-compatible log file called "hello.log" from all log files in the directory "a/b/c" do the following,
 
 ```
     > GoVector --log_type shiviz --log_dir a/b/c --outfile hello.log
@@ -124,7 +124,7 @@ GoVector has the following dependencies:
 
 ### Output Example
 
-The source code from the useage example produces the following log into a file named "LogFile.txt":
+The source code from the usage example produces the following log into a file named "LogFile.txt":
 
 	MyProcess {"MyProcess":1}
 	Initialization Complete
