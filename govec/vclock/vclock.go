@@ -158,9 +158,6 @@ func (vc VClock) Compare(other VClock, cond Condition) bool {
 			if other[id] > vc[id] {
 				switch otherIs {
 				case Equal:
-					if cond&Descendant == 0 {
-						return false
-					}
 					otherIs = Descendant
 					break
 				case Ancestor:
@@ -169,9 +166,6 @@ func (vc VClock) Compare(other VClock, cond Condition) bool {
 			} else if other[id] < vc[id] {
 				switch otherIs {
 				case Equal:
-					if cond&Ancestor == 0 {
-						return false
-					}
 					otherIs = Ancestor
 					break
 				case Descendant:
@@ -185,6 +179,11 @@ func (vc VClock) Compare(other VClock, cond Condition) bool {
 				return cond&Concurrent != 0
 			}
 		}
+	}
+
+	//Equal clocks are concurrent
+	if otherIs == Equal && cond == Concurrent {
+		cond = Equal
 	}
 	return cond&otherIs != 0
 }
