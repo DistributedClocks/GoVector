@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/DistributedClocks/GoVector/govec/vclock"
-	"github.com/daviddengcn/go-colortext"
-	"github.com/vmihailenco/msgpack"
+	ct "github.com/daviddengcn/go-colortext"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 var (
@@ -206,7 +206,7 @@ func (d *VClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
 		}
 		vcMap[key] = value
 	}
-	err = dec.Decode(&d.Pid, &d.Payload, &d.VcMap)
+	err = dec.DecodeMulti(&d.Pid, &d.Payload, &d.VcMap)
 	d.VcMap = vcMap
 	if err != nil {
 		return err

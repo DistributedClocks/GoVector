@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/DistributedClocks/GoVector/govec/vclock"
-	"github.com/vmihailenco/msgpack"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 //ClockPayload is the wire type for vector clocks, and their
@@ -60,7 +60,7 @@ func (d *ClockPayload) EncodeMsgpack(enc *msgpack.Encoder) error {
 func (d *ClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	var err error
-	err = dec.Decode(&d.Pid, &d.Payload, &d.VcMap)
+	err = dec.DecodeMulti(&d.Pid, &d.Payload, &d.VcMap)
 
 	if err != nil {
 		return err
