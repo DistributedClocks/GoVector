@@ -26,7 +26,7 @@ This library can be added to a Go project to generate a
 timestamped log of events in a concurrent or distributed system.
 This library can also be used to generate [TSViz](https://bestchai.bitbucket.io/tsviz/)-compatible
 log of events.
-GoVector is compatible with Go 1.4+. 
+GoVector is compatible with Go 1.11+ and requires support for [Go modules](https://github.com/golang/go/wiki/Modules).
 
 * `govec/`    	    : Contains the Library and all its dependencies
 * `govec/vclock`	: Pure vector clock library
@@ -60,17 +60,17 @@ func main() {
     logger := govec.InitGoVector("MyProcess", "LogFile", govec.GetDefaultConfig())
 
     // Encode message, and update vector clock
-    messagepayload := []byte("samplepayload")
-    vectorclockmessage := logger.PrepareSend("Sending Message", messagepayload, govec.GetDefaultLogOptions())
+    messagePayload := []byte("sample-payload")
+    vectorClockMessage := logger.PrepareSend("Sending Message", messagePayload, govec.GetDefaultLogOptions())
 
     // Send message
-    connection.Write(vectorclockmessage)
+    connection.Write(vectorclockMessage)
 
     // In Receiving Process
-    connection.Read(vectorclockmessage)
+    connection.Read(vectorclockMessage)
 
     // Decode message, and update local vector clock with received clock
-    logger.UnpackReceive("Receiving Message", vectorclockmessage, &messagepayload, govec.GetDefaultLogOptions())
+    logger.UnpackReceive("Receiving Message", vectorClockMessage, &messagePayload, govec.GetDefaultLogOptions())
 
     // Log a local event
     logger.LogLocalEvent("Example Complete", govec.GetDefaultLogOptions())
