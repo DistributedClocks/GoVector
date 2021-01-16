@@ -452,11 +452,13 @@ func (gv *GoLog) logThis(Message string, ProcessID string, VCString string, Prio
 
 //logWriteWrapper is a helper function for wrapping common logging
 //behaviour assosciated with logThis
-func (gv *GoLog) logWriteWrapper(logMessage, errorMessage string, Priority LogPriority) (success bool) {
+func (gv *GoLog) logWriteWrapper(mesg, errMesg string, priority LogPriority) (success bool) {
 	if gv.logging == true {
-		success = gv.logThis(logMessage, gv.pid, gv.currentVC.ReturnVCString(), Priority)
+		prefix := prefixLookup[priority]
+		wrappedMesg := prefix + " " + mesg
+		success = gv.logThis(wrappedMesg, gv.pid, gv.currentVC.ReturnVCString(), priority)
 		if !success {
-			gv.logger.Println(errorMessage)
+			gv.logger.Println(errMesg)
 		}
 	}
 	return
@@ -478,13 +480,12 @@ func (gv *GoLog) tickClock() {
 //coded string is also printed on the console.
 //* LogMessage (string) : Message to be logged
 //* Priority (LogPriority) : Priority at which the message is to be logged
-func (gv *GoLog) LogLocalEvent(LogMessage string, opts GoLogOptions) (logSuccess bool) {
+func (gv *GoLog) LogLocalEvent(mesg string, opts GoLogOptions) (logSuccess bool) {
 	logSuccess = true
 	gv.mutex.Lock()
 	if opts.Priority >= gv.priority {
-		prefix := prefixLookup[opts.Priority]
 		gv.tickClock()
-		logSuccess = gv.logWriteWrapper(prefix+"-"+LogMessage, "Something went Wrong, Could not Log LocalEvent!", opts.Priority)
+		logSuccess = gv.logWriteWrapper(mesg, "Something went Wrong, Could not Log LocalEvent!", opts.Priority)
 	}
 	gv.mutex.Unlock()
 	return

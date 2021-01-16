@@ -64,10 +64,10 @@ func main() {
     vectorClockMessage := logger.PrepareSend("Sending Message", messagePayload, govec.GetDefaultLogOptions())
 
     // Send message
-    connection.Write(vectorclockMessage)
+    connection.Write(vectorClockMessage)
 
     // In Receiving Process
-    connection.Read(vectorclockMessage)
+    connection.Read(vectorClockMessage)
 
     // Decode message, and update local vector clock with received clock
     logger.UnpackReceive("Receiving Message", vectorClockMessage, &messagePayload, govec.GetDefaultLogOptions())
