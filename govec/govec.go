@@ -296,13 +296,15 @@ func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoL
 
 	//we create a new Vector Clock with processname and 0 as the initial time
 	vc1 := vclock.New()
-	vc1.Tick(processid)
+	vc1.Set(processid, 0)
 	gv.currentVC = vc1
 
 	//Starting File IO . If Log exists, Log Will be deleted and A New one will be created
 	logname := logfilename + "-Log.txt"
 	gv.logfile = logname
-	gv.prepareLogFile()
+	if gv.logging {
+		gv.prepareLogFile()
+	}
 
 	return gv
 }
@@ -341,6 +343,7 @@ func (gv *GoLog) prepareLogFile() {
 		gv.logThis(executionstring, "", "", gv.priority)
 	}
 
+	gv.currentVC.Tick(gv.pid)
 	ok := gv.logThis("Initialization Complete", gv.pid, gv.currentVC.ReturnVCString(), gv.priority)
 	if ok == false {
 		gv.logger.Println("Something went Wrong, Could not Log!")
