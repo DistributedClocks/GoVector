@@ -74,6 +74,8 @@ type GoLogConfig struct {
 	LogToFile bool
 	//The minimum priority event to log
 	Priority LogPriority
+	//Initial clock value, zero by default
+	InitialClock uint64
 }
 
 //GetDefaultConfig returns the default GoLogConfig with default values
@@ -85,7 +87,9 @@ func GetDefaultConfig() GoLogConfig {
 		AppendLog:     false,
 		UseTimestamps: false,
 		LogToFile:     true,
-		Priority:      INFO}
+		Priority:      INFO,
+		InitialClock:  0,
+	}
 	return config
 }
 
@@ -294,9 +298,10 @@ func InitGoVector(processid string, logfilename string, config GoLogConfig) *GoL
 		gv.setEncoderDecoder(config.EncodingStrategy, config.DecodingStrategy)
 	}
 
-	//we create a new Vector Clock with processname and 0 as the initial time
+	// We create a new Vector Clock with processname and config.InitialClock
+	// as the initial time
 	vc1 := vclock.New()
-	vc1.Set(processid, 0)
+	vc1.Set(processid, config.InitialClock)
 	gv.currentVC = vc1
 
 	//Starting File IO . If Log exists, Log Will be deleted and A New one will be created

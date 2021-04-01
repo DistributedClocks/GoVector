@@ -19,8 +19,26 @@ func TestBasicInit(t *testing.T) {
 	n, found := vc.FindTicks(TestPID)
 
 	AssertTrue(t, found, "Initializing clock: Init PID not found")
-	AssertEquals(t, uint64(1), n, "PrepareSend: Clock value incremented")
+	AssertEquals(t, uint64(1), n, "Initializing clock: wrong initial clock value")
 
+}
+
+func TestIntialClock(t *testing.T) {
+	var initialClock uint64 = 7
+
+	config := GetDefaultConfig()
+	config.InitialClock = initialClock
+	gv := InitGoVector(TestPID, "TestLogFile", config)
+
+	if gv.pid != TestPID {
+		t.Fatalf("Setting Process ID Failed.")
+	}
+
+	vc := gv.GetCurrentVC()
+	n, found := vc.FindTicks(TestPID)
+
+	AssertTrue(t, found, "Initializing clock: Init PID not found")
+	AssertEquals(t, initialClock+1, n, "Initializing clock: wrong initial clock value")
 }
 
 func TestLogLocal(t *testing.T) {
