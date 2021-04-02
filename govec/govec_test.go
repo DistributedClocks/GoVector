@@ -2,6 +2,8 @@ package govec
 
 import (
 	"testing"
+
+	"github.com/DistributedClocks/GoVector/govec/vclock"
 	//"fmt"
 )
 
@@ -23,22 +25,20 @@ func TestBasicInit(t *testing.T) {
 
 }
 
-func TestIntialClock(t *testing.T) {
-	var initialClock uint64 = 7
+func TestInitialVC(t *testing.T) {
+	initialVC := vclock.VClock(map[string]uint64{
+		TestPID: 7,
+	})
 
 	config := GetDefaultConfig()
-	config.InitialClock = initialClock
+	config.InitialVC = initialVC.Copy()
 	gv := InitGoVector(TestPID, "TestLogFile", config)
-
-	if gv.pid != TestPID {
-		t.Fatalf("Setting Process ID Failed.")
-	}
 
 	vc := gv.GetCurrentVC()
 	n, found := vc.FindTicks(TestPID)
 
 	AssertTrue(t, found, "Initializing clock: Init PID not found")
-	AssertEquals(t, initialClock+1, n, "Initializing clock: wrong initial clock value")
+	AssertEquals(t, initialVC[TestPID]+1, n, "Initializing clock: wrong initial clock value")
 }
 
 func TestLogLocal(t *testing.T) {
