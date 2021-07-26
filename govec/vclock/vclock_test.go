@@ -301,3 +301,23 @@ func TestEncodeDecode(t *testing.T) {
 		t.Fatalf("decoded not the same as encoded enc = %s | dec = %s", nString, dString)
 	}
 }
+
+func TestVCString(t *testing.T)  {
+	n := New()
+
+	n.Set("a", 1)
+	n.Set("b", 1)
+	n.Set("c", 1)
+	n.Set("d", 1)
+	n.Set("e", 1)
+	n.Set("f", 1)
+	n.Set("g", 1)
+	n.Set("h", 1)
+
+	expected := "{\"a\":1, \"b\":1, \"c\":1, \"d\":1, \"e\":1, \"f\":1, \"g\":1, \"h\":1}"
+	nString := n.ReturnVCString()
+
+	if nString != expected {
+		t.Fatalf("VC string %s not the same as expected %s", nString, expected )
+	}
+}
