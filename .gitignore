@@ -56,3 +56,5 @@ example/*.txt
 *.sublime-workspace
 
 *.sublime-project
+
+.idea/
