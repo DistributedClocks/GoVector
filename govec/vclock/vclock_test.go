@@ -301,3 +301,19 @@ func TestEncodeDecode(t *testing.T) {
 		t.Fatalf("decoded not the same as encoded enc = %s | dec = %s", nString, dString)
 	}
 }
+
+func TestCompareDifferentLengths(t *testing.T) {
+	n1 := New()
+	n2 := New()
+
+	n1.Set("a", 1)
+	n1.Set("b", 1)
+
+	n2.Set("b", 1)
+	n2.Set("c", 1)
+	n2.Set("d", 1)
+
+	if n1.Compare(n2, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n1, n2)
+	}
+}
