@@ -585,11 +585,12 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}, opts
 
 }
 
-//StartBroadcast is to be called just prior to starting a message broadcast
-//via RPC calls. Its call it to be followed with asynchronous RPC calls that
-//send out the message to the broadcast recipients and with a call to StopBroadcast.
-//All RPC calls in-between will be logged as a single event and will be sent
-//out with the same vector clock.
+// StartBroadcast allows to use vector clocks in the context of casual broadcasts
+// sent via RPC. Any call to StartBroadcast must have a corresponding call to 
+// StopBroadcast, otherwise a deadlock will occur. All RPC calls made in-between 
+// the calls to StartBroadcast and StopBroadcast will be logged as a single event, 
+// will be sent out with the same vector clock and will represent broadcast messages
+// from the current process to the process pool.
 func (gv *GoLog) StartBroadcast(mesg string, opts GoLogOptions) {
 	gv.mutex.Lock()
 	gv.tickClock()
@@ -597,7 +598,7 @@ func (gv *GoLog) StartBroadcast(mesg string, opts GoLogOptions) {
 	gv.broadcast = true
 }
 
-//StopBroadcast is called once all RPC calls of a message broadcast have been sent.
+// StopBroadcast is called once all RPC calls of a message broadcast have been sent.
 func (gv *GoLog) StopBroadcast() {
 	gv.broadcast = false
 	gv.mutex.Unlock()
