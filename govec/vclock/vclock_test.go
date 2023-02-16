@@ -317,3 +317,23 @@ func TestCompareDifferentLengths(t *testing.T) {
 		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n1, n2)
 	}
 }
+
+func TestVCString(t *testing.T) {
+	n := New()
+
+	n.Set("a", 1)
+	n.Set("b", 1)
+	n.Set("c", 1)
+	n.Set("d", 1)
+	n.Set("e", 1)
+	n.Set("f", 1)
+	n.Set("g", 1)
+	n.Set("h", 1)
+
+	expected := "{\"a\":1, \"b\":1, \"c\":1, \"d\":1, \"e\":1, \"f\":1, \"g\":1, \"h\":1}"
+	nString := n.ReturnVCString()
+
+	if nString != expected {
+		t.Fatalf("VC string %s not the same as expected %s", nString, expected)
+	}
+}
