@@ -5,14 +5,15 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"sort"
 )
 
 // Condition constants define how to compare a vector clock against another,
 // and may be ORed together when being provided to the Compare method.
 type Condition int
 
-//Constants define compairison conditions between pairs of vector
-//clocks
+// Constants define comparison conditions between pairs of vector
+// clocks
 const (
 	Equal Condition = 1 << iota
 	Ancestor
@@ -20,23 +21,23 @@ const (
 	Concurrent
 )
 
-//Vector clocks are maps of string to uint64 where the string is the
-//id of the process, and the uint64 is the clock value
+// VClock are maps of string to uint64 where the string is the
+// id of the process, and the uint64 is the clock value
 type VClock map[string]uint64
 
-//FindTicks returns the clock value for a given id, if a value is not
-//found false is returned
+// FindTicks returns the clock value for a given id, if a value is not
+// found false is returned
 func (vc VClock) FindTicks(id string) (uint64, bool) {
 	ticks, ok := vc[id]
 	return ticks, ok
 }
 
-//New returns a new vector clock
+// New returns a new vector clock
 func New() VClock {
 	return VClock{}
 }
 
-//Copy returs a copy of the clock
+// Copy returns a copy of the clock
 func (vc VClock) Copy() VClock {
 	cp := make(map[string]uint64, len(vc))
 	for key, value := range vc {
@@ -45,27 +46,27 @@ func (vc VClock) Copy() VClock {
 	return cp
 }
 
-//CopyFromMap copys a map to a vector clock
+// CopyFromMap copies a map to a vector clock
 func (vc VClock) CopyFromMap(otherMap map[string]uint64) VClock {
 	return otherMap
 }
 
-//GetMap returns the map typed vector clock
+// GetMap returns the map typed vector clock
 func (vc VClock) GetMap() map[string]uint64 {
 	return map[string]uint64(vc)
 }
 
-//Set assigns a clock value to a clock index
+// Set assigns a clock value to a clock index
 func (vc VClock) Set(id string, ticks uint64) {
 	vc[id] = ticks
 }
 
-//Tick has replaced the old update
+// Tick has replaced the old update
 func (vc VClock) Tick(id string) {
 	vc[id] = vc[id] + 1
 }
 
-//LastUpdate returns the clock value of the oldest clock
+// LastUpdate returns the clock value of the oldest clock
 func (vc VClock) LastUpdate() (last uint64) {
 	for key := range vc {
 		if vc[key] > last {
@@ -75,8 +76,8 @@ func (vc VClock) LastUpdate() (last uint64) {
 	return last
 }
 
-//Merge takes the max of all clock values in other and updates the
-//values of the callee
+// Merge takes the max of all clock values in other and updates the
+// values of the callee
 func (vc VClock) Merge(other VClock) {
 	for id := range other {
 		if vc[id] < other[id] {
@@ -85,7 +86,7 @@ func (vc VClock) Merge(other VClock) {
 	}
 }
 
-//Bytes returns an encoded vector clock
+// Bytes returns an encoded vector clock
 func (vc VClock) Bytes() []byte {
 	b := new(bytes.Buffer)
 	enc := gob.NewEncoder(b)
@@ -96,7 +97,7 @@ func (vc VClock) Bytes() []byte {
 	return b.Bytes()
 }
 
-//FromBytes decodes a vector clock
+// FromBytes decodes a vector clock
 func FromBytes(data []byte) (vc VClock, err error) {
 	b := new(bytes.Buffer)
 	b.Write(data)
@@ -106,12 +107,12 @@ func FromBytes(data []byte) (vc VClock, err error) {
 	return clock, err
 }
 
-//PrintVC prints the callees vector clock to stdout
+// PrintVC prints the callee's vector clock to stdout
 func (vc VClock) PrintVC() {
 	fmt.Println(vc.ReturnVCString())
 }
 
-//ReturnVCString returns a string encoding of a vector clock
+// ReturnVCString returns a string encoding of a vector clock
 func (vc VClock) ReturnVCString() string {
 	//sort
 	ids := make([]string, len(vc))
@@ -120,6 +121,8 @@ func (vc VClock) ReturnVCString() string {
 		ids[i] = id
 		i++
 	}
+
+	sort.Strings(ids)
 
 	var buffer bytes.Buffer
 	buffer.WriteString("{")
@@ -133,8 +136,8 @@ func (vc VClock) ReturnVCString() string {
 	return buffer.String()
 }
 
-//Compare takes another clock and determines if it is Equal, an
-//Ancestor, Descendant, or Concurrent with the callees clock.
+// Compare takes another clock and determines if it is Equal,
+// Ancestor, Descendant, or Concurrent with the callee's clock.
 func (vc VClock) Compare(other VClock, cond Condition) bool {
 	var otherIs Condition
 	// Preliminary qualification based on length
@@ -152,15 +155,12 @@ func (vc VClock) Compare(other VClock, cond Condition) bool {
 		otherIs = Equal
 	}
 
-	//Compare matching items
+	// Compare matching items
 	for id := range other {
 		if _, found := vc[id]; found {
 			if other[id] > vc[id] {
 				switch otherIs {
 				case Equal:
-					if cond&Descendant == 0 {
-						return false
-					}
 					otherIs = Descendant
 					break
 				case Ancestor:
@@ -169,9 +169,6 @@ func (vc VClock) Compare(other VClock, cond Condition) bool {
 			} else if other[id] < vc[id] {
 				switch otherIs {
 				case Equal:
-					if cond&Ancestor == 0 {
-						return false
-					}
 					otherIs = Ancestor
 					break
 				case Descendant:
@@ -181,10 +178,43 @@ func (vc VClock) Compare(other VClock, cond Condition) bool {
 		} else {
 			if otherIs == Equal {
 				return cond&Concurrent != 0
-			} else if (len(other) - len(vc) - 1) < 0 {
+			} else if len(other) <= len(vc) {
 				return cond&Concurrent != 0
 			}
 		}
+	}
+
+	for id := range vc {
+		if _, found := other[id]; found {
+			if other[id] > vc[id] {
+				switch otherIs {
+				case Equal:
+					otherIs = Descendant
+					break
+				case Ancestor:
+					return cond&Concurrent != 0
+				}
+			} else if other[id] < vc[id] {
+				switch otherIs {
+				case Equal:
+					otherIs = Ancestor
+					break
+				case Descendant:
+					return cond&Concurrent != 0
+				}
+			}
+		} else {
+			if otherIs == Equal {
+				return cond&Concurrent != 0
+			} else if len(vc) <= len(other) {
+				return cond&Concurrent != 0
+			}
+		}
+	}
+
+	// Equal clocks are concurrent
+	if otherIs == Equal && cond == Concurrent {
+		cond = Equal
 	}
 	return cond&otherIs != 0
 }

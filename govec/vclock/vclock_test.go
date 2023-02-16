@@ -88,12 +88,195 @@ func TestCompareAndMerge(t *testing.T) {
 		failComparison(t, "Clocks not defined as Descendant: n1 = %s | n2 = %s", n1, n3)
 	} else if !n2.Compare(n3, Descendant) {
 		failComparison(t, "Clocks not defined as Descendant: n1 = %s | n2 = %s", n2, n3)
+	} else if !n1.Compare(n2, Concurrent) {
+		failComparison(t, "Clocks not defined as concurrent: n1 = %s | n2 = %s", n1, n2)
 	}
-	/*
-		//TODO cfung: This test fails, I think it is a bug
-		else if !n1.Compare(n2, Concurrent) {
-		failComparison(t,"Clocks not defined as concurrent: n1 = %s | n2 = %s",n1,n2)
-	}*/
+}
+
+func TestCompareDiffLengthsNonConcurrent(t *testing.T) {
+	n1 := New()
+	n2 := New()
+
+	n1.Set("a", 1)
+	n2.Set("a", 1)
+	n2.Set("b", 1)
+
+	if n1.Compare(n2, Equal) {
+		failComparison(t, "Clocks are defined as Equal: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Ancestor) {
+		failComparison(t, "Clocks are defined as Ancestor: n1 = %s | n2 = %s", n1, n2)
+	} else if !n1.Compare(n2, Descendant) {
+		failComparison(t, "Clocks not defined as Descendant: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Concurrent) {
+		failComparison(t, "Clocks are defined as Concurrent: n1 = %s | n2 = %s", n1, n2)
+	}
+
+	if n2.Compare(n1, Equal) {
+		failComparison(t, "Clocks are defined as Equal: n1 = %s | n2 = %s", n2, n1)
+	} else if !n2.Compare(n1, Ancestor) {
+		failComparison(t, "Clocks not defined as Ancestor: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Concurrent) {
+		failComparison(t, "Clocks are defined as Concurrent: n1 = %s | n2 = %s", n2, n1)
+	}
+}
+
+func TestCompareDiffLengthsConcurrent(t *testing.T) {
+	n1 := New()
+	n2 := New()
+
+	n1.Set("a", 2)
+	n2.Set("a", 1)
+	n2.Set("b", 1)
+
+	if n1.Compare(n2, Equal) {
+		failComparison(t, "Clocks are defined as Equal: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Ancestor) {
+		failComparison(t, "Clocks are defined as Ancestor: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n1, n2)
+	} else if !n1.Compare(n2, Concurrent) {
+		failComparison(t, "Clocks not defined as Concurrent: n1 = %s | n2 = %s", n1, n2)
+	}
+
+	if n2.Compare(n1, Equal) {
+		failComparison(t, "Clocks are defined as Equal: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Ancestor) {
+		failComparison(t, "Clocks are defined as Ancestor: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n2, n1)
+	} else if !n2.Compare(n1, Concurrent) {
+		failComparison(t, "Clocks not defined as Concurrent: n1 = %s | n2 = %s", n2, n1)
+	}
+}
+
+func TestCompareIdenticalClocks(t *testing.T) {
+	n1 := New()
+	n2 := New()
+
+	n1.Set("a", 1)
+	n1.Set("b", 2)
+	n1.Set("c", 3)
+	n2.Set("a", 1)
+	n2.Set("b", 2)
+	n2.Set("c", 3)
+
+	if !n1.Compare(n2, Equal) {
+		failComparison(t, "Clocks not defined as Equal: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Ancestor) {
+		failComparison(t, "Clocks are defined as Ancestor: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n1, n2)
+	} else if !n1.Compare(n2, Concurrent) {
+		failComparison(t, "Clocks not defined as Concurrent: n1 = %s | n2 = %s", n1, n2)
+	}
+
+	if !n2.Compare(n1, Equal) {
+		failComparison(t, "Clocks not defined as Equal: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Ancestor) {
+		failComparison(t, "Clocks are defined as Ancestor: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n2, n1)
+	} else if !n2.Compare(n1, Concurrent) {
+		failComparison(t, "Clocks not defined as Concurrent: n1 = %s | n2 = %s", n2, n1)
+	}
+}
+
+func TestCompareSameLengthConcurrent(t *testing.T) {
+	n1 := New()
+	n2 := New()
+
+	n1.Set("a", 1)
+	n1.Set("b", 2)
+	n1.Set("c", 3)
+	n2.Set("a", 3)
+	n2.Set("b", 2)
+	n2.Set("c", 1)
+
+	if n1.Compare(n2, Equal) {
+		failComparison(t, "Clocks are defined as Equal: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Ancestor) {
+		failComparison(t, "Clocks are defined as Ancestor: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n1, n2)
+	} else if !n1.Compare(n2, Concurrent) {
+		failComparison(t, "Clocks not defined as Concurrent: n1 = %s | n2 = %s", n1, n2)
+	}
+
+	if n2.Compare(n1, Equal) {
+		failComparison(t, "Clocks are defined as Equal: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Ancestor) {
+		failComparison(t, "Clocks are defined as Ancestor: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n2, n1)
+	} else if !n2.Compare(n1, Concurrent) {
+		failComparison(t, "Clocks not defined as Concurrent: n1 = %s | n2 = %s", n2, n1)
+	}
+}
+
+func TestCompareSameLengthNonConcurrent(t *testing.T) {
+	n1 := New()
+	n2 := New()
+
+	n1.Set("a", 1)
+	n1.Set("b", 2)
+	n1.Set("c", 3)
+	n2.Set("a", 2)
+	n2.Set("b", 2)
+	n2.Set("c", 3)
+
+	if n1.Compare(n2, Equal) {
+		failComparison(t, "Clocks are defined as Equal: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Ancestor) {
+		failComparison(t, "Clocks are defined as Ancestor: n1 = %s | n2 = %s", n1, n2)
+	} else if !n1.Compare(n2, Descendant) {
+		failComparison(t, "Clocks not defined as Descendant: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Concurrent) {
+		failComparison(t, "Clocks are defined as Concurrent: n1 = %s | n2 = %s", n1, n2)
+	}
+
+	if n2.Compare(n1, Equal) {
+		failComparison(t, "Clocks are defined as Equal: n1 = %s | n2 = %s", n2, n1)
+	} else if !n2.Compare(n1, Ancestor) {
+		failComparison(t, "Clocks not defined as Ancestor: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Concurrent) {
+		failComparison(t, "Clocks are defined as Concurrent: n1 = %s | n2 = %s", n2, n1)
+	}
+}
+
+func TestCompareNonIdenticalNames(t *testing.T) {
+	n1 := New()
+	n2 := New()
+
+	n1.Set("a", 1)
+	n1.Set("b", 2)
+	n1.Set("c", 3)
+	n2.Set("a", 1)
+	n2.Set("b", 2)
+	n2.Set("d", 3)
+
+	if n1.Compare(n2, Equal) {
+		failComparison(t, "Clocks are defined as Equal: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Ancestor) {
+		failComparison(t, "Clocks are defined as Ancestor: n1 = %s | n2 = %s", n1, n2)
+	} else if n1.Compare(n2, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n1, n2)
+	} else if !n1.Compare(n2, Concurrent) {
+		failComparison(t, "Clocks not defined as Concurrent: n1 = %s | n2 = %s", n1, n2)
+	}
+
+	if n2.Compare(n1, Equal) {
+		failComparison(t, "Clocks are defined as Equal: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Ancestor) {
+		failComparison(t, "Clocks are defined as Ancestor: n1 = %s | n2 = %s", n2, n1)
+	} else if n2.Compare(n1, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n2, n1)
+	} else if !n2.Compare(n1, Concurrent) {
+		failComparison(t, "Clocks not defined as Concurrent: n1 = %s | n2 = %s", n2, n1)
+	}
 }
 
 func failComparison(t *testing.T, failMessage string, clock1, clock2 VClock) {
@@ -116,5 +299,41 @@ func TestEncodeDecode(t *testing.T) {
 		nString := n.ReturnVCString()
 		dString := decoded.ReturnVCString()
 		t.Fatalf("decoded not the same as encoded enc = %s | dec = %s", nString, dString)
+	}
+}
+
+func TestCompareDifferentLengths(t *testing.T) {
+	n1 := New()
+	n2 := New()
+
+	n1.Set("a", 1)
+	n1.Set("b", 1)
+
+	n2.Set("b", 1)
+	n2.Set("c", 1)
+	n2.Set("d", 1)
+
+	if n1.Compare(n2, Descendant) {
+		failComparison(t, "Clocks are defined as Descendant: n1 = %s | n2 = %s", n1, n2)
+	}
+}
+
+func TestVCString(t *testing.T) {
+	n := New()
+
+	n.Set("a", 1)
+	n.Set("b", 1)
+	n.Set("c", 1)
+	n.Set("d", 1)
+	n.Set("e", 1)
+	n.Set("f", 1)
+	n.Set("g", 1)
+	n.Set("h", 1)
+
+	expected := "{\"a\":1, \"b\":1, \"c\":1, \"d\":1, \"e\":1, \"f\":1, \"g\":1, \"h\":1}"
+	nString := n.ReturnVCString()
+
+	if nString != expected {
+		t.Fatalf("VC string %s not the same as expected %s", nString, expected)
 	}
 }

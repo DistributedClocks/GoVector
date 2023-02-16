@@ -15,10 +15,10 @@ feature-rich logging and encoding infrastructure.
 
 Vector clock events
 are generated using 3 key functions, `PrepareSend`, `UnpackReceive`,
-and `LogLocalEvent`. PrepareSend encodes messages for network
+and `LogLocalEvent`. `PrepareSend` encodes messages for network
 transport, updates GoVectors local time, and logs a sending event.
-UnpackReceive decodes messages from the network, merges GoVectors local
-clock with the received clock, and logs a receiving event. LogLocalEvent
+`UnpackReceive` decodes messages from the network, merges GoVectors local
+clock with the received clock, and logs a receiving event. `LogLocalEvent`
 event ticks the clock, and logs a message.
 
 This library can be added to a Go project to generate a
@@ -26,12 +26,12 @@ This library can be added to a Go project to generate a
 timestamped log of events in a concurrent or distributed system.
 This library can also be used to generate [TSViz](https://bestchai.bitbucket.io/tsviz/)-compatible
 log of events.
-GoVector is compatible with Go 1.4+. 
+GoVector is compatible with Go 1.11+ and requires support for [Go modules](https://github.com/golang/go/wiki/Modules).
 
-* govec/    	: Contains the Library and all its dependencies
-* govec/vclock	: Pure vector clock library
-* govec/vrpc	: Go's rpc with GoVector integration
-* example/  	: Contains some examples instrumented with different features of GoVector
+* `govec/`    	    : Contains the Library and all its dependencies
+* `govec/vclock`	: Pure vector clock library
+* `govec/vrpc`	    : Go's rpc with GoVector integration
+* `example/`  	    : Contains some examples instrumented with different features of GoVector
 
 ### Installation
 
@@ -42,36 +42,39 @@ Code](https://golang.org/doc/code.html).
 Once you set up your environment, GoVector can be installed with the go
 tool command:
 
-> go get -u github.com/DistributedClocks/GoVector
+```
+$ go get -u github.com/DistributedClocks/GoVector
+```
 
-###   Usage
+### Usage
 
 The following is a basic example of how this library can be used:
 
 ```go
-	package main
+package main
 
-	import "github.com/DistributedClocks/GoVector/govec"
+import "github.com/DistributedClocks/GoVector/govec"
 
-	func main() {
-		//Initialize GoVector logger
-		Logger := govec.InitGoVector("MyProcess", "LogFile", govec.GetDefaultConfig())
-		
-		//Encode message, and update vector clock
-		messagepayload := []byte("samplepayload")
-		vectorclockmessage := Logger.PrepareSend("Sending Message", messagepayload, govec.GetDefaultLogOptions())
-		
-		//send message
-		connection.Write(vectorclockmessage)
+func main() {
+    // Initialize GoVector logger
+    logger := govec.InitGoVector("MyProcess", "LogFile", govec.GetDefaultConfig())
 
-		//In Receiving Process
-		connection.Read(vectorclockmessage)
-		//Decode message, and update local vector clock with received clock
-		Logger.UnpackReceive("Receiving Message", vectorclockmessage, &messagepayload, govec.GetDefaultLogOptions())
+    // Encode message, and update vector clock
+    messagePayload := []byte("sample-payload")
+    vectorClockMessage := logger.PrepareSend("Sending Message", messagePayload, govec.GetDefaultLogOptions())
 
-		//Log a local event
-		Logger.LogLocalEvent("Example Complete", govec.GetDefaultLogOptions())
-	}
+    // Send message
+    connection.Write(vectorClockMessage)
+
+    // In Receiving Process
+    connection.Read(vectorClockMessage)
+
+    // Decode message, and update local vector clock with received clock
+    logger.UnpackReceive("Receiving Message", vectorClockMessage, &messagePayload, govec.GetDefaultLogOptions())
+
+    // Log a local event
+    logger.LogLocalEvent("Example Complete", govec.GetDefaultLogOptions())
+}
 ```
 For complete documentation with examples see GoVector's [GoDoc](https://godoc.org/github.com/DistributedClocks/GoVector/govec).
 
@@ -83,22 +86,22 @@ For complete documentation with examples see GoVector's [GoDoc](https://godoc.or
 
 ### Generating ShiViz/TSViz compatible logs
 
-By default, when you download the GoVector package using the go get command, the command installs a binary of the to-level file govec.go by the name of GoVector in the directory "**$GOPATH/bin**". As long as this directory is part of your path, you can run the GoVector binary to generate a ShiViz or TSViz compatible log from all the logs in a given directory.
+By default, when you download the GoVector package using the go get command, the command installs a binary of the to-level file `govec.go` by the name of GoVector in the directory `$GOPATH/bin`. As long as this directory is part of your path, you can run the GoVector binary to generate a ShiViz or TSViz compatible log from all the logs in a given directory.
 
-**Note** : Make sure that you are running the GoVector binary on a directory that contains log files from the same execution of the system. If it contains logs from multiple executions, then ShiViz and TSViz won't be able to interpret the log file.
+**Note**: Make sure that you are running the GoVector binary on a directory that contains log files from the same execution of the system. If it contains logs from multiple executions, then ShiViz and TSViz won't be able to interpret the log file.
 
 #### Usage
 
-To generate a ShiViz-compatible log file called "hello.log" from all log files in the directory "a/b/c" do the following,
+To generate a ShiViz-compatible log file called `hello.log` from all log files in the directory `path/to/logs` do the following:
 
 ```
-    > GoVector --log_type shiviz --log_dir a/b/c --outfile hello.log
+$ GoVector --log_type shiviz --log_dir path/to/logs --outfile hello.log
 ```
 
-Similarly, to generate a TSViz-compatible log file called "hello-ts.log" from all log files in the directory "d/e/f" do the following,
+Similarly, to generate a TSViz-compatible log file called `hello-ts.log` from all log files in the directory `path/to/logs` do the following:
 
 ```
-    > GoVector --log_type tsviz --log_dir d/e/f --outfile hello-ts.log
+$ GoVector --log_type tsviz --log_dir path/to/logs --outfile hello-ts.log
 ```
 
 ### Motivation
@@ -128,17 +131,16 @@ GoVector has the following dependencies:
 
 The source code from the usage example produces the following log into a file named "LogFile.txt":
 
-	MyProcess {"MyProcess":1}
-	Initialization Complete
-	MyProcess {"MyProcess":2}
-	Sending Message
-	MyProcess {"MyProcess":3}
-	Receiving Message
-	MyProcess {"MyProcess":4}
-	Example Complete
-
-
-
+```
+MyProcess {"MyProcess":1}
+Initialization Complete
+MyProcess {"MyProcess":2}
+Sending Message
+MyProcess {"MyProcess":3}
+Receiving Message
+MyProcess {"MyProcess":4}
+Example Complete
+```
 
 Here is a sample output of the priority logger:
 ![PriorityLoggerOutput.png](.images/PriorityLoggerOutput.png)
