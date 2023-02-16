@@ -14,26 +14,26 @@ import (
 
 var done chan int = make(chan int, 1)
 
-//Args are matematical arguments for the rpc operations
+// Args are matematical arguments for the rpc operations
 type Args struct {
 	A, B int
 }
 
-//Quotient is the result of a Divide RPC
+// Quotient is the result of a Divide RPC
 type Quotient struct {
 	Quo, Rem int
 }
 
-//Arith is an RPC math server type
+// Arith is an RPC math server type
 type Arith int
 
-//Multiply performs multiplication on two integers
+// Multiply performs multiplication on two integers
 func (t *Arith) Multiply(args *Args, reply *int) error {
 	*reply = args.A * args.B
 	return nil
 }
 
-//Divide divides a by b and returns a quotient with a remainder
+// Divide divides a by b and returns a quotient with a remainder
 func (t *Arith) Divide(args *Args, quo *Quotient) error {
 	if args.B == 0 {
 		return errors.New("divide by zero")
@@ -43,7 +43,7 @@ func (t *Arith) Divide(args *Args, quo *Quotient) error {
 	return nil
 }
 
-func rpcserver() {
+func rpcServer() {
 	fmt.Println("Starting server")
 	logger := govec.InitGoVector("server", "serverlogfile", govec.GetDefaultConfig())
 	arith := new(Arith)
@@ -58,7 +58,7 @@ func rpcserver() {
 	vrpc.ServeRPCConn(server, l, logger, options)
 }
 
-func rpcclient() {
+func rpcClient() {
 	fmt.Println("Starting client")
 	logger := govec.InitGoVector("client", "clientlogfile", govec.GetDefaultConfig())
 	options := govec.GetDefaultLogOptions()
@@ -81,8 +81,8 @@ func rpcclient() {
 }
 
 func main() {
-	go rpcserver()
+	go rpcServer()
 	time.Sleep(time.Millisecond)
-	go rpcclient()
+	go rpcClient()
 	<-done
 }
