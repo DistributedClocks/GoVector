@@ -14,7 +14,7 @@ import (
 
 var done chan int = make(chan int, 1)
 
-// Args are matematical arguments for the rpc operations
+// Args are mathematical arguments for the rpc operations
 type Args struct {
 	A, B int
 }
