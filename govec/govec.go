@@ -247,6 +247,9 @@ type GoLog struct {
 	// Flag to indicate if the log file will contain multiple executions
 	appendLog bool
 
+	// Flag to indicate if the message broadcast is on
+	broadcast bool
+
 	// Priority level at which all events are logged
 	priority LogPriority
 
@@ -513,24 +516,37 @@ func (gv *GoLog) LogLocalEvent(mesg string, opts GoLogOptions) (logSuccess bool)
 // be sent onwards using the Send Command
 func (gv *GoLog) PrepareSend(mesg string, buf interface{}, opts GoLogOptions) (encodedBytes []byte) {
 	//Converting Vector Clock from Bytes and Updating the gv clock
-	gv.mutex.Lock()
-	if opts.Priority >= gv.priority {
-		gv.tickClock()
+	if !gv.broadcast {
+		gv.mutex.Lock()
+		if opts.Priority >= gv.priority {
+			gv.tickClock()
 
-		gv.logWriteWrapper(mesg, "Something went wrong, could not log prepare send", opts.Priority)
+			gv.logWriteWrapper(mesg, "Something went wrong, could not log prepare send", opts.Priority)
 
+			d := VClockPayload{Pid: gv.pid, VcMap: gv.currentVC.GetMap(), Payload: buf}
+
+			// encode the Clock Payload
+			var err error
+			encodedBytes, err = gv.encodingStrategy(&d)
+			if err != nil {
+				gv.logger.Println(err.Error())
+			}
+
+			// return encodedBytes which can be sent off and received on the other end!
+		}
+		gv.mutex.Unlock()
+
+	} else {
+		// Broadcast: do not acquire the lock, tick the clock or log an event as
+		// all been done by StartBroadcast
 		d := VClockPayload{Pid: gv.pid, VcMap: gv.currentVC.GetMap(), Payload: buf}
 
-		// encode the Clock Payload
 		var err error
 		encodedBytes, err = gv.encodingStrategy(&d)
 		if err != nil {
 			gv.logger.Println(err.Error())
 		}
-
-		// return encodedBytes which can be sent off and received on the other end!
 	}
-	gv.mutex.Unlock()
 	return
 }
 
@@ -567,4 +583,23 @@ func (gv *GoLog) UnpackReceive(mesg string, buf []byte, unpack interface{}, opts
 	}
 	gv.mutex.Unlock()
 
+}
+
+// StartBroadcast allows to use vector clocks in the context of casual broadcasts
+// sent via RPC. Any call to StartBroadcast must have a corresponding call to 
+// StopBroadcast, otherwise a deadlock will occur. All RPC calls made in-between 
+// the calls to StartBroadcast and StopBroadcast will be logged as a single event, 
+// will be sent out with the same vector clock and will represent broadcast messages
+// from the current process to the process pool.
+func (gv *GoLog) StartBroadcast(mesg string, opts GoLogOptions) {
+	gv.mutex.Lock()
+	gv.tickClock()
+	gv.logWriteWrapper(mesg, "Something went wrong, could not log prepare send", opts.Priority)
+	gv.broadcast = true
+}
+
+// StopBroadcast is called once all RPC calls of a message broadcast have been sent.
+func (gv *GoLog) StopBroadcast() {
+	gv.broadcast = false
+	gv.mutex.Unlock()
 }

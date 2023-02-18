@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/rpc"
+	"strconv"
 	"time"
 
 	"github.com/DistributedClocks/GoVector/govec"
@@ -13,6 +14,7 @@ import (
 )
 
 var done chan int = make(chan int, 1)
+var ports = [3]string{"8080", "8081", "8082"}
 
 // Args are mathematical arguments for the rpc operations
 type Args struct {
@@ -43,13 +45,13 @@ func (t *Arith) Divide(args *Args, quo *Quotient) error {
 	return nil
 }
 
-func rpcServer() {
-	fmt.Println("Starting server")
-	logger := govec.InitGoVector("server", "serverlogfile", govec.GetDefaultConfig())
+func rpcServer(no string, port string) {
+	fmt.Println("Starting server no. " + no + " on port " + port)
+	logger := govec.InitGoVector("server"+no, "server"+no+"logfile", govec.GetDefaultConfig())
 	arith := new(Arith)
 	server := rpc.NewServer()
 	server.Register(arith)
-	l, e := net.Listen("tcp", ":8080")
+	l, e := net.Listen("tcp", ":"+port)
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
@@ -62,26 +64,36 @@ func rpcClient() {
 	fmt.Println("Starting client")
 	logger := govec.InitGoVector("client", "clientlogfile", govec.GetDefaultConfig())
 	options := govec.GetDefaultLogOptions()
-	client, err := vrpc.RPCDial("tcp", "127.0.0.1:8080", logger, options)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var result int
-	err = client.Call("Arith.Multiply", Args{5, 6}, &result)
-	if err != nil {
-		log.Fatal(err)
+
+	var clients [3]*rpc.Client
+	var err error
+	for i, port := range ports {
+		clients[i], err = vrpc.RPCDial("tcp", "127.0.0.1:"+port, logger, options)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	var qresult Quotient
-	err = client.Call("Arith.Divide", Args{4, 2}, &qresult)
-	if err != nil {
-		log.Fatal(err)
+	var calls [3]*rpc.Call
+	var results [3]int
+	logger.StartBroadcast("Broadcasting via RPC", options)
+	for i, client := range clients {
+		calls[i] = client.Go("Arith.Multiply", Args{i, i + 1}, &results[i], nil)
 	}
+	logger.StopBroadcast()
+
+	for i, call := range calls {
+		<-call.Done
+		fmt.Println("Received result", results[i], "from server no.", strconv.Itoa(i+1))
+	}
+
 	done <- 1
 }
 
 func main() {
-	go rpcServer()
+	for i, port := range ports {
+		go rpcServer(strconv.Itoa(i+1), port)
+	}
 	time.Sleep(time.Millisecond)
 	go rpcClient()
 	<-done

@@ -98,6 +98,35 @@ func TestSendAndUnpackStrings(t *testing.T) {
 
 }
 
+func TestBroadcast(t *testing.T) {
+
+	gv := InitGoVector(TestPID, "TestLogFile", GetDefaultConfig())
+	opts := GetDefaultLogOptions()
+
+	gv.StartBroadcast("TestBroadcast", opts)
+	var packed []byte
+
+	for i := 0; i < 5; i++ {
+		packed = gv.PrepareSend("", 1337, opts)
+	}
+
+	gv.StopBroadcast()
+
+	vc := gv.GetCurrentVC()
+	n, _ := vc.FindTicks(TestPID)
+
+	AssertEquals(t, uint64(2), n, "PrepareSend: Clock value incremented")
+
+	var response int
+	gv.UnpackReceive("TestMessage", packed, &response, opts)
+
+	vc = gv.GetCurrentVC()
+	n, _ = vc.FindTicks(TestPID)
+
+	AssertEquals(t, 1337, response, "PrepareSend: Clock value incremented.")
+	AssertEquals(t, uint64(3), n, "PrepareSend: Clock value incremented.")
+}
+
 func BenchmarkPrepare(b *testing.B) {
 
 	gv := InitGoVector(TestPID, "TestLogFile", GetDefaultConfig())
