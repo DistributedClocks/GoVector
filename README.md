@@ -126,6 +126,7 @@ GoVector has the following dependencies:
 + Fabian Ruffy
 + Vaastav Anand
 + Sasha Avreline
++ Shayan Hosseini (Maintainer)
 
 ### Output Example
 
