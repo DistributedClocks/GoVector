@@ -43,7 +43,7 @@ Once you set up your environment, GoVector can be installed with the go
 tool command:
 
 ```
-$ go get -u github.com/DistributedClocks/GoVector
+$ go install github.com/DistributedClocks/GoVector
 ```
 
 ### Usage
