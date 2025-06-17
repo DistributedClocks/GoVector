@@ -209,11 +209,7 @@ func (d *VClockPayload) DecodeMsgpack(dec *msgpack.Decoder) error {
 		}
 		vcMap[key] = value
 	}
-	err = dec.DecodeMulti(&d.Pid, &d.Payload, &d.VcMap)
 	d.VcMap = vcMap
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
